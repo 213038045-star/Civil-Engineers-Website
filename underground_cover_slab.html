@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Underground Water Reservoir — Roof Slab Design (BNBC 2020)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root{
+  --blue-deep:#04100c; --blue-mid:#081f18; --blue-line:#1f6b52;
+  --paper:#c9fbe5; --accent:#2dd4bf; --accent-soft:rgba(45,212,191,0.14);
+  --grid-line:rgba(45,212,191,0.06); --text-dim:#6fa896;
+  --pass:#4ade80; --fail:#f87171;
+  --font-display:'JetBrains Mono','Courier New',monospace; --font-mono:'JetBrains Mono','Courier New',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;}
+body{
+  margin:0; font-family:var(--font-mono); color:var(--paper);
+  background:
+    linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0/28px 28px,
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0/28px 28px,
+    var(--blue-deep);
+  min-height:100vh;
+}
+.wrap{max-width:1200px;margin:0 auto;padding:48px 24px 96px;}
+header{margin-bottom:36px;}
+.eyebrow{font-size:0.7rem;font-weight:600;letter-spacing:0.35em;color:var(--accent);margin-bottom:12px;}
+h1{font-family:var(--font-display);font-weight:700;font-size:clamp(1.7rem,4vw,2.4rem);margin:0 0 10px;letter-spacing:-0.01em;}
+header p{color:var(--text-dim);font-size:0.92rem;line-height:1.7;max-width:780px;margin:0;}
+.assume-banner{
+  background:rgba(234,179,8,0.10); border:1px solid #eab308; color:#fde68a;
+  padding:14px 18px; font-size:0.8rem; line-height:1.6; margin-bottom:28px;
+}
+.assume-banner strong{color:var(--accent);}
+
+.grid{display:grid;grid-template-columns:400px 1fr;gap:28px;align-items:start;}
+@media (max-width:960px){.grid{grid-template-columns:1fr;}}
+
+.panel{background:rgba(10,30,24,0.5); border:1px solid var(--blue-line); padding:24px 22px; position:sticky; top:20px;}
+@media (max-width:960px){.panel{position:static;}}
+
+.panel h2{font-family:var(--font-display);font-weight:600;font-size:1.05rem;color:var(--paper);margin:0 0 4px;}
+.section-tag{font-size:0.62rem;font-weight:600;letter-spacing:0.2em;color:var(--accent);margin:22px 0 10px;text-transform:uppercase;}
+.section-tag:first-of-type{margin-top:0;}
+
+.field{margin-bottom:12px;}
+.field label{display:flex;justify-content:space-between;gap:8px;font-size:0.74rem;color:var(--text-dim);margin-bottom:5px;}
+.field label span.unit{color:var(--accent);font-weight:600;}
+.field input, .field select{
+  width:100%;background:rgba(6,20,17,0.75);border:1px solid var(--blue-line);
+  color:var(--paper);padding:9px 10px;font-family:var(--font-mono);font-size:0.85rem;border-radius:2px;
+}
+.field input:focus, .field select:focus{outline:none;border-color:var(--accent);}
+.field small{display:block;color:var(--text-dim);opacity:0.75;font-size:0.66rem;margin-top:4px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+
+button#calcBtn{
+  width:100%;margin-top:18px;background:var(--accent);color:var(--blue-deep);
+  border:none;padding:13px;font-family:var(--font-mono);font-weight:700;
+  font-size:0.85rem;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:background 0.2s ease;
+}
+button#calcBtn:hover{background:#f3b558;}
+
+.results{min-height:200px;}
+.placeholder{border:1px dashed var(--blue-line);padding:48px 24px;text-align:center;color:var(--text-dim);font-size:0.85rem;}
+
+.card{background:rgba(10,30,24,0.45);border:1px solid var(--blue-line);padding:20px 22px;margin-bottom:16px;position:relative;}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px;flex-wrap:wrap;}
+.card-head h3{font-family:var(--font-display);font-size:1rem;font-weight:600;margin:0;color:var(--paper);}
+.card-head .tag{font-size:0.62rem;letter-spacing:0.15em;color:var(--accent);text-transform:uppercase;margin-top:3px;display:block;}
+.badge{font-size:0.68rem;font-weight:700;letter-spacing:0.08em;padding:5px 10px;border-radius:2px;text-transform:uppercase;white-space:nowrap;}
+.badge.pass{background:rgba(74,222,128,0.16);color:var(--pass);border:1px solid var(--pass);}
+.badge.fail{background:rgba(248,113,113,0.16);color:var(--fail);border:1px solid var(--fail);}
+.badge.info{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent);}
+
+.formula{font-size:0.78rem;color:var(--text-dim);background:rgba(6,20,17,0.55);padding:10px 12px;border-left:2px solid var(--blue-line);margin:8px 0;overflow-x:auto; white-space:pre;}
+.calc-row{display:flex;justify-content:space-between;font-size:0.8rem;padding:5px 0;border-bottom:1px dashed rgba(61,110,165,0.3);color:var(--paper);}
+.calc-row:last-child{border-bottom:none;}
+.calc-row .k{color:var(--text-dim);}
+.calc-row .v{font-weight:600;}
+
+.summary{background:rgba(45,212,191,0.08);border:1px solid var(--accent);padding:22px;margin-bottom:16px;}
+.summary h3{font-family:var(--font-display);color:var(--accent);margin:0 0 12px;font-size:1.05rem;}
+.summary .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-top:14px;}
+.summary .stat{background:rgba(6,20,17,0.55);padding:12px 14px;}
+.summary .stat .label{font-size:0.65rem;color:var(--text-dim);letter-spacing:0.1em;text-transform:uppercase;}
+.summary .stat .value{font-family:var(--font-display);font-size:1.2rem;font-weight:700;color:var(--paper);margin-top:4px;}
+
+.note{font-size:0.72rem;color:var(--text-dim);line-height:1.6;margin-top:6px;}
+.note.warn{color:#eab308;}
+.footnote{margin-top:32px;font-size:0.72rem;color:var(--text-dim);line-height:1.7;border-top:1px dashed var(--blue-line);padding-top:18px;}
+table.iter{width:100%;border-collapse:collapse;font-size:0.76rem;margin:8px 0;}
+table.iter th{text-align:right;color:var(--accent);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--blue-line);letter-spacing:0.04em;text-transform:uppercase;font-size:0.65rem;}
+table.iter th:first-child, table.iter td:first-child{text-align:left;}
+table.iter td{text-align:right;padding:5px 8px;border-bottom:1px dashed rgba(61,110,165,0.25);}
+table.iter tr:last-child td{color:var(--accent);font-weight:700;border-bottom:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">DWG-07 · STRUCTURAL CALCULATION SHEET — US CUSTOMARY UNITS</div>
+    <h1>Underground Water Reservoir — Roof (Cover) Slab Design</h1>
+    <p>Designs the roof/cover slab as a two-way restrained panel spanning between the tank's interior wall faces, carrying its own self-weight, any earth cover above it, and a live/access load — completing the same base‑slab → sidewall → roof sequence as the earlier sheets.</p>
+  </header>
+
+  <div class="assume-banner">
+    <strong>Note:</strong> no hand-calculation sheet was supplied for the roof slab, so this tool was built by extending the same method used on your base-slab and sidewall sheets (two-way panel moment coefficients, φ=0.9 flexure, a/A<sub>s</sub> trial-and-error, and consistent A<sub>s,min</sub>/A<sub>s,max</sub> checks) rather than transcribing a specific source. Check every default — especially the live load and moment coefficients — against your governing code and actual roof usage (foot traffic only vs. vehicular, buried vs. exposed) before relying on the output.
+  </div>
+
+  <div class="grid">
+    <!-- INPUT PANEL -->
+    <div class="panel">
+      <h2>Design Inputs</h2>
+
+      <div class="section-tag">Tank Geometry</div>
+      <div class="two-col">
+        <div class="field"><label>Interior length, L <span class="unit">ft</span></label><input type="number" id="Lt" value="22" step="0.25"></div>
+        <div class="field"><label>Interior width, B <span class="unit">ft</span></label><input type="number" id="Bt" value="11" step="0.25"></div>
+      </div>
+      <div class="two-col">
+        <div class="field"><label>Wall thickness <span class="unit">in</span></label><input type="number" id="tWall" value="9" step="0.5"></div>
+        <div class="field"><label>Roof slab thickness <span class="unit">in</span></label><input type="number" id="tRoof" value="6" step="0.5"></div>
+      </div>
+      <div class="note" style="margin-bottom:14px;">Roof slab plan = (L+2·t_wall) × (B+2·t_wall) — bears on top of the walls, same as the cover slab in the base-slab sheet. Design spans (for panel moments) use the clear interior dimensions L × B.</div>
+
+      <div class="section-tag">Loads</div>
+      <div class="two-col">
+        <div class="field"><label>Live / access load <span class="unit">psf</span></label><input type="number" id="LL" value="100" step="5">
+        </div>
+        <div class="field"><label>Earth cover over roof <span class="unit">ft</span></label><input type="number" id="earthCover" value="0" step="0.25"></div>
+      </div>
+      <div class="two-col">
+        <div class="field"><label>Unit wt. concrete, γc <span class="unit">pcf</span></label><input type="number" id="gammaC" value="150"></div>
+        <div class="field"><label>Unit wt. fill (if buried) <span class="unit">pcf</span></label><input type="number" id="gammaFill" value="110"></div>
+      </div>
+      <div class="two-col">
+        <div class="field"><label>Load factor, dead</label><input type="number" id="lfD" value="1.2" step="0.05"></div>
+        <div class="field"><label>Load factor, live</label><input type="number" id="lfL" value="1.6" step="0.05"></div>
+      </div>
+      <div class="note" style="margin-bottom:14px;">Default live load (100 psf) assumes pedestrian/maintenance access only — increase substantially (e.g. HS-20 wheel loads) if the roof will see vehicular traffic, and set earth cover to 0 if the roof is exposed rather than buried.</div>
+
+      <div class="section-tag">Materials</div>
+      <div class="two-col">
+        <div class="field"><label>f'c <span class="unit">psi</span></label><input type="number" id="fc" value="3000"></div>
+        <div class="field"><label>fy <span class="unit">psi</span></label><input type="number" id="fy" value="40000"></div>
+      </div>
+      <div class="field"><label>Min. steel ratio, ρ_min (temp &amp; shrinkage, gross)</label><input type="number" id="rhoMinTS" value="0.002" step="0.0001"></div>
+
+      <div class="section-tag">Two-Way Panel Moment Coefficients</div>
+      <div class="two-col">
+        <div class="field"><label>C_A (short-span, A)</label><input type="number" id="Ca" value="0.045" step="0.001"></div>
+        <div class="field"><label>C_B (long-span, B)</label><input type="number" id="Cb" value="0.003" step="0.001"></div>
+      </div>
+      <div class="field"><small>Defaults assume the roof is more continuous/fixed with the walls than the base slab was (monolithic pour, all edges continuous), so smaller coefficients than the base-slab sheet's 0.095/0.006 are used here. Replace with your code's actual table values for m = A/B and the true edge-restraint condition — do not rely on these defaults as-is.</small></div>
+
+      <div class="section-tag">Reinforcement</div>
+      <div class="two-col">
+        <div class="field"><label>Clear cover <span class="unit">in</span></label><input type="number" id="cover" value="1.5" step="0.25"></div>
+        <div class="field"><label>Trial bar size <span class="unit">#</span></label>
+          <select id="barDia">
+            <option value="0.375" selected>#3</option>
+            <option value="0.500">#4</option>
+            <option value="0.625">#5</option>
+          </select>
+        </div>
+      </div>
+
+      <button id="calcBtn" onclick="runDesign()">Calculate Design</button>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="results" id="results">
+      <div class="placeholder">Enter design parameters and click <strong style="color:var(--accent);">Calculate Design</strong> to run the roof slab design.</div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    Preliminary design tool for educational / early‑stage use. Roof slab treated as a two‑way restrained rectangular panel spanning between the tank's interior wall faces, using user‑supplied moment coefficients — always confirm these match your actual edge‑restraint case and span ratio m = A/B. Depth requirement is solved directly from the assumed ρ = ρ_max so the section stays under‑reinforced (ductile); flexural steel area is then solved separately by a/A_s trial‑and‑error iteration for the actual moment demand in each direction. Minimum steel uses one explicit ρ_min on the gross section (temperature &amp; shrinkage), consistent with the base‑slab and sidewall sheets. Always verify against your project's loading code and have the final design checked/sealed by a licensed structural engineer before construction.
+  </div>
+</div>
+
+<script>
+function num(id){ const v = document.getElementById(id).value; return v === '' ? null : parseFloat(v); }
+function fmt(n, d=2){ return isFinite(n) ? n.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}) : '—'; }
+function barLabel(db){
+  const map = {'0.375':'#3','0.5':'#4','0.625':'#5','0.75':'#6'};
+  return map[String(db)] || (fmt(db,3)+'in');
+}
+function badge(pass, txt){ return `<span class="badge ${pass?'pass':'fail'}">${txt || (pass?'PASS':'FAIL')}</span>`; }
+
+function designDirection(label, Mu_ftlb, b, d, fc, fy, phi, rhoMax, As_min){
+  const fc_ksi = fc/1000, fy_ksi = fy/1000;
+  const Mu_kipft = Mu_ftlb/1000;
+  const Mu_kipin = Mu_kipft*12;
+
+  const denom = phi*rhoMax*fy_ksi*b*(1 - 0.59*rhoMax*fy_ksi/fc_ksi);
+  const d_req = Math.sqrt(Mu_kipin/denom);
+
+  let As = 0.005*b*d;
+  let a = As*fy_ksi/(0.85*fc_ksi*b);
+  let iterRows = [];
+  let converged = false, iterCount = 0;
+  for(let i=0;i<25;i++){
+    a = As*fy_ksi/(0.85*fc_ksi*b);
+    const AsNew = Mu_kipin/(phi*fy_ksi*(d-a/2));
+    iterCount = i+1;
+    iterRows.push({n:i+1, a, As:AsNew});
+    if(Math.abs(AsNew-As)<0.0005){ As = AsNew; converged = true; break; }
+    As = AsNew;
+  }
+  a = As*fy_ksi/(0.85*fc_ksi*b);
+  const As_final = Math.max(As, As_min);
+  const governedByMin = As_final > As + 1e-6;
+  const depthOK = d >= d_req;
+
+  return {label, Mu_kipft, Mu_kipin, d_req, As, a, As_final, governedByMin, depthOK, iterRows, converged, iterCount};
+}
+
+function runDesign(){
+  const Lt = num('Lt'), Bt = num('Bt'), tWall = num('tWall'), tRoof = num('tRoof');
+  const LL = num('LL'), earthCover = num('earthCover');
+  const gammaC = num('gammaC'), gammaFill = num('gammaFill');
+  const lfD = num('lfD'), lfL = num('lfL');
+  const fc = num('fc'), fy = num('fy'), rhoMinTS = num('rhoMinTS');
+  const Ca = num('Ca'), Cb = num('Cb');
+  const cover = num('cover'), barDia = num('barDia');
+
+  const phi = 0.9;
+  const fc_ksi = fc/1000, fy_ksi = fy/1000;
+  const tWall_ft = tWall/12, tRoof_ft = tRoof/12;
+
+  // ---------- geometry ----------
+  const L_roof = Lt + 2*tWall_ft;
+  const B_roof = Bt + 2*tWall_ft;
+  const area_roof = L_roof*B_roof;
+
+  // ---------- loads ----------
+  const selfWt = tRoof_ft*gammaC;              // psf
+  const fillLoad = earthCover*gammaFill;        // psf
+  const DL = selfWt + fillLoad;                 // psf
+  const w_u = lfD*DL + lfL*LL;                  // psf, factored
+
+  // ---------- panel moments ----------
+  const A_span = Math.min(Lt,Bt);
+  const B_span = Math.max(Lt,Bt);
+  const m = A_span/B_span;
+  const Mu_A = Ca*w_u*A_span*A_span; // ft-lb/ft
+  const Mu_B = Cb*w_u*B_span*B_span; // ft-lb/ft
+
+  // ---------- reinforcement ----------
+  const b = 12;
+  const d_provided = tRoof - cover - barDia/2;
+
+  const beta1 = fc <= 4000 ? 0.85 : Math.max(0.65, 0.85 - 0.05*((fc-4000)/1000));
+  const rhoBalanced = 0.85*beta1*(fc/fy)*(87000/(87000+fy));
+  const rhoMax = 0.75*rhoBalanced;
+
+  const As_min = rhoMinTS*b*tRoof;
+
+  const dirA = designDirection('Short span (A = '+fmt(A_span,2)+"')", Mu_A, b, d_provided, fc, fy, phi, rhoMax, As_min);
+  const dirB = designDirection('Long span (B = '+fmt(B_span,2)+"')", Mu_B, b, d_provided, fc, fy, phi, rhoMax, As_min);
+
+  const barArea = Math.PI/4*barDia*barDia;
+  function barsFor(As_final){
+    const spacing = 12*barArea/As_final;
+    return {spacing};
+  }
+  const barsA = barsFor(dirA.As_final);
+  const barsB = barsFor(dirB.As_final);
+
+  const As_maxSec = rhoMax*b*d_provided;
+  const maxOK_A = dirA.As_final <= As_maxSec + 1e-6;
+  const maxOK_B = dirB.As_final <= As_maxSec + 1e-6;
+
+  const allPass = dirA.depthOK && dirB.depthOK && maxOK_A && maxOK_B;
+
+  let html = '';
+  html += `<div class="summary">
+    <h3>Design Summary — ${allPass?'ALL CHECKS SATISFIED':'REVIEW REQUIRED'}</h3>
+    <div class="calc-row"><span class="k">Overall status</span><span class="v">${badge(allPass)}</span></div>
+    <div class="grid3">
+      <div class="stat"><div class="label">Roof slab plan</div><div class="value">${fmt(L_roof,2)}×${fmt(B_roof,2)} ft</div></div>
+      <div class="stat"><div class="label">Roof slab area</div><div class="value">${fmt(area_roof,2)} ft²</div></div>
+      <div class="stat"><div class="label">Dead load</div><div class="value">${fmt(DL,1)} psf</div></div>
+      <div class="stat"><div class="label">Factored load, w_u</div><div class="value">${fmt(w_u,1)} psf</div></div>
+      <div class="stat"><div class="label">d provided</div><div class="value">${fmt(d_provided,2)} in</div></div>
+      <div class="stat"><div class="label">Governing Mu</div><div class="value">${fmt(Math.max(dirA.Mu_kipft,dirB.Mu_kipft),2)} kip·ft/ft</div></div>
+    </div>
+  </div>`;
+
+  html += card('A', 'Geometry', true, `
+    <div class="formula">Roof slab plan = (L+2t_wall) × (B+2t_wall) = ${fmt(L_roof,2)} × ${fmt(B_roof,2)} ft
+Area = ${fmt(area_roof,2)} ft²
+Design span ratio, m = A/B = ${fmt(A_span,2)}/${fmt(B_span,2)} = ${fmt(m,3)}</div>
+  `, false);
+
+  html += card('B', 'Loads', true, `
+    <div class="formula">Self weight = t_roof×γc = ${fmt(tRoof_ft,3)}×${gammaC} = ${fmt(selfWt,1)} psf
+Earth cover load = ${fmt(earthCover,2)}×${gammaFill} = ${fmt(fillLoad,1)} psf
+Dead load, DL = ${fmt(DL,1)} psf
+Live load, LL = ${fmt(LL,1)} psf
+
+Factored load, w_u = ${lfD}·DL + ${lfL}·LL = ${lfD}×${fmt(DL,1)} + ${lfL}×${fmt(LL,1)} = ${fmt(w_u,1)} psf</div>
+  `, false);
+
+  html += card('C', 'Two-Way Panel Moment Analysis', true, `
+    <div class="formula">Mu (short span, A) = C_A·w_u·A² = ${Ca}×${fmt(w_u,1)}×${fmt(A_span,2)}² = ${fmt(Mu_A,2)} ft·lb/ft = ${fmt(Mu_A/1000,3)} kip·ft/ft
+Mu (long span, B)  = C_B·w_u·B² = ${Cb}×${fmt(w_u,1)}×${fmt(B_span,2)}² = ${fmt(Mu_B,2)} ft·lb/ft = ${fmt(Mu_B/1000,3)} kip·ft/ft</div>
+    <div class="calc-row"><span class="k">Mu, short span (A)</span><span class="v">${fmt(Mu_A/1000,3)} kip·ft/ft</span></div>
+    <div class="calc-row"><span class="k">Mu, long span (B)</span><span class="v">${fmt(Mu_B/1000,3)} kip·ft/ft</span></div>
+  `, false);
+
+  [dirA, dirB].forEach((dir, idx)=>{
+    const letter = idx===0 ? 'D' : 'E';
+    const bars = idx===0 ? barsA : barsB;
+    const maxOK = idx===0 ? maxOK_A : maxOK_B;
+    let iterHtml = `<table class="iter"><tr><th>Iter</th><th>a (in)</th><th>As (in²)</th></tr>`;
+    dir.iterRows.forEach(r=>{ iterHtml += `<tr><td>${r.n}</td><td>${fmt(r.a,3)}</td><td>${fmt(r.As,3)}</td></tr>`; });
+    iterHtml += `</table>`;
+    html += card(letter, `Depth &amp; Steel Design — ${dir.label}`, dir.depthOK && maxOK, `
+      <div class="formula">d_req = sqrt(Mu / [φ·ρmax·fy·b·(1−0.59·ρmax·fy/f'c)])
+      = sqrt(${fmt(dir.Mu_kipin,2)} / [0.9×${fmt(rhoMax,5)}×${fmt(fy_ksi,2)}×12×(1−0.59×${fmt(rhoMax,5)}×${fmt(fy_ksi,2)}/${fmt(fc_ksi,2)})])
+      = ${fmt(dir.d_req,3)} in   ${dir.depthOK? '≤':'>'}  d_provided = ${fmt(d_provided,2)} in</div>
+      <div class="calc-row"><span class="k">Required depth, d_req</span><span class="v">${fmt(dir.d_req,3)} in</span></div>
+      <div class="calc-row"><span class="k">Provided depth, d</span><span class="v">${fmt(d_provided,2)} in</span></div>
+      <div class="calc-row"><span class="k">Check d ≥ d_req</span><span class="v">${badge(dir.depthOK)}</span></div>
+      <div class="formula">Trial &amp; error:  a = As·fy/(0.85·f'c·b)      As = Mu/[φ·fy·(d−a/2)]</div>
+      ${iterHtml}
+      <div class="note">${dir.converged? `Converged after ${dir.iterCount} iteration(s).` : `Did not fully converge in 25 iterations — verify inputs.`}</div>
+      <div class="calc-row"><span class="k">As required (from moment)</span><span class="v">${fmt(dir.As,3)} in²/ft</span></div>
+      <div class="calc-row"><span class="k">As_min (temp &amp; shrinkage, gross)</span><span class="v">${fmt(As_min,3)} in²/ft</span></div>
+      <div class="calc-row"><span class="k">As adopted</span><span class="v">${fmt(dir.As_final,3)} in²/ft ${dir.governedByMin?'(governed by As_min)':''}</span></div>
+      <div class="calc-row"><span class="k">As_max (0.75ρ_balanced)</span><span class="v">${fmt(As_maxSec,3)} in²/ft</span></div>
+      <div class="calc-row"><span class="k">Check As ≤ As_max</span><span class="v">${badge(maxOK)}</span></div>
+      <div class="calc-row"><span class="k">Bars, ${barLabel(barDia)}</span><span class="v">@ ${fmt(bars.spacing,2)} in c/c</span></div>
+    `);
+  });
+
+  document.getElementById('results').innerHTML = html;
+  document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function card(letter, title, pass, body, showBadge=true){
+  return `<div class="card">
+    <div class="card-head">
+      <div><span class="tag">CHECK ${letter}</span><h3>${title}</h3></div>
+      ${showBadge ? badge(pass) : ''}
+    </div>
+    ${body}
+  </div>`;
+}
+</script>
+</body>
+</html>

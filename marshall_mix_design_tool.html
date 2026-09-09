@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marshall Mix Design Tool</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --bg:#14171d;
+    --panel:#1b1f27;
+    --panel2:#20242d;
+    --line:#2e3542;
+    --line-soft:#252b35;
+    --ink:#eef1f5;
+    --sub:#8d98a8;
+    --blue-bg:#0c2c4a;
+    --blue-bg2:#081f38;
+    --draw-line:#eaf4ff;
+    --draw-dim:#7fd4e8;
+    --accent:#f0a63c;
+    --accent2:#4fe0c4;
+    --pass:#4cc38a;
+    --fail:#f0704a;
+    --air:#0c2c4a;
+    --binder:#3a2410;
+    --agg:#8a7a63;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  header{
+    padding:24px 30px 18px; border-bottom:1px solid var(--line);
+    display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
+    background:linear-gradient(180deg, rgba(79,224,196,0.04), transparent);
+  }
+  header h1{font-size:21px; margin:0; letter-spacing:0.2px; font-weight:800;}
+  header .tag{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--accent2); background:rgba(79,224,196,0.09); padding:4px 10px; border-radius:20px; border:1px solid rgba(79,224,196,0.25);}
+  header .sub{font-size:13px; color:var(--sub);}
+
+  .layout{ display:grid; grid-template-columns: 300px 1fr; gap:0; min-height:calc(100vh - 80px); }
+  @media (max-width: 1000px){ .layout{grid-template-columns:1fr;} }
+
+  .controls{ padding:22px 20px 60px; border-right:1px solid var(--line); background:var(--panel); overflow-y:auto; }
+  .group{margin-bottom:22px;}
+  .group h3{
+    font-size:10.5px; text-transform:uppercase; letter-spacing:1.4px; color:var(--accent2);
+    margin:0 0 12px; font-weight:700; display:flex; align-items:center; gap:8px;
+  }
+  .group h3::after{content:""; flex:1; height:1px; background:var(--line);}
+  .field{margin-bottom:11px;}
+  .field label{ display:block; font-size:12px; color:var(--sub); margin-bottom:5px; font-weight:500; }
+  .numfield{
+    display:flex; align-items:stretch; border:1px solid var(--line); border-radius:9px;
+    background:var(--panel2); overflow:hidden; transition:border-color .15s ease;
+  }
+  .numfield:focus-within{border-color:var(--accent2); box-shadow:0 0 0 3px rgba(79,224,196,0.12);}
+  .numfield input{
+    flex:1; min-width:0; border:none; background:transparent; padding:9px 10px;
+    color:var(--ink); font-family:'JetBrains Mono',monospace; font-size:13.5px; font-weight:600;
+  }
+  .numfield input:focus{outline:none;}
+  .numfield .unit{
+    padding:9px 10px; color:var(--sub); font-size:11.5px; font-family:'JetBrains Mono',monospace;
+    display:flex; align-items:center; border-left:1px solid var(--line); background:rgba(255,255,255,0.015);
+    white-space:nowrap;
+  }
+  select{
+    width:100%; padding:9px 10px; background:var(--panel2); border:1px solid var(--line);
+    color:var(--ink); border-radius:9px; font-family:'JetBrains Mono',monospace; font-size:12.5px;
+  }
+  select:focus{outline:none; border-color:var(--accent2);}
+
+  .guidance{
+    margin-top:10px; padding:11px 13px; background:var(--panel2); border:1px solid var(--line);
+    border-left:3px solid var(--accent2); border-radius:6px; font-size:11.5px; color:var(--sub); line-height:1.6;
+  }
+  .guidance b{color:var(--ink);}
+
+  .main{padding:24px 28px; overflow-x:hidden;}
+
+  .results{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:22px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.12);
+  }
+  .results h3{margin:0; padding:13px 18px; font-size:11.5px; text-transform:uppercase; letter-spacing:1.2px; color:var(--accent2); border-bottom:1px solid var(--line); font-weight:700; display:flex; justify-content:space-between; align-items:center;}
+  .results h3 span.hint{font-size:10.5px; color:var(--sub); text-transform:none; letter-spacing:0; font-weight:500; font-family:'Inter',sans-serif;}
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th{text-align:left; font-size:10px; color:var(--sub); text-transform:uppercase; letter-spacing:0.5px; padding:9px 12px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  td{padding:7px 12px; border-bottom:1px solid var(--line-soft); font-family:'JetBrains Mono',monospace; white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(255,255,255,0.015);}
+  td.computed{color:var(--draw-dim);}
+  table.trial input{
+    width:64px; border:1px solid var(--line); border-radius:6px; background:var(--panel2);
+    color:var(--ink); font-family:'JetBrains Mono',monospace; font-size:12.5px; padding:5px 6px;
+  }
+  table.trial input:focus{outline:none; border-color:var(--accent2);}
+  .badge{ display:inline-block; padding:2px 10px; border-radius:20px; font-size:10.5px; font-weight:700; font-family:'Inter',sans-serif; }
+  .badge.pass{background:rgba(76,195,138,0.14); color:var(--pass); border:1px solid rgba(76,195,138,0.35);}
+  .badge.fail{background:rgba(240,112,74,0.14); color:var(--fail); border:1px solid rgba(240,112,74,0.35);}
+
+  .drawings{display:grid; grid-template-columns: 1fr 1.6fr; gap:18px; margin-bottom:22px; align-items:start;}
+  @media (max-width: 1150px){ .drawings{grid-template-columns:1fr;} }
+  .card{
+    background: linear-gradient(165deg, var(--blue-bg) 0%, var(--blue-bg2) 100%);
+    border:1px solid #123b5e; border-radius:12px; padding:16px 16px 12px; position:relative;
+    box-shadow:0 8px 24px rgba(0,0,0,0.18);
+  }
+  .card .label{
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--draw-dim);
+    text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; display:flex; justify-content:space-between;
+  }
+  .card svg{width:100%; height:auto; display:block;}
+
+  .notes{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px 20px; font-size:12.5px; color:var(--sub); line-height:1.65; }
+  .notes b{color:var(--ink);}
+  .notes h3{font-size:11.5px; text-transform:uppercase; letter-spacing:1.2px; color:var(--accent2); margin:0 0 10px; font-weight:700;}
+  .notes ul{margin:6px 0 10px 18px; padding:0;}
+  .footnote{font-size:11px; color:#66707f; margin-top:14px; border-top:1px dashed var(--line); padding-top:10px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Marshall Mix Design Tool</h1>
+  <span class="tag">Marshall method · AASHTO R-12 / Asphalt Institute MS-2</span>
+  <span class="sub">Enter trial specimen data — volumetrics, characteristic curves, and optimum asphalt content update live</span>
+</header>
+
+<div class="layout">
+  <div class="controls">
+
+    <div class="group">
+      <h3>Aggregate &amp; binder properties</h3>
+      <div class="field"><label>Aggregate bulk specific gravity, Gsb</label>
+        <div class="numfield"><input type="number" id="gsb" value="2.707" step="0.001"><span class="unit">—</span></div></div>
+      <div class="field"><label>Aggregate effective specific gravity, Gse</label>
+        <div class="numfield"><input type="number" id="gse" value="2.733" step="0.001"><span class="unit">—</span></div></div>
+      <div class="field"><label>Asphalt binder specific gravity, Gb</label>
+        <div class="numfield"><input type="number" id="gb" value="1.013" step="0.001"><span class="unit">—</span></div></div>
+      <div class="guidance" id="pbaShow"></div>
+    </div>
+
+    <div class="group">
+      <h3>Traffic level &amp; spec</h3>
+      <div class="field"><label>Design traffic level</label>
+        <select id="traffic">
+          <option value="light">Light — Design EAL &lt; 10⁴</option>
+          <option value="medium" selected>Medium — 10⁴ ≤ EAL ≤ 10⁶</option>
+          <option value="heavy">Heavy — Design EAL &gt; 10⁶</option>
+        </select>
+      </div>
+      <div class="guidance" id="blowsShow"></div>
+      <div class="field" style="margin-top:11px;"><label>Nominal max. aggregate size, NMAS (for min. VMA)</label>
+        <select id="nmas">
+          <option value="9.5">9.5 mm — VMA min 15%</option>
+          <option value="12.5" selected>12.5 mm — VMA min 14%</option>
+          <option value="19">19 mm — VMA min 13%</option>
+          <option value="25">25 mm — VMA min 12%</option>
+          <option value="37.5">37.5 mm — VMA min 11%</option>
+        </select>
+      </div>
+      <div class="field" style="margin-top:11px;"><label>Target design air voids</label>
+        <div class="numfield"><input type="number" id="targetVa" value="4.0" step="0.1"><span class="unit">%</span></div></div>
+    </div>
+
+  </div>
+
+  <div class="main">
+
+    <div class="results">
+      <h3>Trial specimens (Marshall data) <span class="hint">edit any cell — computed columns update live</span></h3>
+      <div style="overflow-x:auto;">
+      <table class="trial">
+        <thead><tr>
+          <th>Trial</th><th>AC, Pb (%)</th><th>Gmb</th><th>Gmm</th><th>Stability (N)</th><th>Flow (0.01in)</th>
+          <th>Va (%)</th><th>VMA (%)</th><th>VFA (%)</th><th>Density (pcf)</th><th>Pbe (%)</th>
+        </tr></thead>
+        <tbody id="trialBody"></tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="drawings">
+      <div class="card">
+        <div class="label"><span>Weight-volume phase diagram at OAC</span><span id="phaseDims"></span></div>
+        <div id="svgPhase"></div>
+      </div>
+      <div class="card">
+        <div class="label"><span>Characteristic curves vs. asphalt content</span><span id="chartDims"></span></div>
+        <div id="svgCharts"></div>
+      </div>
+    </div>
+
+    <div class="results">
+      <h3>Optimum asphalt content &amp; Marshall criteria check</h3>
+      <table>
+        <thead><tr><th>Property</th><th>Value at OAC</th><th>Criteria (traffic-dependent)</th><th>Status</th></tr></thead>
+        <tbody id="critBody"></tbody>
+      </table>
+    </div>
+
+    <div class="notes">
+      <h3>Reference basis &amp; formulas</h3>
+      <ul>
+        <li><b>Optimum asphalt content (OAC)</b> is taken as the asphalt content at the target design air voids (default 4%, the median of the typical 3–5% design range) on the Va-vs-AC curve, found by linear interpolation between the two bracketing trial specimens. All other properties at OAC (stability, flow, VMA, VFA, density) are interpolated the same way.</li>
+        <li><b>Voids in mineral aggregate:</b> VMA = 100 − (Gmb·Ps)/Gsb, where Ps is aggregate percent by total mix weight (100 − Pb).</li>
+        <li><b>Air voids:</b> Va = 100·(Gmm − Gmb)/Gmm.</li>
+        <li><b>Voids filled with asphalt:</b> VFA = 100·(VMA − Va)/VMA.</li>
+        <li><b>Absorbed asphalt:</b> Pba = 100·Gb·(Gse − Gsb)/(Gsb·Gse). <b>Effective asphalt content:</b> Pbe = Pb − Pba·Ps/100.</li>
+        <li><b>Marshall criteria</b> (compaction blows and stability/flow/VFA limits) follow the traffic-level bands commonly published in AASHTO R-12 / Asphalt Institute MS-2: light traffic uses 35 blows/side, medium 50, heavy 75; the minimum VMA depends on nominal maximum aggregate size (NMAS). Treat these as standard starting points — always confirm against your specifying agency's current standard.</li>
+        <li>The phase diagram splits total mix volume into <b>air (Va)</b>, <b>effective asphalt binder (VMA − Va)</b>, and <b>aggregate (100 − VMA)</b> at the interpolated OAC.</li>
+      </ul>
+      <div class="footnote">This tool implements the classic Marshall mix design method (AASHTO R-12 / Asphalt Institute MS-2) for preliminary/educational mix proportioning. It does not cover Superpave gyratory design, moisture-susceptibility (TSR) testing, or performance-grade binder selection. Have the final mix design verified by a qualified materials engineer and laboratory testing before production.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const globalIds = ['gsb','gse','gb','traffic','nmas','targetVa'];
+const gEls = {};
+globalIds.forEach(id=>{ gEls[id] = document.getElementById(id); });
+
+// default trial specimen data (editable) — AC%, Gmb, Gmm, Stability(N), Flow(0.01in)
+let trials = [
+  {ac:4.5, gmb:2.381, gmm:2.560, stab:2500, flow:11.0},
+  {ac:5.0, gmb:2.408, gmm:2.548, stab:2680, flow:11.8},
+  {ac:5.5, gmb:2.427, gmm:2.536, stab:2800, flow:12.6},
+  {ac:6.0, gmb:2.441, gmm:2.524, stab:2850, flow:13.4},
+  {ac:6.5, gmb:2.447, gmm:2.512, stab:2750, flow:14.3},
+  {ac:7.0, gmb:2.448, gmm:2.500, stab:2550, flow:15.2},
+];
+
+const TRAFFIC_CRIT = {
+  light:  {blows:35, stabMinN:3336, flowMin:8, flowMax:18, vfaMin:70, vfaMax:80},
+  medium: {blows:50, stabMinN:5338, flowMin:8, flowMax:16, vfaMin:65, vfaMax:78},
+  heavy:  {blows:75, stabMinN:8006, flowMin:8, flowMax:14, vfaMin:65, vfaMax:75},
+};
+const VMA_MIN = {'9.5':15, '12.5':14, '19':13, '25':12, '37.5':11};
+
+function fmt(n, d=1){ return Number.isFinite(n) ? n.toLocaleString(undefined,{maximumFractionDigits:d, minimumFractionDigits:d}) : '—'; }
+
+function readGlobals(){
+  return {
+    gsb: +gEls.gsb.value || 2.7,
+    gse: +gEls.gse.value || 2.72,
+    gb: +gEls.gb.value || 1.02,
+    traffic: gEls.traffic.value,
+    nmas: gEls.nmas.value,
+    targetVa: +gEls.targetVa.value || 4.0,
+  };
+}
+
+function computeRow(t, g){
+  const Pb = t.ac, Ps = 100 - Pb;
+  const Va = 100*(t.gmm - t.gmb)/t.gmm;
+  const VMA = 100 - (t.gmb*Ps)/g.gsb;
+  const VFA = 100*(VMA - Va)/VMA;
+  const Pba = 100*g.gb*(g.gse - g.gsb)/(g.gsb*g.gse);
+  const Pbe = Pb - Pba*Ps/100;
+  const density = t.gmb*62.4;
+  return {Pb, Va, VMA, VFA, Pba, Pbe, density};
+}
+
+function renderTrialTable(g){
+  const tbody = document.getElementById('trialBody');
+  tbody.innerHTML = '';
+  trials.forEach((t, i)=>{
+    const c = computeRow(t, g);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>#${i+1}</td>
+      <td><input type="number" step="0.1" data-i="${i}" data-f="ac" value="${t.ac}"></td>
+      <td><input type="number" step="0.001" data-i="${i}" data-f="gmb" value="${t.gmb}"></td>
+      <td><input type="number" step="0.001" data-i="${i}" data-f="gmm" value="${t.gmm}"></td>
+      <td><input type="number" step="1" data-i="${i}" data-f="stab" value="${t.stab}"></td>
+      <td><input type="number" step="0.1" data-i="${i}" data-f="flow" value="${t.flow}"></td>
+      <td class="computed">${fmt(c.Va,2)}</td>
+      <td class="computed">${fmt(c.VMA,2)}</td>
+      <td class="computed">${fmt(c.VFA,2)}</td>
+      <td class="computed">${fmt(c.density,1)}</td>
+      <td class="computed">${fmt(c.Pbe,2)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const i = +e.target.dataset.i, f = e.target.dataset.f;
+      trials[i][f] = +e.target.value;
+      render();
+    });
+  });
+}
+
+// linear interpolation of a property array vs ac at a target ac value
+function interpAt(rows, key, acTarget){
+  const sorted = [...rows].sort((a,b)=>a.Pb-b.Pb);
+  if(acTarget <= sorted[0].Pb) return sorted[0][key];
+  if(acTarget >= sorted[sorted.length-1].Pb) return sorted[sorted.length-1][key];
+  for(let i=0;i<sorted.length-1;i++){
+    const a = sorted[i], b = sorted[i+1];
+    if(acTarget >= a.Pb && acTarget <= b.Pb){
+      const t = (acTarget - a.Pb)/(b.Pb - a.Pb);
+      return a[key] + t*(b[key]-a[key]);
+    }
+  }
+  return null;
+}
+
+// find AC where Va (decreasing with AC) crosses targetVa
+function findOAC(rows, targetVa){
+  const sorted = [...rows].sort((a,b)=>a.Pb-b.Pb);
+  for(let i=0;i<sorted.length-1;i++){
+    const a = sorted[i], b = sorted[i+1];
+    const hi = Math.max(a.Va,b.Va), lo = Math.min(a.Va,b.Va);
+    if(targetVa <= hi && targetVa >= lo && a.Va !== b.Va){
+      const t = (targetVa - a.Va)/(b.Va - a.Va);
+      return a.Pb + t*(b.Pb - a.Pb);
+    }
+  }
+  // fallback: clamp to nearest end
+  return targetVa > sorted[0].Va ? sorted[0].Pb : sorted[sorted.length-1].Pb;
+}
+
+function svg(tag, attrs, children){
+  const ns = "http://www.w3.org/2000/svg";
+  const el = document.createElementNS(ns, tag);
+  for(const k in attrs) el.setAttribute(k, attrs[k]);
+  (children||[]).forEach(c=>el.appendChild(c));
+  return el;
+}
+function text(x,y,str,opts={}){
+  const t = svg('text', Object.assign({x,y,fill:'var(--draw-dim)','font-size':opts.size||11,'font-family':"'JetBrains Mono',monospace",'text-anchor':opts.anchor||'middle'}, opts.attrs||{}));
+  t.textContent = str;
+  return t;
+}
+function line(x1,y1,x2,y2,opts={}){
+  return svg('line', Object.assign({x1,y1,x2,y2,stroke:opts.stroke||'var(--draw-line)','stroke-width':opts.w||1.5},opts.attrs||{}));
+}
+
+function drawPhase(g, rows, oac){
+  const container = document.getElementById('svgPhase');
+  container.innerHTML = '';
+  const Va = interpAt(rows,'Va',oac), VMA = interpAt(rows,'VMA',oac);
+  const airPct = Va, asphaltPct = VMA - Va, aggPct = 100 - VMA;
+
+  const W = 180, totalH = 300, pad = 40;
+  const vw = W+pad*2, vh = totalH+pad*1.3;
+  const root = svg('svg',{viewBox:`0 0 ${vw} ${vh}`, width:'100%'});
+  const ox = pad, oy = pad*0.6;
+
+  const airH = totalH*(airPct/100);
+  const asphH = totalH*(asphaltPct/100);
+  const aggH = totalH*(aggPct/100);
+
+  let y = oy;
+  root.appendChild(svg('rect',{x:ox,y,width:W,height:airH, fill:'#0c2c4a', stroke:'var(--draw-line)','stroke-width':1.2}));
+  root.appendChild(text(ox+W+10, y+airH/2+4, `Air ${fmt(airPct,1)}%`, {size:11, anchor:'start'}));
+  y += airH;
+
+  root.appendChild(svg('rect',{x:ox,y,width:W,height:asphH, fill:'#3a2410', stroke:'var(--draw-line)','stroke-width':1.2}));
+  root.appendChild(text(ox+W+10, y+asphH/2+4, `Asphalt ${fmt(asphaltPct,1)}%`, {size:11, anchor:'start', attrs:{fill:'var(--accent)'}}));
+  y += asphH;
+
+  const pAgg = svg('pattern',{id:'pAggPhase', patternUnits:'userSpaceOnUse', width:20, height:14});
+  pAgg.appendChild(svg('rect',{width:20,height:14,fill:'#8a7a63'}));
+  [[3,3,2.2],[12,2,1.8],[7,8,2.0],[16,10,1.6],[2,11,1.4]].forEach(([px,py,r])=>{
+    pAgg.appendChild(svg('circle',{cx:px,cy:py,r, fill:'#c9bda3', opacity:0.85}));
+  });
+  const defs = svg('defs',{}); defs.appendChild(pAgg);
+  root.appendChild(defs);
+
+  root.appendChild(svg('rect',{x:ox,y,width:W,height:aggH, fill:'url(#pAggPhase)', stroke:'var(--draw-line)','stroke-width':1.2}));
+  root.appendChild(text(ox+W+10, y+aggH/2+4, `Aggregate ${fmt(aggPct,1)}%`, {size:11, anchor:'start', attrs:{fill:'#e8dcc4'}}));
+
+  root.appendChild(text(ox+W/2, oy-14, `Total mix volume, 100%`, {size:10.5}));
+  container.appendChild(root);
+  document.getElementById('phaseDims').textContent = `OAC = ${fmt(oac,2)}%`;
+}
+
+function miniChart(root, ox, oy, w, h, rows, key, label, oacX, unit){
+  const pts = [...rows].sort((a,b)=>a.Pb-b.Pb).map(r=>({x:r.Pb, y:r[key]}));
+  const xs = pts.map(p=>p.x), ys = pts.map(p=>p.y);
+  const xMin = Math.min(...xs), xMax = Math.max(...xs);
+  const yMin = Math.min(...ys), yMax = Math.max(...ys);
+  const yPad = (yMax-yMin)*0.15 || 1;
+  const yLo = yMin - yPad, yHi = yMax + yPad;
+  const sx = v => ox + (v-xMin)/(xMax-xMin || 1) * w;
+  const sy = v => oy + h - (v-yLo)/(yHi-yLo || 1) * h;
+
+  root.appendChild(line(ox, oy, ox, oy+h, {stroke:'var(--draw-line)', w:1}));
+  root.appendChild(line(ox, oy+h, ox+w, oy+h, {stroke:'var(--draw-line)', w:1}));
+  root.appendChild(text(ox+w/2, oy-6, label, {size:10.5, attrs:{fill:'var(--ink)'}}));
+
+  let d = '';
+  pts.forEach((p,i)=>{ d += (i===0?'M':'L') + sx(p.x) + ' ' + sy(p.y) + ' '; });
+  root.appendChild(svg('path',{d, fill:'none', stroke:'var(--accent2)','stroke-width':1.8}));
+  pts.forEach(p=>{
+    root.appendChild(svg('circle',{cx:sx(p.x), cy:sy(p.y), r:2.6, fill:'var(--accent2)'}));
+  });
+
+  // OAC marker
+  if(oacX >= xMin && oacX <= xMax){
+    const yAtOAC = interpAt(rows, key, oacX);
+    root.appendChild(line(sx(oacX), oy, sx(oacX), oy+h, {stroke:'var(--accent)', w:1, attrs:{'stroke-dasharray':'3,3'}}));
+    root.appendChild(svg('circle',{cx:sx(oacX), cy:sy(yAtOAC), r:3.6, fill:'var(--accent)', stroke:'#14171d','stroke-width':1}));
+  }
+
+  root.appendChild(text(ox+w/2, oy+h+16, 'Asphalt content (%)', {size:8.5, attrs:{fill:'var(--sub)'}}));
+  root.appendChild(text(ox-8, oy-2, `${fmt(yMax,1)}${unit||''}`, {size:8.5, anchor:'end', attrs:{fill:'var(--sub)'}}));
+  root.appendChild(text(ox-8, oy+h+2, `${fmt(yMin,1)}${unit||''}`, {size:8.5, anchor:'end', attrs:{fill:'var(--sub)'}}));
+}
+
+function drawCharts(rows, oacX){
+  const container = document.getElementById('svgCharts');
+  container.innerHTML = '';
+  const colW = 220, rowH = 150, gapX = 60, gapY = 60, padL = 46, padT = 30;
+  const vw = padL + colW*3 + gapX*2 + 20, vh = padT + rowH*2 + gapY + 30;
+  const root = svg('svg',{viewBox:`0 0 ${vw} ${vh}`, width:'100%'});
+
+  const specs = [
+    {key:'Va', label:'Air Voids (%)', unit:'%'},
+    {key:'density', label:'Density (pcf)', unit:''},
+    {key:'flowVal', label:'Flow (0.01 in)', unit:''},
+    {key:'stab', label:'Stability (N)', unit:''},
+    {key:'VFA', label:'VFA (%)', unit:'%'},
+    {key:'VMA', label:'VMA (%)', unit:'%'},
+  ];
+  // build rows with all needed keys aligned
+  const merged = rows.map(r=>({Pb:r.Pb, Va:r.Va, VMA:r.VMA, VFA:r.VFA, density:r.density, stab:r.stab, flowVal:r.flow}));
+
+  specs.forEach((s, idx)=>{
+    const col = idx % 3, rowI = Math.floor(idx/3);
+    const ox = padL + col*(colW+gapX);
+    const oy = padT + rowI*(rowH+gapY);
+    miniChart(root, ox, oy, colW, rowH, merged, s.key, s.label, oacX, s.unit);
+  });
+
+  container.appendChild(root);
+  document.getElementById('chartDims').textContent = `${rows.length} trial specimens`;
+}
+
+function statusCell(pass){
+  return `<span class="badge ${pass?'pass':'fail'}">${pass?'PASS':'FAIL'}</span>`;
+}
+
+function render(){
+  const g = readGlobals();
+  renderTrialTable(g);
+
+  const rows = trials.map(t=>{
+    const c = computeRow(t, g);
+    return {Pb:c.Pb, gmb:t.gmb, Va:c.Va, VMA:c.VMA, VFA:c.VFA, Pba:c.Pba, Pbe:c.Pbe, density:c.density, stab:t.stab, flow:t.flow};
+  });
+
+  const Pba = computeRow(trials[0], g).Pba;
+  document.getElementById('pbaShow').innerHTML = `Absorbed asphalt Pba ≈ <b>${fmt(Pba,2)}%</b> of aggregate weight (from Gsb, Gse, Gb)`;
+
+  const crit = TRAFFIC_CRIT[g.traffic];
+  document.getElementById('blowsShow').innerHTML = `Compaction: <b>${crit.blows} blows</b> per side of specimen for this traffic level`;
+
+  const oac = findOAC(rows, g.targetVa);
+
+  drawPhase(g, rows, oac);
+  drawCharts(rows, oac);
+
+  const stabAtOAC = interpAt(rows,'stab',oac);
+  const flowAtOAC = interpAt(rows,'flow',oac);
+  const vaAtOAC = interpAt(rows,'Va',oac);
+  const vmaAtOAC = interpAt(rows,'VMA',oac);
+  const vfaAtOAC = interpAt(rows,'VFA',oac);
+  const densAtOAC = interpAt(rows,'density',oac);
+  const vmaMin = VMA_MIN[g.nmas];
+
+  const rowsHTML = [
+    {name:'Optimum asphalt content (OAC)', val:`${fmt(oac,2)} %`, crit:`AC at ${fmt(g.targetVa,1)}% design air voids`, pass:true, info:true},
+    {name:'Marshall stability', val:`${fmt(stabAtOAC,0)} N`, crit:`min ${fmt(crit.stabMinN,0)} N`, pass: stabAtOAC >= crit.stabMinN},
+    {name:'Flow', val:`${fmt(flowAtOAC,1)} (0.01 in)`, crit:`${crit.flowMin}–${crit.flowMax}`, pass: flowAtOAC >= crit.flowMin && flowAtOAC <= crit.flowMax},
+    {name:'Air voids, Va', val:`${fmt(vaAtOAC,2)} %`, crit:`3–5 %`, pass: vaAtOAC >= 3 && vaAtOAC <= 5},
+    {name:'Voids in mineral aggregate, VMA', val:`${fmt(vmaAtOAC,2)} %`, crit:`min ${vmaMin} % (NMAS ${g.nmas} mm)`, pass: vmaAtOAC >= vmaMin},
+    {name:'Voids filled with asphalt, VFA', val:`${fmt(vfaAtOAC,1)} %`, crit:`${crit.vfaMin}–${crit.vfaMax} %`, pass: vfaAtOAC >= crit.vfaMin && vfaAtOAC <= crit.vfaMax},
+    {name:'Density at OAC', val:`${fmt(densAtOAC,1)} pcf`, crit:`— (informational)`, pass:true, info:true},
+  ];
+
+  document.getElementById('critBody').innerHTML = rowsHTML.map(r=>`
+    <tr>
+      <td style="font-family:'Inter',sans-serif;">${r.name}</td>
+      <td>${r.val}</td>
+      <td>${r.crit}</td>
+      <td>${r.info ? '<span class="badge" style="background:rgba(79,224,196,0.12); color:var(--accent2); border:1px solid rgba(79,224,196,0.3);">INFO</span>' : statusCell(r.pass)}</td>
+    </tr>
+  `).join('');
+}
+
+Object.values(gEls).forEach(el=>{
+  el.addEventListener('input', render);
+  el.addEventListener('change', render);
+});
+
+render();
+</script>
+</body>
+</html>

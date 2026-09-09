@@ -1,0 +1,153 @@
+/* ============================================
+   Site Stylesheet — "Clean Cards" theme
+   Matches the light, white-card layout in the
+   reference screenshot (light grey bg, white
+   cards, blue headings/buttons)
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root{
+  --bg:          #f2f3f5;
+  --card-bg:     #ffffff;
+  --border:      #e5e7eb;
+  --blue:        #1a56db;
+  --blue-dark:   #1544ad;
+  --text-heading:#1f2937;
+  --text-body:   #4b5563;
+  --shadow:      0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-hover:0 8px 20px rgba(0,0,0,0.08);
+
+  --font-display: 'Inter', sans-serif;
+  --font-body:    'Inter', sans-serif;
+}
+
+*, *::before, *::after{
+  box-sizing: border-box;
+}
+
+body{
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--text-body);
+  background: var(--bg);
+  min-height: 100vh;
+}
+
+/* ============================================
+   FOOTING SECTION / PROJECTS PAGE
+   ============================================ */
+
+.footing{
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 56px 24px 96px;
+  text-align: center;
+}
+
+.footing h1{
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  letter-spacing: -0.01em;
+  margin: 0 0 12px;
+  color: var(--text-heading);
+}
+
+.footing > p{
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-body);
+  max-width: 640px;
+  margin: 0 auto 48px;
+}
+
+/* ============================================
+   PROJECT CARD GRID
+   ============================================ */
+
+.footing-container{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+  text-align: left;
+}
+
+.project-card{
+  position: relative;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px 22px;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.project-card:hover{
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-hover);
+}
+
+.project-card h2{
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  line-height: 1.35;
+  color: var(--blue);
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-card p{
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-body);
+  margin: 0 0 20px;
+}
+
+.project-card a{
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--blue);
+  text-decoration: none;
+  padding: 9px 18px;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.project-card a:hover{
+  background: var(--blue-dark);
+}
+
+.project-card a:focus-visible{
+  outline: 2px solid var(--blue-dark);
+  outline-offset: 2px;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 640px){
+  .footing{
+    padding: 40px 18px 72px;
+  }
+  .footing-container{
+    grid-template-columns: 1fr;
+  }
+}
+
+/* respect reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .project-card,
+  .project-card a{
+    transition: none;
+  }
+}

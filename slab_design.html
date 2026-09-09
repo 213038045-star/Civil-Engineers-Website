@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Continuous One-Way Slab Design — ACI Coefficient Method</title>
+<style>
+  :root{
+    --blue-deep:#0a0e16; --blue-mid:#0d1420; --blue-line:#1e2a38;
+    --paper:#e7edf4; --ink:#08131019; --accent:#34d399;
+    --grid:rgba(255,255,255,0.035); --ok:#34d399; --warn:#f0665a; --red:#f0665a; --green:#34d399;
+    --muted:#6b7d90; --panel-bg:rgba(13,20,30,0.75); --input-bg:#0b111a; --accent-dark:#06180f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Courier New', Consolas, monospace;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/24px 24px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/24px 24px,
+      var(--blue-deep);
+    color:var(--paper); min-height:100vh; padding:32px 16px 64px;
+  }
+  .sheet{max-width:1100px; margin:0 auto;}
+  .title-block{
+    border-bottom:2px solid var(--blue-line); background:transparent;
+    padding:0 0 18px; display:flex; justify-content:space-between; align-items:flex-end;
+    flex-wrap:wrap; gap:12px; margin-bottom:16px;
+  }
+  .title-block h1{margin:0; font-size:1.35rem; letter-spacing:1.2px; text-transform:uppercase; font-weight:700; color:#ffffff;}
+  .title-block .sub{font-size:0.72rem; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; margin-top:6px;}
+  .stamp{
+    font-size:0.68rem; text-align:center; line-height:1.6; color:var(--accent-dark);
+    letter-spacing:1px; background:var(--accent); padding:9px 16px; font-weight:700;
+    text-transform:uppercase; letter-spacing:1.5px;
+  }
+  .disclaimer{
+    border:1px solid var(--warn); background:rgba(240,102,90,0.07); color:#f6b3ac;
+    font-size:0.72rem; line-height:1.6; padding:12px 16px; margin-bottom:20px;
+  }
+  .grid-layout{display:grid; grid-template-columns:1fr 1.25fr; gap:20px;}
+  @media (max-width:860px){.grid-layout{grid-template-columns:1fr;}}
+  .panel{border:1px solid var(--blue-line); background:var(--panel-bg); padding:20px;}
+  .panel h2{
+    margin:0 0 14px; font-size:0.82rem; letter-spacing:2px; text-transform:uppercase;
+    color:var(--accent); border-bottom:1px dashed var(--blue-line); padding-bottom:8px;
+  }
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:0.68rem; letter-spacing:0.4px; text-transform:uppercase; color:var(--muted); margin-bottom:5px;}
+  .field .unit{color:var(--accent);}
+  .field input, .field select{
+    width:100%; padding:7px 9px; background:var(--input-bg); color:var(--paper);
+    border:1px solid var(--blue-line); font-family:inherit; font-size:0.9rem;
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--accent); outline-offset:-1px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
+  .checkbox-field{display:flex; align-items:center; gap:8px; margin-bottom:14px;}
+  .checkbox-field input{width:auto;}
+  .checkbox-field label{margin:0; font-size:0.68rem; letter-spacing:0.4px; text-transform:uppercase; color:var(--muted);}
+  button.calc{
+    width:100%; padding:13px; background:var(--accent); color:var(--accent-dark);
+    border:none; font-family:inherit; font-weight:700; letter-spacing:2px;
+    text-transform:uppercase; font-size:0.85rem; cursor:pointer; margin-top:6px;
+  }
+  button.calc:hover{background:#5eeab0;}
+  .section-title{
+    font-size:0.74rem; letter-spacing:2px; text-transform:uppercase; color:var(--accent);
+    margin:16px 0 8px; padding-top:12px; border-top:1px dashed var(--blue-line);
+  }
+  .section-title:first-child{margin-top:0; padding-top:0; border-top:none;}
+  .results{display:none;}
+  .results.show{display:block;}
+  .result-row{
+    display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+    padding:6px 0; border-bottom:1px solid rgba(30,42,56,0.8);
+  }
+  .result-row:last-child{border-bottom:none;}
+  .result-row .label{font-size:0.68rem; letter-spacing:0.3px; text-transform:uppercase; color:var(--muted);}
+  .result-row .value{font-size:0.9rem; font-weight:700; color:var(--paper); text-align:right;}
+  .result-row .value .u{font-size:0.64rem; color:var(--accent); font-weight:400; margin-left:3px;}
+  .status-banner{margin-top:10px; padding:11px 14px; font-size:0.75rem; letter-spacing:0.5px; border:1px solid;}
+  .status-banner.ok{border-color:var(--ok); color:var(--ok); background:rgba(52,211,153,0.08);}
+  .status-banner.warn{border-color:var(--warn); color:var(--warn); background:rgba(240,102,90,0.08);}
+  .placeholder{color:var(--muted); font-size:0.8rem; text-align:center; padding:30px 10px;}
+  .formula-note{
+    margin-top:16px; font-size:0.64rem; color:var(--muted); line-height:1.7;
+    border-top:1px dashed var(--blue-line); padding-top:12px;
+  }
+  .code-ref{color:var(--accent); font-weight:700;}
+  .diagram-box{border:1px dashed var(--blue-line); padding:12px; margin-bottom:16px; background:rgba(8,13,20,0.6);}
+  .diagram-box svg{width:100%; height:auto; display:block;}
+  .diagram-caption{font-size:0.68rem; color:var(--muted); text-align:center; margin-top:6px; letter-spacing:0.5px;}
+  table.sect-table{width:100%; border-collapse:collapse; font-size:0.72rem; margin-top:4px;}
+  table.sect-table th, table.sect-table td{border-bottom:1px solid rgba(30,42,56,0.8); padding:6px 4px; text-align:center;}
+  table.sect-table th{color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; font-size:0.62rem;}
+  .span-toggle{width:auto !important; margin-right:6px; vertical-align:middle;}
+  .field label.with-toggle{display:flex; align-items:center;}
+  .field input:disabled{opacity:0.35; cursor:not-allowed;}
+
+  .row4{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px;}
+  .coef-note{font-size:0.62rem; color:var(--muted); line-height:1.5; margin:-6px 0 12px;}
+  .subhead{font-size:0.72rem; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin:10px 0 6px;}
+  .mode-toggle{display:flex; gap:10px; margin-bottom:20px;}
+  .mode-btn{
+    flex:1; padding:14px; background:var(--panel-bg); border:2px solid var(--blue-line);
+    color:var(--paper); font-family:inherit; font-weight:700; letter-spacing:1.5px;
+    text-transform:uppercase; font-size:0.8rem; cursor:pointer;
+  }
+  .mode-btn:hover{border-color:var(--accent);}
+  .mode-btn.active{background:var(--accent); color:var(--accent-dark); border-color:var(--accent);}
+  .mode-panel{display:none;}
+  .mode-panel.active{display:block;}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="title-block">
+    <div>
+      <h1>Continuous Slab Design</h1>
+      <div class="sub">ACI/BNBC Coefficient Method &middot; One-Way (Beam Strip) &amp; Two-Way (Panel)</div>
+    </div>
+    <div class="stamp">
+      DRAWING NO. SD-002 / SD-003<br>
+      UNITS: ft / in / ksi / psf<br>
+      REF: ACI 318 Ch.8 &amp; 318-63 M3 (BNBC Part 6, Ch.6)
+    </div>
+  </div>
+
+  <div class="mode-toggle">
+    <button type="button" class="mode-btn active" id="modeBtnOneWay">&#9724; One-Way Slab</button>
+    <button type="button" class="mode-btn" id="modeBtnTwoWay">&#9638; Two-Way Slab</button>
+  </div>
+
+  <div class="mode-panel active" id="onewayMode">
+
+  <div class="disclaimer">
+    ⚠ Preliminary strength design (USD) using the ACI/BNBC approximate moment-coefficient method for
+    continuous one-way slabs — extended to four spans, with every support (both exterior ends and all
+    interior supports) resting on beams rather than walls. Coefficients shown are the standard ACI Table
+    12.1 values for three-or-more-span layouts. Verify applicability of each coefficient for your actual
+    support/continuity conditions, and have final design checked by a licensed structural engineer.
+  </div>
+
+  <div class="grid-layout">
+
+    <!-- INPUT PANEL -->
+    <div class="panel">
+      <h2>Inputs</h2>
+
+      <div class="section-title">Span Layout (center-to-center)</div>
+      <div class="field" style="font-size:0.62rem; color:#7fa1c7; margin-top:-4px;">
+        Uncheck a span to remove it from the strip (e.g. a 2- or 3-span slab). Remaining checked
+        spans are kept in order 1&rarr;4; the exterior/interior coefficients re-map automatically.
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label class="with-toggle"><input type="checkbox" id="useSpan1" class="span-toggle" checked>Span 1 <span class="unit">&nbsp;(ft)</span></label>
+          <input type="number" id="span1" value="12" min="1" step="0.5">
+        </div>
+        <div class="field">
+          <label class="with-toggle"><input type="checkbox" id="useSpan2" class="span-toggle" checked>Span 2 <span class="unit">&nbsp;(ft)</span></label>
+          <input type="number" id="span2" value="12" min="1" step="0.5">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label class="with-toggle"><input type="checkbox" id="useSpan3" class="span-toggle" checked>Span 3 <span class="unit">&nbsp;(ft)</span></label>
+          <input type="number" id="span3" value="12" min="1" step="0.5">
+        </div>
+        <div class="field">
+          <label class="with-toggle"><input type="checkbox" id="useSpan4" class="span-toggle" checked>Span 4 <span class="unit">&nbsp;(ft)</span></label>
+          <input type="number" id="span4" value="12" min="1" step="0.5">
+        </div>
+      </div>
+      <div class="checkbox-field">
+        <input type="checkbox" id="includeCant" checked>
+        <label for="includeCant">Include end cantilever (past last active span)</label>
+      </div>
+      <div class="field" id="cantField">
+        <label>Cantilever Length <span class="unit">(ft, from beam face &mdash; enter 0 to skip it without unchecking)</span></label>
+        <input type="number" id="cantSpan" value="6" min="0" step="0.5">
+      </div>
+      <div class="field">
+        <label>Beam Width, all supports <span class="unit">(in)</span></label>
+        <input type="number" id="beamW" value="12" min="1" step="1">
+      </div>
+
+      <div class="section-title">Loads</div>
+      <div class="row2">
+        <div class="field">
+          <label>Live Load <span class="unit">(psf)</span></label>
+          <input type="number" id="ll" value="60" min="0">
+        </div>
+        <div class="field">
+          <label>Floor Finish / Superimposed DL <span class="unit">(psf)</span></label>
+          <input type="number" id="ff" value="25" min="0">
+        </div>
+      </div>
+
+      <div class="section-title">Materials &amp; Section</div>
+      <div class="row2">
+        <div class="field">
+          <label>f'<sub>c</sub> <span class="unit">(ksi)</span></label>
+          <input type="number" id="fc" value="3" min="2" step="0.5">
+        </div>
+        <div class="field">
+          <label>f<sub>y</sub> <span class="unit">(ksi)</span></label>
+          <input type="number" id="fy" value="40" min="40" step="20">
+        </div>
+      </div>
+      <div class="field">
+        <label>Slab Thickness, t <span class="unit">(in) &mdash; leave blank to auto-estimate</span></label>
+        <input type="number" id="thickness" placeholder="auto" min="2" step="0.25">
+      </div>
+      <div class="field">
+        <label>Cover to Bar Centroid <span class="unit">(in)</span></label>
+        <input type="number" id="cover" value="1.0" min="0.5" step="0.125">
+      </div>
+
+      <div class="section-title">Moment Coefficients <span style="color:var(--warn)">(editable)</span></div>
+      <div class="row2">
+        <div class="field">
+          <label>End A &mdash; exterior support (negative)</label>
+          <input type="number" id="coefEndA" value="0" step="0.001">
+        </div>
+        <div class="field">
+          <label>Span 1 &mdash; end span (positive)</label>
+          <input type="number" id="coefS1" value="0.0909" step="0.001">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Support 2 &mdash; 1st interior (negative)</label>
+          <input type="number" id="coefSup2" value="0.1" step="0.001">
+        </div>
+        <div class="field">
+          <label>Span 2 &mdash; interior span (positive)</label>
+          <input type="number" id="coefS2" value="0.0625" step="0.001">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Support 3 &mdash; interior (negative)</label>
+          <input type="number" id="coefSup3" value="0.0909" step="0.001">
+        </div>
+        <div class="field">
+          <label>Span 3 &mdash; interior span (positive)</label>
+          <input type="number" id="coefS3" value="0.0625" step="0.001">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Support 4 &mdash; 1st interior (negative)</label>
+          <input type="number" id="coefSup4" value="0.1" step="0.001">
+        </div>
+        <div class="field">
+          <label>Span 4 &mdash; end span (positive)</label>
+          <input type="number" id="coefS4" value="0.0909" step="0.001">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>End B &mdash; exterior support (negative)</label>
+          <input type="number" id="coefEndB" value="0" step="0.001">
+        </div>
+        <div class="field" id="coefCantField">
+          <label>Cantilever root (negative)</label>
+          <input type="number" id="coefCant" value="0.5" step="0.001">
+        </div>
+      </div>
+      <div class="field" style="font-size:0.62rem; color:#7fa1c7; margin-top:-6px;">
+        Default values shown = ACI Table 12.1 coefficients for three-or-more-span slabs: end span
+        positive 1/11, interior span positive 1/16, first interior support negative 1/10, other
+        interior support negative 1/11, exterior (end) supports 0 (discontinuous, unrestrained),
+        cantilever 1/2. Enter your own coefficient (as a decimal) if your support condition differs.
+        "Support N" is always the beam immediately before Span N, regardless of whether earlier spans are unchecked.
+      </div>
+
+      <div class="section-title">Reinforcement</div>
+      <div class="row2">
+        <div class="field">
+          <label>Main Bar Size (flexural)</label>
+          <select id="mainBarSize">
+            <option value="3">#3</option>
+            <option value="4" selected>#4</option>
+            <option value="5">#5</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Temp./Shrinkage Bar Size</label>
+          <select id="tsBarSize">
+            <option value="3" selected>#3</option>
+            <option value="4">#4</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="calc" id="calcBtn">Design Slab &rarr;</button>
+    </div>
+
+    <!-- OUTPUT PANEL -->
+    <div class="panel">
+      <h2>Design Results</h2>
+
+      <div id="placeholder" class="placeholder">
+        Enter span layout, loads, and materials, then click Design Slab<br>
+        to see thickness, moments, reinforcement, and detailing.
+      </div>
+
+      <div class="results" id="results">
+
+        <div class="section-title">Thickness Estimation</div>
+        <table class="sect-table">
+          <tr><th>Condition</th><th>Governing l</th><th>MF</th><th>Req'd t</th></tr>
+          <tr id="t1_row"><td>End spans, one end continuous (l/24)</td><td id="t1_l">-</td><td id="t1_mf">-</td><td id="t1_t">-</td></tr>
+          <tr id="t2_row"><td>Interior spans, both ends continuous (l/28)</td><td id="t2_l">-</td><td id="t2_mf">-</td><td id="t2_t">-</td></tr>
+          <tr id="t3_row"><td>Cantilever (l/10)</td><td id="t3_l">-</td><td id="t3_mf">-</td><td id="t3_t">-</td></tr>
+        </table>
+        <div class="result-row"><span class="label">Governing / Adopted Thickness, t</span><span class="value" id="rThickness">-</span></div>
+
+        <div class="section-title">Factored Loads</div>
+        <div class="result-row"><span class="label">Self-Weight (150 pcf)</span><span class="value" id="rSelf">-</span></div>
+        <div class="result-row"><span class="label">Total Factored Load, w<sub>u</sub></span><span class="value" id="rWu">-</span></div>
+
+        <!-- MOMENT DIAGRAM -->
+        <div class="section-title">Moment Coefficients &amp; Design Moments</div>
+        <div class="diagram-box"><svg id="momentSvg" viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg"></svg></div>
+
+        <table class="sect-table" id="momentTable"></table>
+
+        <div class="section-title">Effective Depth Check</div>
+        <div class="result-row"><span class="label">Governing Moment, M<sub>max</sub></span><span class="value" id="rMmax">-</span></div>
+        <div class="result-row"><span class="label">Required Effective Depth, d<sub>req</sub></span><span class="value" id="rDreq">-</span></div>
+        <div class="result-row"><span class="label">Provided Effective Depth, d<sub>prov</sub> = t &minus; cover</span><span class="value" id="rDprov">-</span></div>
+
+        <div class="section-title">Reinforcement — Minimum &amp; Per Section</div>
+        <div class="result-row"><span class="label">Min. Reinforcement, A<sub>s,min</sub> = 0.002bt (or code ratio)</span><span class="value" id="rAsMin">-</span></div>
+        <div class="result-row"><span class="label">Tension-Controlled Limit, &rho;<sub>t</sub> (&epsilon;<sub>t</sub>=0.005)</span><span class="value" id="rRhoT">-</span></div>
+        <table class="sect-table" id="asTable"></table>
+        <div id="asLegend" style="display:none; font-size:0.62rem; color:#7fa1c7; line-height:1.5; margin:6px 0 4px;">
+          &dagger; &rho; exceeds &rho;<sub>t</sub> at this section — over-reinforced (not tension-controlled);
+          increase t, raise f'<sub>c</sub>, or reduce M<sub>u</sub>.
+        </div>
+
+        <div class="section-title">Bar Spacing Limits</div>
+        <div class="result-row"><span class="label">Short Dir. (main bars): S<sub>min</sub>&ndash;S<sub>max</sub></span><span class="value" id="rSpacingShort">-</span></div>
+        <div class="result-row"><span class="label">Long Dir. (temp./shrink.): S<sub>min</sub>&ndash;S<sub>max</sub></span><span class="value" id="rSpacingLong">-</span></div>
+        <div class="result-row"><span class="label">Temp./Shrinkage Steel</span><span class="value" id="rTsBar">-</span></div>
+
+        <!-- DETAILING DIAGRAM -->
+        <div class="section-title">Detailing — Elevation</div>
+        <div class="diagram-box"><svg id="detailSvg" viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg"></svg></div>
+
+        <div id="statusBanner" class="status-banner ok">PASS</div>
+      </div>
+
+      <div class="formula-note">
+        <span class="code-ref">Min. thickness (ACI 9.5.2.1):</span> t = (l/ratio)&times;MF, MF=0.4+f<sub>y</sub>/100 (f<sub>y</sub> in ksi);
+        round to nearest 0.25&Prime; if t&lt;6&Prime;, else nearest 0.5&Prime;<br>
+        <span class="code-ref">Moment coefficients (ACI Table 12.1, three-or-more spans):</span> end-span positive =
+        w<sub>u</sub>l<sup>2</sup>/11 (discontinuous end unrestrained); interior-span positive =
+        w<sub>u</sub>l<sup>2</sup>/16; negative at first interior support (each end) =
+        w<sub>u</sub>l<sup>2</sup>/10; negative at other interior supports =
+        w<sub>u</sub>l<sup>2</sup>/11; exterior (end) support negative = 0 by default (discontinuous,
+        unrestrained — increase if the end beam actually restrains rotation); cantilever = w<sub>u</sub>l<sup>2</sup>/2<br>
+        <span class="code-ref">Flexural design (trial-and-error, successive approximation):</span>
+        a=A<sub>s</sub>f<sub>y</sub>/(0.85f'<sub>c</sub>b), A<sub>s</sub>=M<sub>u</sub>/[&phi;f<sub>y</sub>(d&minus;a/2)] &mdash;
+        iterate until a converges, &phi;=0.90<br>
+        <span class="code-ref">Tension-controlled limit (over-reinforcement check):</span>
+        &rho;<sub>t</sub>=0.85&beta;<sub>1</sub>(f'<sub>c</sub>/f<sub>y</sub>)&times;0.375 at &epsilon;<sub>t</sub>=0.005;
+        &beta;<sub>1</sub>=0.85 for f'<sub>c</sub>&le;4 ksi, reduced 0.05 per 1 ksi above 4 (floor 0.65).
+        If &rho;=A<sub>s</sub>/(bd) &gt; &rho;<sub>t</sub>, section is over-reinforced (not ductile) &mdash;
+        increase t, raise f'<sub>c</sub>, or reduce M<sub>u</sub><br>
+        <span class="code-ref">Min. steel (ACI 7.12.2.1):</span> 0.0020 (Grade 40/50), 0.0018 (Grade 60), or
+        0.0018&times;60/f<sub>y</sub> (f<sub>y</sub>&gt;60 ksi) &times; b &times; t<br>
+        <span class="code-ref">Bar spacing (ACI 7.6.5 / 7.12.2.2):</span> main bars &le; min(3t,18&Prime;);
+        temp./shrink. bars &le; min(5t,18&Prime;); both &ge; 1.5t recommended minimum
+      </div>
+    </div>
+
+  </div>
+
+  </div>
+
+  <div class="mode-panel" id="twowayMode">
+
+<div class="disclaimer">
+    ⚠ Preliminary strength design (USD) using the BNBC/ACI 318-63 Method 3 moment-coefficient method for
+    two-way slabs on stiff beam supports. Moment coefficients (C<sub>a</sub>, C<sub>b</sub>) and bar sizes
+    are fully editable — enter the values for your specific panel case (edge continuity + aspect ratio m)
+    from your BNBC coefficient table. Final design must be verified and sealed by a licensed structural
+    engineer.
+  </div>
+
+<div class="grid-layout">
+
+    <!-- INPUT PANEL -->
+    <div class="panel">
+      <h2>Inputs</h2>
+
+      <div class="section-title">Panel Dimensions</div>
+      <div class="row2">
+        <div class="field">
+          <label>Short Span, S<sub>a</sub> <span class="unit">(ft, clear)</span></label>
+          <input type="number" id="tw_sa" value="14" min="1" step="0.5">
+        </div>
+        <div class="field">
+          <label>Long Span, S<sub>b</sub> <span class="unit">(ft, clear)</span></label>
+          <input type="number" id="tw_sb" value="18" min="1" step="0.5">
+        </div>
+      </div>
+      <div class="field">
+        <label>Aspect Ratio, m = S<sub>a</sub>/S<sub>b</sub></label>
+        <input type="text" id="tw_mRatio" value="-" disabled>
+      </div>
+
+      <div class="section-title">Panel Case &amp; Moment Coefficients <span style="color:var(--warn)">(editable)</span></div>
+      <div class="coef-note">
+        Full 9-case ACI 318-63 Table 3.8 / BNBC 2020 &sect;6.3.13 &ldquo;Method 3&rdquo; coefficient set is built in.
+        Pick the panel edge-continuity case below, then click <b>Look Up Coefficients</b> to auto-fill
+        C<sub>a</sub>, C<sub>b</sub> (interpolated for your calculated m = S<sub>a</sub>/S<sub>b</sub>) from the table.
+        Every value stays editable afterward if you want to override it.
+      </div>
+      <div class="field">
+        <label>Panel Case (edge continuity)</label>
+        <select id="tw_case">
+          <option value="1">Case 1 &mdash; Interior panel, all 4 edges continuous</option>
+          <option value="2">Case 2 &mdash; One short edge discontinuous</option>
+          <option value="3">Case 3 &mdash; One long edge discontinuous</option>
+          <option value="4">Case 4 &mdash; Two adjacent edges discontinuous (corner panel)</option>
+          <option value="5">Case 5 &mdash; Two short edges discontinuous</option>
+          <option value="6">Case 6 &mdash; Two long edges discontinuous</option>
+          <option value="7">Case 7 &mdash; Three edges discontinuous (one long edge continuous)</option>
+          <option value="8">Case 8 &mdash; Three edges discontinuous (one short edge continuous)</option>
+          <option value="9">Case 9 &mdash; All four edges discontinuous (isolated panel)</option>
+        </select>
+      </div>
+      <div id="tw_caseDesc" class="coef-note" style="margin-top:-8px;">&nbsp;</div>
+      <button type="button" class="calc" id="tw_lookupBtn" style="background:var(--blue-line); color:var(--paper); margin-bottom:16px;">Look Up Coefficients (Case, m) &darr;</button>
+
+      <div class="subhead">Direction A &mdash; short span, S<sub>a</sub></div>
+      <div class="row4">
+        <div class="field" id="fld_caNegCont"><label>C<sub>a,neg</sub> cont. edge</label><input type="number" id="tw_caNegCont" value="0.045" step="0.001"></div>
+        <div class="field" id="fld_caNegDisc"><label>C<sub>a,neg</sub> disc. edge</label><input type="number" id="tw_caNegDisc" value="0" step="0.001"></div>
+        <div class="field" id="fld_caPosDL"><label>C<sub>a,pos</sub> (DL)</label><input type="number" id="tw_caPosDL" value="0.018" step="0.001"></div>
+        <div class="field" id="fld_caPosLL"><label>C<sub>a,pos</sub> (LL)</label><input type="number" id="tw_caPosLL" value="0.027" step="0.001"></div>
+      </div>
+      <div class="subhead">Direction B &mdash; long span, S<sub>b</sub></div>
+      <div class="row4">
+        <div class="field" id="fld_cbNegCont"><label>C<sub>b,neg</sub> cont. edge</label><input type="number" id="tw_cbNegCont" value="0.045" step="0.001"></div>
+        <div class="field" id="fld_cbNegDisc"><label>C<sub>b,neg</sub> disc. edge</label><input type="number" id="tw_cbNegDisc" value="0" step="0.001"></div>
+        <div class="field" id="fld_cbPosDL"><label>C<sub>b,pos</sub> (DL)</label><input type="number" id="tw_cbPosDL" value="0.018" step="0.001"></div>
+        <div class="field" id="fld_cbPosLL"><label>C<sub>b,pos</sub> (LL)</label><input type="number" id="tw_cbPosLL" value="0.027" step="0.001"></div>
+      </div>
+      <div class="coef-note">
+        Neg. coefficients apply to the total factored load w<sub>u</sub>=1.2DL+1.6LL: M<sub>neg</sub>=C<sub>neg</sub>w<sub>u</sub>l&sup2;.
+        Pos. coefficients are applied separately to dead and live load (pattern-loading provision):
+        M<sub>pos</sub>=C<sub>pos,DL</sub>(1.2&times;DL)l&sup2; + C<sub>pos,LL</sub>(1.6&times;LL)l&sup2;. A direction with no
+        continuous edge in this case has no "cont." field shown &mdash; that edge is discontinuous with zero
+        assumed negative moment (min. steel only).
+      </div>
+
+      <div class="section-title">Loads</div>
+      <div class="row2">
+        <div class="field">
+          <label>Live Load <span class="unit">(psf)</span></label>
+          <input type="number" id="tw_ll" value="60" min="0">
+        </div>
+        <div class="field">
+          <label>Floor Finish / Superimposed DL <span class="unit">(psf)</span></label>
+          <input type="number" id="tw_ff" value="25" min="0">
+        </div>
+      </div>
+
+      <div class="section-title">Materials &amp; Section</div>
+      <div class="row2">
+        <div class="field">
+          <label>f'<sub>c</sub> <span class="unit">(ksi)</span></label>
+          <input type="number" id="tw_fc" value="3" min="2" step="0.5">
+        </div>
+        <div class="field">
+          <label>f<sub>y</sub> <span class="unit">(ksi)</span></label>
+          <input type="number" id="tw_fy" value="40" min="40" step="20">
+        </div>
+      </div>
+      <div class="field">
+        <label>Slab Thickness, t <span class="unit">(in) &mdash; leave blank for rough guideline</span></label>
+        <input type="number" id="tw_thickness" placeholder="auto (perimeter/180 guideline)" min="2" step="0.25">
+      </div>
+      <div class="field">
+        <label>Cover to Bar Centroid (short dir.) <span class="unit">(in)</span></label>
+        <input type="number" id="tw_cover" value="0.875" min="0.5" step="0.125">
+      </div>
+
+      <div class="section-title">Reinforcement</div>
+      <div class="row2">
+        <div class="field">
+          <label>Short Dir. (S<sub>a</sub>) Bar Size</label>
+          <select id="tw_barA">
+            <option value="3">#3</option>
+            <option value="4" selected>#4</option>
+            <option value="5">#5</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Long Dir. (S<sub>b</sub>) Bar Size</label>
+          <select id="tw_barB">
+            <option value="3" selected>#3</option>
+            <option value="4">#4</option>
+            <option value="5">#5</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="calc" id="tw_calcBtn">Design Panel &rarr;</button>
+    </div>
+
+    <!-- OUTPUT PANEL -->
+    <div class="panel">
+      <h2>Design Results</h2>
+
+      <div id="tw_placeholder" class="placeholder">
+        Enter panel dimensions, coefficients, loads, and materials, then<br>
+        click Design Panel to see moments, reinforcement, and detailing.
+      </div>
+
+      <div class="results" id="tw_results">
+
+        <div class="section-title">Thickness Guideline</div>
+        <div class="result-row"><span class="label">Perimeter/180 Rough Guideline</span><span class="value" id="tw_rHGuide">-</span></div>
+        <div class="result-row"><span class="label">Adopted Thickness, t</span><span class="value" id="tw_rThickness">-</span></div>
+
+        <div class="section-title">Factored Load</div>
+        <div class="result-row"><span class="label">Self-Weight (150 pcf)</span><span class="value" id="tw_rSelf">-</span></div>
+        <div class="result-row"><span class="label">Total Factored Load, w<sub>u</sub></span><span class="value" id="tw_rWu">-</span></div>
+
+        <!-- MOMENT / PLAN DIAGRAM -->
+        <div class="section-title">Panel Moments</div>
+        <div class="diagram-box"><svg id="tw_planSvg" viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg"></svg></div>
+        <table class="sect-table" id="tw_momentTable"></table>
+
+        <div class="section-title">Effective Depth Check</div>
+        <div class="result-row"><span class="label">d<sub>a</sub> (short dir., outer layer)</span><span class="value" id="tw_rDa">-</span></div>
+        <div class="result-row"><span class="label">d<sub>b</sub> (long dir., inner layer)</span><span class="value" id="tw_rDb">-</span></div>
+
+        <div class="section-title">Reinforcement</div>
+        <div class="result-row"><span class="label">Min. Steel, A<sub>s,min</sub> = ratio&times;b&times;t</span><span class="value" id="tw_rAsMin">-</span></div>
+        <div class="result-row"><span class="label">Tension-Controlled Limit, &rho;<sub>t</sub> (&epsilon;<sub>t</sub>=0.005)</span><span class="value" id="tw_rRhoT">-</span></div>
+        <table class="sect-table" id="tw_asTable"></table>
+        <div class="coef-note" id="tw_asLegend" style="display:none;">&dagger; &rho; exceeds &rho;<sub>t</sub> at this location — section is not tension-controlled (over-reinforced); increase t, raise f'<sub>c</sub>, or reduce M<sub>u</sub>.</div>
+
+        <div class="section-title">Bar Spacing Limits (§8.7.2 / two-way)</div>
+        <div class="result-row"><span class="label">Max. Spacing, min(2t, 18&Prime;)</span><span class="value" id="tw_rMaxSpacing">-</span></div>
+
+        <!-- DETAILING DIAGRAM -->
+        <div class="section-title">Detailing — Plan View</div>
+        <div class="diagram-box"><svg id="tw_detailSvg" viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg"></svg></div>
+
+        <div id="tw_statusBanner" class="status-banner ok">PASS</div>
+      </div>
+
+      <div class="formula-note">
+        <span class="code-ref">Two-way moments (BNBC Method 3 / ACI 318-63 coefficient method):</span>
+        M<sub>a</sub>=C<sub>a</sub>w<sub>u</sub>S<sub>a</sub>&sup2;, M<sub>b</sub>=C<sub>b</sub>w<sub>u</sub>S<sub>b</sub>&sup2;
+        (using total factored load w<sub>u</sub> = 1.2DL+1.6LL) — coefficients depend on panel case &amp; m, user-supplied<br>
+        <span class="code-ref">Flexural design (trial-and-error, successive approximation):</span>
+        a=A<sub>s</sub>f<sub>y</sub>/(0.85f'<sub>c</sub>b), A<sub>s</sub>=M<sub>u</sub>/[&phi;f<sub>y</sub>(d-a/2)] &mdash;
+        iterate until a converges, &phi;=0.90<br>
+        <span class="code-ref">Tension-controlled limit (over-reinforcement check):</span>
+        &rho;<sub>t</sub>=0.375&times;0.85&beta;<sub>1</sub>(f'<sub>c</sub>/f<sub>y</sub>) at &epsilon;<sub>t</sub>=0.005;
+        &beta;<sub>1</sub>=0.85 for f'<sub>c</sub>&le;4 ksi, reduced 0.05 per 1 ksi above 4 (floor 0.65).
+        If &rho;=A<sub>s</sub>/(bd) &gt; &rho;<sub>t</sub>, section is over-reinforced (not ductile) &mdash;
+        increase t, raise f'<sub>c</sub>, or reduce M<sub>u</sub><br>
+        <span class="code-ref">Min. steel:</span> 0.0020 (Grade 40/50), 0.0018 (Grade 60), or 0.0018&times;60/f<sub>y</sub>
+        (f<sub>y</sub>&gt;60 ksi) &times; b &times; t, each direction<br>
+        <span class="code-ref">Max. bar spacing (§8.7.2):</span> min(2t, 18&Prime;)<br>
+        <span class="code-ref">Bar layering:</span> short-direction bars placed outermost (closer to surface,
+        larger effective depth); long-direction bars placed just inside
+      </div>
+    </div>
+
+  </div>
+
+  </div>
+
+</div>
+
+<script>
+(function(){
+
+  const barDB = { 3:{db:0.375, Ab:0.11}, 4:{db:0.500, Ab:0.20}, 5:{db:0.625, Ab:0.31} };
+
+  document.getElementById('includeCant').addEventListener('change', function(){
+    document.getElementById('cantField').style.display = this.checked ? 'block' : 'none';
+    document.getElementById('coefCantField').style.display = this.checked ? 'block' : 'none';
+  });
+
+  [1,2,3,4].forEach(n=>{
+    document.getElementById('useSpan'+n).addEventListener('change', function(){
+      document.getElementById('span'+n).disabled = !this.checked;
+    });
+  });
+
+  function roundThickness(t){
+    return t < 6 ? Math.ceil(t/0.25)*0.25 : Math.ceil(t/0.5)*0.5;
+  }
+
+  function calcSpacing(As, barSize, Smin, Smax){
+    const bar = barDB[barSize];
+    let s = Math.floor((bar.Ab*12/As)*2)/2;
+    const cappedS = Math.min(s, Smax);
+    const ok = cappedS >= Smin;
+    return {size:barSize, spacing:ok ? cappedS : Math.max(cappedS,Smin), ok:ok};
+  }
+
+  document.getElementById('calcBtn').addEventListener('click', () => {
+    const spanCL = {}, spanIn = {}, spanFt = {};
+    [1,2,3,4].forEach(n => { spanCL[n] = parseFloat(document.getElementById('span'+n).value); });
+    const spanUsed = {};
+    [1,2,3,4].forEach(n => { spanUsed[n] = document.getElementById('useSpan'+n).checked; });
+    const activeNums = [1,2,3,4].filter(n => spanUsed[n]);
+
+    if (activeNums.length === 0) { alert('Select at least one span.'); return; }
+
+    const includeCant = document.getElementById('includeCant').checked;
+    const cantCL = parseFloat(document.getElementById('cantSpan').value) || 0;
+    const beamW = parseFloat(document.getElementById('beamW').value);
+    const LL = parseFloat(document.getElementById('ll').value);
+    const FF = parseFloat(document.getElementById('ff').value);
+    const fc = parseFloat(document.getElementById('fc').value); // ksi
+    const fy = parseFloat(document.getElementById('fy').value); // ksi
+    const coverIn = parseFloat(document.getElementById('cover').value);
+    let tInput = document.getElementById('thickness').value;
+    const cEndA = parseFloat(document.getElementById('coefEndA').value);
+    const cEndB = parseFloat(document.getElementById('coefEndB').value);
+    const cCant = parseFloat(document.getElementById('coefCant').value);
+    const posCoefMap = {
+      1: parseFloat(document.getElementById('coefS1').value),
+      2: parseFloat(document.getElementById('coefS2').value),
+      3: parseFloat(document.getElementById('coefS3').value),
+      4: parseFloat(document.getElementById('coefS4').value)
+    };
+    const supCoefMap = {
+      2: parseFloat(document.getElementById('coefSup2').value),
+      3: parseFloat(document.getElementById('coefSup3').value),
+      4: parseFloat(document.getElementById('coefSup4').value)
+    };
+    const mainBarSize = parseInt(document.getElementById('mainBarSize').value);
+    const tsBarSize = parseInt(document.getElementById('tsBarSize').value);
+
+    const coefs = [cEndA,cEndB,cCant,posCoefMap[1],posCoefMap[2],posCoefMap[3],posCoefMap[4],supCoefMap[2],supCoefMap[3],supCoefMap[4]];
+    if (coefs.some(v => isNaN(v))) { alert('Please enter valid numeric moment coefficients.'); return; }
+
+    const req = [...activeNums.map(n=>spanCL[n]), beamW, LL, FF, fc, fy, coverIn];
+    if (req.some(v => isNaN(v) || v<=0)) { alert('Please enter valid positive values for all active spans.'); return; }
+    if (includeCant && (isNaN(cantCL) || cantCL<0)) { alert('Enter a valid (non-negative) cantilever length, or uncheck it.'); return; }
+
+    // A cantilever length of 0 ft is treated the same as unchecking the box —
+    // either way turns the cantilever portion off for this run.
+    const useCant = includeCant && cantCL > 0;
+
+    // clear spans (ft) — every support is a beam of the same width, so each active
+    // span loses half a beam width at each end: clear = center-to-center - beamW
+    const lIn = {}, lFt = {};
+    activeNums.forEach(n => { lIn[n] = spanCL[n]*12 - beamW; lFt[n] = lIn[n]/12; });
+    const lc_in = useCant ? cantCL*12 - beamW/2 : 0;
+    const lc = lc_in/12;
+
+    // ---- thickness estimation ----
+    // first/last active span -> "end span, one end continuous" (l/24)
+    // spans strictly between them -> "interior span, both ends continuous" (l/28)
+    const MF = 0.4 + fy/100;
+    const endLens = [], intLens = [];
+    activeNums.forEach((n,i) => {
+      if (i===0 || i===activeNums.length-1) endLens.push(lIn[n]); else intLens.push(lIn[n]);
+    });
+    const lgovEnd_in = endLens.length ? Math.max(...endLens) : 0;
+    const lgovInt_in = intLens.length ? Math.max(...intLens) : 0;
+    const t1 = lgovEnd_in ? (lgovEnd_in/24)*MF : 0;
+    const t2 = lgovInt_in ? (lgovInt_in/28)*MF : 0;
+    const t3 = useCant ? (lc_in/10)*MF : 0;
+    const tGov_raw = Math.max(t1, t2, t3);
+    const tGov = roundThickness(tGov_raw);
+    const t = tInput ? parseFloat(tInput) : tGov;
+
+    document.getElementById('t1_row').style.display = lgovEnd_in ? 'table-row' : 'none';
+    if (lgovEnd_in){
+      document.getElementById('t1_l').textContent = lgovEnd_in.toFixed(0)+'"';
+      document.getElementById('t1_mf').textContent = MF.toFixed(2);
+      document.getElementById('t1_t').textContent = t1.toFixed(2)+'"';
+    }
+    document.getElementById('t2_row').style.display = lgovInt_in ? 'table-row' : 'none';
+    if (lgovInt_in){
+      document.getElementById('t2_l').textContent = lgovInt_in.toFixed(0)+'"';
+      document.getElementById('t2_mf').textContent = MF.toFixed(2);
+      document.getElementById('t2_t').textContent = t2.toFixed(2)+'"';
+    }
+    document.getElementById('t3_row').style.display = useCant ? 'table-row' : 'none';
+    if (useCant){
+      document.getElementById('t3_l').textContent = lc_in.toFixed(0)+'"';
+      document.getElementById('t3_mf').textContent = MF.toFixed(2);
+      document.getElementById('t3_t').textContent = t3.toFixed(2)+'"';
+    }
+    document.getElementById('rThickness').innerHTML = t.toFixed(2) + '<span class="u">in</span>' + (tInput? ' (user-set)' : ' (auto, rounded from '+tGov_raw.toFixed(2)+'")');
+
+    // ---- loads ----
+    const selfWeight = 150*t/12; // psf
+    const DL = selfWeight + FF;
+    const wu_psf = 1.2*DL + 1.6*LL;
+    const wu = wu_psf/1000; // ksf
+
+    document.getElementById('rSelf').innerHTML = selfWeight.toFixed(2) + '<span class="u">psf</span>';
+    document.getElementById('rWu').innerHTML = wu_psf.toFixed(1) + '<span class="u">psf</span> = ' + wu.toFixed(3) + '<span class="u">ksf</span>';
+
+    // ---- build sections generically: Support, Span, Support, Span, ..., Support, [Cantilever] ----
+    const sections = [];
+    const firstNum = activeNums[0], lastNum = activeNums[activeNums.length-1];
+
+    sections.push({name:'Support before Span '+firstNum+' (exterior, negative)', coef:'-'+cEndA.toFixed(4), M: -cEndA*wu*lFt[firstNum]*lFt[firstNum], kind:'support'});
+    activeNums.forEach((n,i) => {
+      sections.push({name:'Span '+n+' ('+(i===0||i===activeNums.length-1?'end':'interior')+' span, positive)', coef:posCoefMap[n].toFixed(4), M: posCoefMap[n]*wu*lFt[n]*lFt[n], kind:'span'});
+      if (i < activeNums.length-1){
+        const nextN = activeNums[i+1];
+        const supCoef = supCoefMap[nextN];
+        const lAvg = (lFt[n]+lFt[nextN])/2;
+        sections.push({name:'Support before Span '+nextN+' (interior, negative)', coef:'-'+supCoef.toFixed(4), M: -supCoef*wu*lAvg*lAvg, kind:'support'});
+      }
+    });
+    sections.push({name:'Support after Span '+lastNum+' (exterior, negative)', coef:'-'+cEndB.toFixed(4), M: -cEndB*wu*lFt[lastNum]*lFt[lastNum], kind:'support'});
+    if (useCant){
+      sections.push({name:'Cantilever root (negative)', coef:'-'+cCant.toFixed(4), M: -cCant*wu*lc*lc, kind:'cant'});
+    }
+
+    let mTableHtml = '<tr><th>Section</th><th>Coefficient</th><th>M<sub>u</sub> (k-ft/ft)</th></tr>';
+    sections.forEach(s => {
+      mTableHtml += `<tr><td>${s.name}</td><td>${s.coef}</td><td>${s.M.toFixed(2)}</td></tr>`;
+    });
+    document.getElementById('momentTable').innerHTML = mTableHtml;
+
+    const Mmax = Math.max(...sections.map(s => Math.abs(s.M)));
+    document.getElementById('rMmax').innerHTML = Mmax.toFixed(2) + '<span class="u">kip&middot;ft/ft</span>';
+
+    // ---- effective depth check ----
+    const b = 12; // in
+    const beta1 = fc <= 4 ? 0.85 : Math.max(0.65, 0.85 - 0.05*(fc-4));
+    const rho_t = 0.85*beta1*(fc/fy)*(0.003/0.008); // eps_t = 0.005 limit
+    document.getElementById('rRhoT').innerHTML = rho_t.toFixed(4) + '<span class="u">(A_s/bd)</span>';
+    const Mmax_kin = Mmax*12;
+    const phi = 0.9;
+    const denom = phi*rho_t*fy*b*(1 - 0.59*rho_t*fy/fc);
+    const dReq = denom > 0 ? Math.sqrt(Mmax_kin/denom) : NaN;
+    const dProv = t - coverIn;
+
+    document.getElementById('rDreq').innerHTML = dReq.toFixed(2) + '<span class="u">in</span>';
+    document.getElementById('rDprov').innerHTML = dProv.toFixed(2) + '<span class="u">in</span>' + (dProv>=dReq ? ' (OK)' : ' (INSUFFICIENT)');
+
+    // ---- min steel ----
+    let tsRatio;
+    if (fy <= 50) tsRatio = 0.0020;
+    else if (fy === 60) tsRatio = 0.0018;
+    else tsRatio = 0.0018*60/fy;
+    const AsMin = tsRatio*b*t;
+    document.getElementById('rAsMin').innerHTML = AsMin.toFixed(3) + '<span class="u">in&sup2;/ft</span>';
+
+    // ---- spacing limits ----
+    const SminShort = 1.5*t, SmaxShort = Math.min(3*t,18);
+    const SminLong = 1.5*t, SmaxLong = Math.min(5*t,18);
+    document.getElementById('rSpacingShort').innerHTML = SminShort.toFixed(2) + '&Prime; &ndash; ' + SmaxShort.toFixed(2) + '<span class="u">in</span>';
+    document.getElementById('rSpacingLong').innerHTML = SminLong.toFixed(2) + '&Prime; &ndash; ' + SmaxLong.toFixed(2) + '<span class="u">in</span>';
+
+    // ---- per-section As & bar pick ----
+    const fc_ksi = fc, fy_ksi = fy;
+
+    // trial-and-error flexural design (successive approximation):
+    //   a = As*fy/(0.85*f'c*b)   As = Mu/(phi*fy*(d-a/2))
+    function reqAs(Mu, d){
+      const Mu_in = Math.abs(Mu)*12; // k-in
+      let a = 0.1*d; // initial trial guess for stress-block depth
+      let As = 0;
+      for (let i = 0; i < 25; i++){
+        As = Mu_in/(phi*fy_ksi*(d - a/2));
+        const aNew = As*fy_ksi/(0.85*fc_ksi*b);
+        if (Math.abs(aNew - a) < 0.0001) { a = aNew; break; }
+        a = aNew;
+      }
+      if (!isFinite(As) || As < 0 || a >= d) {
+        return { As: null, rho: null, overReinforced: false };
+      }
+      const rho = As/(b*d);
+      return { As: Math.max(As, AsMin), rho, overReinforced: rho > rho_t };
+    }
+
+    let asTableHtml = '<tr><th>Section</th><th>M<sub>u</sub></th><th>A<sub>s,req</sub></th><th>&rho;</th><th>Bar &amp; Spacing</th></tr>';
+    const sectionResults = [];
+    sections.forEach(s => {
+      const r = reqAs(s.M, dProv);
+      let barInfo = null, asDisplay, rhoDisplay;
+      if (r.As === null){
+        asDisplay = 'N/A'; rhoDisplay = '-';
+      } else {
+        barInfo = calcSpacing(r.As, mainBarSize, SminShort, SmaxShort);
+        asDisplay = r.As.toFixed(3) + (r.overReinforced ? ' &dagger;' : '');
+        rhoDisplay = r.rho.toFixed(4);
+      }
+      sectionResults.push({...s, As: r.As, barInfo, overReinforced: r.overReinforced});
+      asTableHtml += `<tr><td>${s.name}</td><td>${s.M.toFixed(2)}</td><td>${asDisplay}</td><td>${rhoDisplay}</td><td>${barInfo ? '#'+barInfo.size+' @ '+barInfo.spacing.toFixed(1)+'"'+(barInfo.ok?'':' *') : '-'}</td></tr>`;
+    });
+    document.getElementById('asTable').innerHTML = asTableHtml;
+    document.getElementById('asLegend').style.display = sectionResults.some(s => s.overReinforced) ? 'block' : 'none';
+
+    // ---- temp/shrinkage bar ----
+    const tsBarInfo = calcSpacing(AsMin, tsBarSize, SminLong, SmaxLong);
+    document.getElementById('rTsBar').innerHTML = '#' + tsBarInfo.size + ' @ ' + tsBarInfo.spacing.toFixed(1) + '<span class="u">in o.c.</span>';
+
+    // ---- geometry for the diagrams: one entry per active span (in ft), plus optional cantilever ----
+    const geomSpans = activeNums.map(n => lFt[n]);
+
+    // --- Draw moment coefficient diagram ---
+    drawMomentDiagram(sections, geomSpans, lc, useCant);
+
+    // --- Draw detailing elevation ---
+    drawDetailDiagram(sectionResults, geomSpans, lc, useCant, t);
+
+    // ---- status ----
+    const banner = document.getElementById('statusBanner');
+    let fails = [];
+    if (dProv < dReq) fails.push('effective depth insufficient — increase thickness');
+    if (sectionResults.some(s => s.As === null)) fails.push('section inadequate for moment at one or more locations');
+    if (sectionResults.some(s => s.overReinforced)) fails.push('reinforcement ratio exceeds tension-controlled limit rho_t at one or more sections — over-reinforced, increase t, raise f\'c, or reduce Mu');
+    if (sectionResults.some(s => s.barInfo && !s.barInfo.ok)) fails.push('required spacing below minimum at one or more sections — use larger bar or thicker slab');
+    if (fails.length === 0){
+      banner.className = 'status-banner ok';
+      banner.textContent = 'PASS — preliminary design satisfies ACI/BNBC coefficient-method checks';
+    } else {
+      banner.className = 'status-banner warn';
+      banner.textContent = 'REVIEW NEEDED — ' + fails.join('; ');
+    }
+
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('results').classList.add('show');
+  });
+
+  // Build junction (support) x-positions and the cantilever tip x-position for a row of
+  // `spans` (array of clear lengths in ft), scaled into [x0, x0+plotW].
+  function buildGeometry(spans, lc, useCant, x0, plotW){
+    const totalL = spans.reduce((a,b)=>a+b,0) + (useCant?lc:0);
+    const junctionX = [x0];
+    let cum = 0;
+    spans.forEach(len => { cum += len; junctionX.push(x0 + (cum/totalL)*plotW); });
+    const cantTipX = useCant ? x0 + ((cum+lc)/totalL)*plotW : null;
+    return { junctionX, cantTipX, totalL };
+  }
+
+  // Draws a small beam (rectangle, protruding below the slab line) at (x, y) — used at
+  // every support, since every support in this layout — exterior and interior — is a beam.
+  function drawBeamGlyph(x, y){
+    return `<rect x="${x-9}" y="${y-3}" width="18" height="26" fill="#3d6ea5" stroke="#a8c2de" stroke-width="1"/>`;
+  }
+
+  function drawMomentDiagram(sections, spans, lc, useCant){
+    const svg = document.getElementById('momentSvg');
+    const x0 = 60, plotW = 580, yBeam = 140;
+    const { junctionX, cantTipX } = buildGeometry(spans, lc, useCant, x0, plotW);
+    const numSpans = spans.length;
+    const lastX = useCant ? cantTipX : junctionX[junctionX.length-1];
+
+    let s = '';
+    // slab centerline, end to end (including cantilever if present)
+    s += `<line x1="${junctionX[0]}" y1="${yBeam}" x2="${lastX}" y2="${yBeam}" stroke="#eef3f8" stroke-width="3"/>`;
+
+    // beam glyph at every support (all supports rest on beams — see disclaimer)
+    junctionX.forEach(x => { s += drawBeamGlyph(x, yBeam); });
+
+    if (useCant){
+      // free end at the cantilever tip — small end cap, no support glyph
+      s += `<line x1="${cantTipX}" y1="${yBeam-8}" x2="${cantTipX}" y2="${yBeam+8}" stroke="#a8c2de" stroke-width="2"/>`;
+      s += `<text x="${cantTipX}" y="${yBeam-14}" fill="#a8c2de" font-size="9" text-anchor="middle" font-family="Courier New">free end</text>`;
+    }
+
+    // sections[] alternates support,span,support,span,...,support,[cant]
+    // index 2*i -> support i (at junctionX[i]); index 2*i+1 -> span i (midpoint of junctionX[i],junctionX[i+1])
+    for (let i = 0; i <= numSpans; i++){
+      const sec = sections[2*i];
+      const x = junctionX[i];
+      s += `<circle cx="${x}" cy="${yBeam}" r="4" fill="#e8a33d"/>`;
+      s += `<text x="${x}" y="${yBeam-38}" fill="#eef3f8" font-size="10" text-anchor="middle" font-family="Courier New">Sup ${i+1}</text>`;
+      s += `<text x="${x}" y="${yBeam-24}" fill="#d9634c" font-size="9" text-anchor="middle" font-family="Courier New">${sec.coef}</text>`;
+    }
+    for (let i = 0; i < numSpans; i++){
+      const sec = sections[2*i+1];
+      const x = (junctionX[i]+junctionX[i+1])/2;
+      s += `<text x="${x}" y="${yBeam+45}" fill="#5fbf8f" font-size="10" text-anchor="middle" font-family="Courier New">${sec.coef}</text>`;
+    }
+    if (useCant){
+      const cantSec = sections[sections.length-1];
+      const xr = junctionX[numSpans];
+      s += `<text x="${xr}" y="${yBeam+58}" fill="#d9634c" font-size="9" text-anchor="middle" font-family="Courier New">cant: ${cantSec.coef}</text>`;
+    }
+
+    // span dimension lines
+    for (let i = 0; i < numSpans; i++){
+      const xa = junctionX[i], xb = junctionX[i+1];
+      s += `<line x1="${xa}" y1="${yBeam+70}" x2="${xb}" y2="${yBeam+70}" stroke="#a8c2de" stroke-width="1"/>`;
+      s += `<text x="${(xa+xb)/2}" y="${yBeam+85}" fill="#a8c2de" font-size="9" text-anchor="middle" font-family="Courier New">${spans[i].toFixed(2)} ft</text>`;
+    }
+    if (useCant){
+      const xa = junctionX[numSpans], xb = cantTipX;
+      s += `<line x1="${xa}" y1="${yBeam+70}" x2="${xb}" y2="${yBeam+70}" stroke="#a8c2de" stroke-width="1"/>`;
+      s += `<text x="${(xa+xb)/2}" y="${yBeam+85}" fill="#a8c2de" font-size="9" text-anchor="middle" font-family="Courier New">${lc.toFixed(2)} ft</text>`;
+    }
+
+    s += `<text x="350" y="20" fill="#eef3f8" font-size="12" text-anchor="middle" font-family="Courier New" font-weight="bold">MOMENT COEFFICIENTS AT CRITICAL SECTIONS</text>`;
+    s += `<text x="350" y="240" fill="#5fbf8f" font-size="9" text-anchor="middle" font-family="Courier New">Green = positive (bottom steel, midspan) &nbsp;&nbsp; Red = negative (top steel, at each beam)</text>`;
+
+    svg.innerHTML = s;
+  }
+
+  function drawDetailDiagram(sectionResults, spans, lc, useCant, t){
+    const svg = document.getElementById('detailSvg');
+    const x0 = 50, plotW = 600, yTop = 90, yBot = 120;
+    const { junctionX, cantTipX } = buildGeometry(spans, lc, useCant, x0, plotW);
+    const numSpans = spans.length;
+    const lastX = useCant ? cantTipX : junctionX[junctionX.length-1];
+
+    let s = '';
+    // slab outline
+    s += `<rect x="${junctionX[0]}" y="${yTop}" width="${lastX-junctionX[0]}" height="${yBot-yTop}" fill="none" stroke="#eef3f8" stroke-width="2"/>`;
+
+    // beam at every support (exterior and interior alike)
+    junctionX.forEach(x => {
+      s += `<rect x="${x-9}" y="${yBot}" width="18" height="26" fill="#3d6ea5"/>`;
+      s += `<rect x="${x-6}" y="${yTop-4}" width="12" height="${yBot-yTop+8}" fill="#3d6ea5" opacity="0.5"/>`;
+    });
+    if (useCant){
+      s += `<line x1="${cantTipX}" y1="${yTop-6}" x2="${cantTipX}" y2="${yBot+6}" stroke="#a8c2de" stroke-width="2"/>`;
+    }
+
+    // bottom bars (positive) — continuous run of dots along the full length
+    const nDots = 22;
+    for (let i=0;i<=nDots;i++){
+      const x = junctionX[0] + (i/nDots)*(lastX-junctionX[0]);
+      s += `<circle cx="${x}" cy="${yBot-4}" r="2.2" fill="#e8a33d"/>`;
+    }
+    s += `<line x1="${junctionX[0]}" y1="${yBot-4}" x2="${lastX}" y2="${yBot-4}" stroke="#e8a33d" stroke-width="1.5"/>`;
+
+    // top bars (negative) — short dashed run centered on every support, plus along the cantilever
+    const chairLen = 34;
+    junctionX.forEach((x,i) => {
+      const xa = Math.max(junctionX[0], x-chairLen), xb = Math.min(lastX, x+chairLen);
+      s += `<line x1="${xa}" y1="${yTop+4}" x2="${xb}" y2="${yTop+4}" stroke="#d9634c" stroke-width="2.5"/>`;
+    });
+    if (useCant){
+      s += `<line x1="${junctionX[numSpans]-6}" y1="${yTop+4}" x2="${cantTipX}" y2="${yTop+4}" stroke="#d9634c" stroke-width="2.5"/>`;
+    }
+
+    // labels from computed sections (same alternating support/span indexing as sections[])
+    function lbl(sec){
+      if (!sec || !sec.barInfo) return 'min. steel';
+      return '#'+sec.barInfo.size+' @ '+sec.barInfo.spacing.toFixed(1)+'"';
+    }
+    for (let i = 0; i < numSpans; i++){
+      const sec = sectionResults[2*i+1];
+      const x = (junctionX[i]+junctionX[i+1])/2;
+      s += `<text x="${x}" y="${yBot+8}" fill="#e8a33d" font-size="9" text-anchor="middle" font-family="Courier New">${lbl(sec)}</text>`;
+    }
+    for (let i = 0; i <= numSpans; i++){
+      const sec = sectionResults[2*i];
+      const x = junctionX[i];
+      s += `<text x="${x}" y="${yTop-8}" fill="#d9634c" font-size="9" text-anchor="middle" font-family="Courier New">${lbl(sec)}</text>`;
+    }
+    if (useCant){
+      const sec = sectionResults[sectionResults.length-1];
+      s += `<text x="${(junctionX[numSpans]+cantTipX)/2}" y="${yTop-20}" fill="#d9634c" font-size="9" text-anchor="middle" font-family="Courier New">cant: ${lbl(sec)}</text>`;
+    }
+
+    // thickness label
+    s += `<text x="${junctionX[0]-30}" y="${(yTop+yBot)/2+4}" fill="#a8c2de" font-size="9" text-anchor="middle" font-family="Courier New" transform="rotate(-90 ${junctionX[0]-30} ${(yTop+yBot)/2+4})">t=${t.toFixed(2)}"</text>`;
+
+    // span labels
+    for (let i = 0; i < numSpans; i++){
+      const xa = junctionX[i], xb = junctionX[i+1];
+      s += `<line x1="${xa}" y1="${yBot+50}" x2="${xb}" y2="${yBot+50}" stroke="#a8c2de" stroke-width="1"/>`;
+      s += `<text x="${(xa+xb)/2}" y="${yBot+65}" fill="#a8c2de" font-size="9" text-anchor="middle" font-family="Courier New">${spans[i].toFixed(2)} ft</text>`;
+    }
+    if (useCant){
+      const xa = junctionX[numSpans], xb = cantTipX;
+      s += `<line x1="${xa}" y1="${yBot+50}" x2="${xb}" y2="${yBot+50}" stroke="#a8c2de" stroke-width="1"/>`;
+      s += `<text x="${(xa+xb)/2}" y="${yBot+65}" fill="#a8c2de" font-size="9" text-anchor="middle" font-family="Courier New">${lc.toFixed(2)} ft</text>`;
+    }
+
+    s += `<text x="350" y="20" fill="#eef3f8" font-size="12" text-anchor="middle" font-family="Courier New" font-weight="bold">REINFORCEMENT DETAILING — ELEVATION</text>`;
+    s += `<circle cx="180" cy="245" r="3" fill="#e8a33d"/><text x="190" y="248" fill="#a8c2de" font-size="9" font-family="Courier New">bottom bars (positive)</text>`;
+    s += `<line x1="360" y1="245" x2="380" y2="245" stroke="#d9634c" stroke-width="2.5"/><text x="385" y="248" fill="#a8c2de" font-size="9" font-family="Courier New">top bars (negative)</text>`;
+    s += `<rect x="540" y="240" width="14" height="10" fill="#3d6ea5"/><text x="558" y="248" fill="#a8c2de" font-size="9" font-family="Courier New">beam</text>`;
+
+    svg.innerHTML = s;
+  }
+
+})();
+</script>
+
+<script>
+(function(){
+
+  const barDB = { 3:{db:0.375, Ab:0.11}, 4:{db:0.500, Ab:0.20}, 5:{db:0.625, Ab:0.31} };
+
+  // ---- Full ACI 318-63 Table 3.8 / BNBC 2020 §6.3.13 "Method 3" coefficient set ----
+  // m = la/lb, rows ordered m = 1.00 down to 0.50 in steps of 0.05.
+  // Only the columns that actually apply to each case are listed; a direction with
+  // no "Neg" column has both edges discontinuous (assumed zero negative moment there).
+  // Values verified cell-by-cell against the source coefficient tables
+  // (ACI 318-63 Method 3 / Table 6.6.8-6.6.10) supplied by the user (Book22).
+  const M_VALS = [1.00,0.95,0.90,0.85,0.80,0.75,0.70,0.65,0.60,0.55,0.50];
+  const CASE_DESC = {
+    1: 'Interior panel — all 4 edges continuous.',
+    2: 'One short edge discontinuous — other 3 edges continuous.',
+    3: 'One long edge discontinuous — other 3 edges continuous.',
+    4: 'Two adjacent edges discontinuous — typical building corner panel.',
+    5: 'Two short edges discontinuous, long edges continuous.',
+    6: 'Two long edges discontinuous, short edges continuous.',
+    7: 'Three edges discontinuous, one long edge continuous.',
+    8: 'Three edges discontinuous, one short edge continuous.',
+    9: 'All four edges discontinuous — isolated panel, no restraint.'
+  };
+  const COEF_DATA = {
+    1:{cols:['caNegCont','caPosDL','caPosLL','cbNegCont','cbPosDL','cbPosLL'],rows:[
+      [0.045,0.018,0.027,0.045,0.018,0.027],[0.05,0.02,0.03,0.041,0.016,0.024],
+      [0.055,0.022,0.034,0.037,0.014,0.022],[0.06,0.024,0.037,0.031,0.012,0.02],
+      [0.065,0.026,0.041,0.027,0.011,0.017],[0.069,0.028,0.045,0.022,0.009,0.014],
+      [0.074,0.03,0.049,0.017,0.007,0.012],[0.077,0.032,0.053,0.014,0.006,0.009],
+      [0.081,0.034,0.058,0.01,0.004,0.007],[0.084,0.035,0.062,0.007,0.003,0.006],
+      [0.086,0.037,0.066,0.006,0.002,0.004]]},
+    2:{cols:['caNegCont','caNegDisc','caPosDL','caPosLL','cbNegCont','cbPosDL','cbPosLL'],rows:[
+      [0.061,0.03,0.023,0.03,0.033,0.02,0.028],[0.065,0.033,0.024,0.032,0.029,0.017,0.025],
+      [0.068,0.038,0.026,0.036,0.025,0.015,0.022],[0.072,0.043,0.028,0.039,0.021,0.013,0.019],
+      [0.075,0.047,0.029,0.042,0.017,0.01,0.017],[0.078,0.051,0.031,0.046,0.014,0.007,0.014],
+      [0.081,0.056,0.033,0.05,0.011,0.006,0.011],[0.083,0.06,0.034,0.054,0.008,0.005,0.009],
+      [0.085,0.065,0.036,0.059,0.006,0.004,0.007],[0.086,0.07,0.037,0.063,0.005,0.003,0.005],
+      [0.088,0.074,0.038,0.067,0.003,0.002,0.004]]},
+    3:{cols:['caNegCont','caPosDL','caPosLL','cbNegCont','cbNegDisc','cbPosDL','cbPosLL'],rows:[
+      [0.033,0.02,0.028,0.061,0.03,0.023,0.033],[0.038,0.022,0.03,0.056,0.036,0.021,0.03],
+      [0.043,0.025,0.031,0.052,0.041,0.019,0.027],[0.049,0.029,0.031,0.046,0.046,0.017,0.024],
+      [0.055,0.032,0.032,0.041,0.051,0.015,0.021],[0.061,0.036,0.032,0.036,0.057,0.013,0.018],
+      [0.068,0.04,0.033,0.029,0.062,0.011,0.015],[0.074,0.044,0.033,0.024,0.068,0.009,0.012],
+      [0.08,0.048,0.033,0.018,0.073,0.007,0.01],[0.085,0.052,0.033,0.014,0.078,0.005,0.007],
+      [0.089,0.056,0.033,0.01,0.083,0.004,0.005]]},
+    4:{cols:['caNegCont','caPosDL','caPosLL','cbNegCont','cbPosDL','cbPosLL'],rows:[
+      [0.05,0.027,0.032,0.05,0.027,0.032],[0.055,0.03,0.035,0.045,0.024,0.029],
+      [0.06,0.033,0.039,0.04,0.022,0.026],[0.066,0.036,0.042,0.034,0.019,0.023],
+      [0.071,0.039,0.044,0.029,0.016,0.02],[0.076,0.043,0.047,0.024,0.013,0.016],
+      [0.081,0.046,0.051,0.019,0.011,0.014],[0.085,0.05,0.055,0.015,0.009,0.011],
+      [0.089,0.053,0.059,0.011,0.007,0.009],[0.092,0.056,0.063,0.008,0.005,0.007],
+      [0.094,0.059,0.067,0.006,0.004,0.005]]},
+    5:{cols:['caNegCont','caPosDL','caPosLL','cbPosDL','cbPosLL'],rows:[
+      [0.075,0.027,0.032,0.018,0.027],[0.079,0.028,0.034,0.015,0.024],
+      [0.08,0.029,0.036,0.013,0.021],[0.082,0.031,0.039,0.011,0.019],
+      [0.083,0.032,0.041,0.009,0.016],[0.085,0.033,0.044,0.007,0.013],
+      [0.086,0.035,0.047,0.005,0.011],[0.087,0.036,0.049,0.004,0.009],
+      [0.088,0.037,0.052,0.003,0.007],[0.089,0.038,0.054,0.002,0.005],
+      [0.09,0.039,0.057,0.001,0.004]]},
+    6:{cols:['caPosDL','caPosLL','cbNegCont','cbPosDL','cbPosLL'],rows:[
+      [0.018,0.027,0.076,0.027,0.032],[0.021,0.03,0.072,0.025,0.029],
+      [0.025,0.031,0.07,0.024,0.027],[0.029,0.031,0.065,0.022,0.024],
+      [0.034,0.032,0.061,0.02,0.022],[0.04,0.032,0.056,0.018,0.019],
+      [0.046,0.032,0.05,0.016,0.016],[0.054,0.032,0.043,0.014,0.014],
+      [0.062,0.032,0.035,0.011,0.011],[0.071,0.032,0.028,0.009,0.009],
+      [0.08,0.032,0.022,0.007,0.007]]},
+    7:{cols:['caNegCont','caPosDL','caPosLL','cbPosDL','cbPosLL'],rows:[
+      [0.071,0.033,0.035,0.027,0.032],[0.075,0.036,0.038,0.024,0.029],
+      [0.079,0.039,0.042,0.021,0.026],[0.083,0.042,0.045,0.017,0.023],
+      [0.086,0.045,0.048,0.015,0.02],[0.088,0.048,0.052,0.012,0.016],
+      [0.091,0.051,0.057,0.009,0.014],[0.093,0.054,0.062,0.007,0.011],
+      [0.095,0.056,0.067,0.006,0.009],[0.096,0.058,0.073,0.004,0.007],
+      [0.097,0.061,0.077,0.003,0.005]]},
+    8:{cols:['caPosDL','caPosLL','cbNegCont','cbPosDL','cbPosLL'],rows:[
+      [0.027,0.032,0.071,0.033,0.042],[0.031,0.036,0.067,0.031,0.038],
+      [0.035,0.04,0.062,0.028,0.034],[0.04,0.043,0.057,0.025,0.03],
+      [0.045,0.046,0.051,0.022,0.026],[0.051,0.049,0.044,0.02,0.023],
+      [0.058,0.052,0.038,0.017,0.019],[0.065,0.056,0.031,0.014,0.016],
+      [0.073,0.059,0.024,0.012,0.013],[0.081,0.063,0.019,0.009,0.01],
+      [0.089,0.067,0.014,0.007,0.007]]},
+    9:{cols:['caPosDL','caPosLL','cbPosDL','cbPosLL'],rows:[
+      [0.036,0.036,0.036,0.036],[0.04,0.04,0.033,0.033],
+      [0.045,0.045,0.029,0.029],[0.05,0.05,0.026,0.026],
+      [0.056,0.056,0.023,0.023],[0.061,0.061,0.019,0.019],
+      [0.068,0.068,0.016,0.016],[0.074,0.074,0.013,0.013],
+      [0.081,0.081,0.01,0.01],[0.088,0.088,0.008,0.008],
+      [0.095,0.095,0.006,0.006]]}
+  };
+  const COL_LABEL = {
+    caNegCont:'M_a,neg (short, continuous edge)', caNegDisc:'M_a,neg (short, discontinuous edge)',
+    caPosDL:'M_a,pos (short, midspan)', caPosLL:'M_a,pos (short, midspan)',
+    cbNegCont:'M_b,neg (long, continuous edge)', cbNegDisc:'M_b,neg (long, discontinuous edge)',
+    cbPosDL:'M_b,pos (long, midspan)', cbPosLL:'M_b,pos (long, midspan)'
+  };
+  const FIELD_IDS = ['caNegCont','caNegDisc','caPosDL','caPosLL','cbNegCont','cbNegDisc','cbPosDL','cbPosLL'];
+
+  function lookupCoef(caseNum, m){
+    const data = COEF_DATA[caseNum];
+    const mc = Math.max(0.5, Math.min(1.0, m));
+    let i = 0;
+    while (i < M_VALS.length-1 && M_VALS[i+1] > mc) i++;
+    const iHi = i, iLo = Math.min(i+1, M_VALS.length-1);
+    const mHi = M_VALS[iHi], mLo = M_VALS[iLo];
+    const rowHi = data.rows[iHi], rowLo = data.rows[iLo];
+    const frac = (mHi === mLo) ? 0 : (mc - mLo)/(mHi - mLo);
+    const result = {};
+    data.cols.forEach((c,idx) => { result[c] = rowLo[idx] + frac*(rowHi[idx]-rowLo[idx]); });
+    return result;
+  }
+
+  function updateCaseFields(){
+    const caseNum = parseInt(document.getElementById('tw_case').value);
+    document.getElementById('tw_caseDesc').textContent = CASE_DESC[caseNum];
+    const cols = COEF_DATA[caseNum].cols;
+    FIELD_IDS.forEach(id => {
+      document.getElementById('fld_'+id).style.display = cols.includes(id) ? 'block' : 'none';
+    });
+  }
+  document.getElementById('tw_case').addEventListener('change', updateCaseFields);
+  updateCaseFields();
+
+  document.getElementById('tw_lookupBtn').addEventListener('click', () => {
+    const caseNum = parseInt(document.getElementById('tw_case').value);
+    const sa = parseFloat(document.getElementById('tw_sa').value);
+    const sb = parseFloat(document.getElementById('tw_sb').value);
+    if (!(sa > 0 && sb > 0)) { alert('Enter valid Sa and Sb spans first.'); return; }
+    const m = Math.min(sa,sb)/Math.max(sa,sb);
+    const vals = lookupCoef(caseNum, m);
+    Object.keys(vals).forEach(c => {
+      document.getElementById('tw_'+c).value = vals[c].toFixed(4);
+    });
+  });
+
+  function updateM(){
+    const sa = parseFloat(document.getElementById('tw_sa').value);
+    const sb = parseFloat(document.getElementById('tw_sb').value);
+    if (sa > 0 && sb > 0) {
+      const m = Math.min(sa,sb)/Math.max(sa,sb);
+      document.getElementById('tw_mRatio').value = m.toFixed(2);
+    }
+  }
+  document.getElementById('tw_sa').addEventListener('input', updateM);
+  document.getElementById('tw_sb').addEventListener('input', updateM);
+  updateM();
+
+  function calcSpacing(As, barSize, Smin, Smax){
+    const bar = barDB[barSize];
+    let s = Math.floor((bar.Ab*12/As)*2)/2;
+    const cappedS = Math.min(s, Smax);
+    const ok = cappedS >= Smin;
+    return {size:barSize, spacing: ok ? cappedS : Math.max(cappedS,Smin), ok:ok};
+  }
+
+  document.getElementById('tw_calcBtn').addEventListener('click', () => {
+    const caseNum = parseInt(document.getElementById('tw_case').value);
+    const cols = COEF_DATA[caseNum].cols;
+    const Sa = parseFloat(document.getElementById('tw_sa').value);
+    const Sb = parseFloat(document.getElementById('tw_sb').value);
+    const coefVals = {};
+    cols.forEach(c => { coefVals[c] = parseFloat(document.getElementById('tw_'+c).value); });
+    const LL = parseFloat(document.getElementById('tw_ll').value);
+    const FF = parseFloat(document.getElementById('tw_ff').value);
+    const fc = parseFloat(document.getElementById('tw_fc').value); // ksi
+    const fy = parseFloat(document.getElementById('tw_fy').value); // ksi
+    const coverIn = parseFloat(document.getElementById('tw_cover').value);
+    let tInput = document.getElementById('tw_thickness').value;
+    const barA = parseInt(document.getElementById('tw_barA').value);
+    const barB = parseInt(document.getElementById('tw_barB').value);
+
+    const req = [Sa,Sb,LL,FF,fc,fy,coverIn, ...Object.values(coefVals)];
+    if (req.some(v => isNaN(v) || v<0) || Sa<=0 || Sb<=0 || fc<=0 || fy<=0) {
+      alert('Please enter valid, non-negative values.');
+      return;
+    }
+
+    // rough thickness guideline: perimeter/180 (in), for slabs with beams on all sides
+    const perimeter_in = 2*(Sa+Sb)*12;
+    const hGuide = perimeter_in/180;
+    const t = tInput ? parseFloat(tInput) : Math.max(4, Math.round(hGuide*4)/4);
+
+    document.getElementById('tw_rHGuide').innerHTML = hGuide.toFixed(2) + '<span class="u">in (rough guideline only)</span>';
+    document.getElementById('tw_rThickness').innerHTML = t.toFixed(2) + '<span class="u">in</span>' + (tInput ? ' (user-set)' : ' (from guideline)');
+
+    // loads
+    const selfWeight = 150*t/12; // psf
+    const DLpsf = selfWeight + FF;
+    const wu_psf = 1.2*DLpsf + 1.6*LL;
+    const wu = wu_psf/1000; // ksf — used for negative-moment (combined-load) coefficients
+    const wuDL = (1.2*DLpsf)/1000; // ksf — factored DL only, for positive-moment DL coefficient
+    const wuLL = (1.6*LL)/1000;    // ksf — factored LL only, for positive-moment LL coefficient
+
+    document.getElementById('tw_rSelf').innerHTML = selfWeight.toFixed(2) + '<span class="u">psf</span>';
+    document.getElementById('tw_rWu').innerHTML = wu_psf.toFixed(1) + '<span class="u">psf</span> = ' + wu.toFixed(3) + '<span class="u">ksf</span>';
+
+    // ---- build the moment list generically from whichever columns this case has ----
+    // Negative coefficients (if any) act on the combined factored load wu; there can be
+    // 0, 1 (symmetric/continuous both edges), or 2 (one cont., one disc.) per direction.
+    // Positive coefficients always exist and are split into DL and LL contributions.
+    function negEdges(prefix){
+      const edges = [];
+      if (cols.includes(prefix+'NegCont')) edges.push({key:prefix+'NegCont', label:'continuous edge'});
+      if (cols.includes(prefix+'NegDisc')) edges.push({key:prefix+'NegDisc', label:'discontinuous edge'});
+      return edges;
+    }
+    const moments = [];
+    negEdges('ca').forEach(e => {
+      moments.push({name:'M_a,neg (short, '+e.label+')', dir:'A', kind:'neg', M: coefVals[e.key]*wu*Sa*Sa});
+    });
+    moments.push({name:'M_a,pos (short, midspan)', dir:'A', kind:'pos',
+      M: coefVals.caPosDL*wuDL*Sa*Sa + coefVals.caPosLL*wuLL*Sa*Sa});
+    negEdges('cb').forEach(e => {
+      moments.push({name:'M_b,neg (long, '+e.label+')', dir:'B', kind:'neg', M: coefVals[e.key]*wu*Sb*Sb});
+    });
+    moments.push({name:'M_b,pos (long, midspan)', dir:'B', kind:'pos',
+      M: coefVals.cbPosDL*wuDL*Sb*Sb + coefVals.cbPosLL*wuLL*Sb*Sb});
+
+    let mHtml = '<tr><th>Location</th><th>Direction</th><th>M<sub>u</sub> (k-ft/ft)</th></tr>';
+    moments.forEach(m => { mHtml += `<tr><td>${m.name}</td><td>${m.dir}</td><td>${m.M.toFixed(2)}</td></tr>`; });
+    document.getElementById('tw_momentTable').innerHTML = mHtml;
+
+    // effective depths (short dir bars outer, long dir bars inner) — used for both
+    // top (negative) and bottom (positive) steel at their respective faces
+    const barADb = barDB[barA].db, barBDb = barDB[barB].db;
+    const dA = t - coverIn - barADb/2;
+    const dB = t - coverIn - barADb - barBDb/2;
+    document.getElementById('tw_rDa').innerHTML = dA.toFixed(2) + '<span class="u">in</span>';
+    document.getElementById('tw_rDb').innerHTML = dB.toFixed(2) + '<span class="u">in</span>';
+
+    // min steel
+    let tsRatio;
+    if (fy <= 50) tsRatio = 0.0020;
+    else if (fy === 60) tsRatio = 0.0018;
+    else tsRatio = 0.0018*60/fy;
+    const b = 12;
+    const AsMin = tsRatio*b*t;
+    document.getElementById('tw_rAsMin').innerHTML = AsMin.toFixed(3) + '<span class="u">in&sup2;/ft</span>';
+
+    const maxSpacing = Math.min(2*t, 18);
+    document.getElementById('tw_rMaxSpacing').innerHTML = maxSpacing.toFixed(2) + '<span class="u">in</span>';
+    const minSpacing = 1.5*t;
+
+    const fc_ksi = fc, fy_ksi = fy, phi = 0.9;
+
+    // beta1 per ACI 318 (f'c in ksi): 0.85 up to 4 ksi, reduced 0.05 per 1 ksi above 4, floor 0.65
+    const beta1 = fc_ksi <= 4 ? 0.85 : Math.max(0.65, 0.85 - 0.05*(fc_ksi - 4));
+
+    // tension-controlled reinforcement ratio limit: eps_t = 0.005 -> c/d = 0.003/(0.003+0.005) = 0.375
+    const rho_t = 0.375*0.85*beta1*(fc_ksi/fy_ksi);
+    document.getElementById('tw_rRhoT').innerHTML = rho_t.toFixed(4) + '<span class="u">(A_s/bd)</span>';
+
+    // trial-and-error flexural design (successive substitution):
+    //   a = As*fy/(0.85*f'c*b)   As = Mu/(phi*fy*(d-a/2))
+    function reqAs(Mu, d){
+      const Mu_in = Mu*12; // k-in
+      let a = 0.1*d; // initial trial guess for stress-block depth
+      let As = 0;
+      for (let i = 0; i < 25; i++){
+        As = Mu_in/(phi*fy_ksi*(d - a/2));
+        const aNew = As*fy_ksi/(0.85*fc_ksi*b);
+        if (Math.abs(aNew - a) < 0.0001) { a = aNew; break; }
+        a = aNew;
+      }
+      if (!isFinite(As) || As < 0 || a >= d) {
+        return { As: null, a: null, rho: null, overReinforced: false };
+      }
+      const rho = As/(b*d);
+      return { As: Math.max(As, AsMin), a, rho, overReinforced: rho > rho_t };
+    }
+
+    let asHtml = '<tr><th>Location</th><th>M<sub>u</sub></th><th>A<sub>s,req</sub></th><th>&rho;</th><th>Bar &amp; Spacing</th></tr>';
+    const results = [];
+    moments.forEach(m => {
+      const d = m.dir === 'A' ? dA : dB;
+      const bar = m.dir === 'A' ? barA : barB;
+      const r = reqAs(m.M, d);
+      let barInfo = null, asDisplay, rhoDisplay;
+      if (r.As === null){ asDisplay = 'N/A'; rhoDisplay = '-'; }
+      else {
+        barInfo = calcSpacing(r.As, bar, minSpacing, maxSpacing);
+        asDisplay = r.As.toFixed(3) + (r.overReinforced ? ' &dagger;' : '');
+        rhoDisplay = r.rho.toFixed(4);
+      }
+      results.push({...m, As: r.As, barInfo, overReinforced: r.overReinforced});
+      asHtml += `<tr><td>${m.name}</td><td>${m.M.toFixed(2)}</td><td>${asDisplay}</td><td>${rhoDisplay}</td><td>${barInfo ? '#'+barInfo.size+' @ '+barInfo.spacing.toFixed(1)+'"'+(barInfo.ok?'':' *') : '-'}</td></tr>`;
+    });
+    document.getElementById('tw_asTable').innerHTML = asHtml;
+    document.getElementById('tw_asLegend').style.display = results.some(r => r.overReinforced) ? 'block' : 'none';
+
+    drawPlanDiagram(Sa, Sb);
+    drawDetailDiagram(results, Sa, Sb);
+
+    const banner = document.getElementById('tw_statusBanner');
+    let fails = [];
+    if (results.some(r => r.As === null)) fails.push('section inadequate for one or more moments — increase t or f\'c');
+    if (results.some(r => r.overReinforced)) fails.push('reinforcement ratio exceeds tension-controlled limit rho_t at one or more locations — over-reinforced, increase t, raise f\'c, or reduce Mu');
+    if (results.some(r => r.barInfo && !r.barInfo.ok)) fails.push('required spacing outside limits at one or more locations — adjust bar size or thickness');
+    if (fails.length === 0){
+      banner.className = 'status-banner ok';
+      banner.textContent = 'PASS — preliminary design satisfies checks (Case '+caseNum+', m='+(Math.min(Sa,Sb)/Math.max(Sa,Sb)).toFixed(2)+')';
+    } else {
+      banner.className = 'status-banner warn';
+      banner.textContent = 'REVIEW NEEDED — ' + fails.join('; ');
+    }
+
+    document.getElementById('tw_placeholder').style.display = 'none';
+    document.getElementById('tw_results').classList.add('show');
+  });
+
+  function drawPlanDiagram(Sa, Sb){
+    const svg = document.getElementById('tw_planSvg');
+    const x0=90, y0=40, w=440, h=220;
+    let s='';
+    s += `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="none" stroke="#eef3f8" stroke-width="2"/>`;
+    // continuous edge hatching (all sides continuous)
+    s += `<g stroke="#3d6ea5" stroke-width="6">
+      <line x1="${x0}" y1="${y0}" x2="${x0+w}" y2="${y0}"/>
+      <line x1="${x0}" y1="${y0+h}" x2="${x0+w}" y2="${y0+h}"/>
+      <line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y0+h}"/>
+      <line x1="${x0+w}" y1="${y0}" x2="${x0+w}" y2="${y0+h}"/></g>`;
+    // negative moment zone (near edges, dashed red box inset)
+    s += `<rect x="${x0+16}" y="${y0+16}" width="${w-32}" height="${h-32}" fill="none" stroke="#d9634c" stroke-width="1.5" stroke-dasharray="6 4"/>`;
+    // positive moment zone (center, green)
+    s += `<rect x="${x0+w*0.3}" y="${y0+h*0.3}" width="${w*0.4}" height="${h*0.4}" fill="rgba(95,191,143,0.15)" stroke="#5fbf8f" stroke-width="1.5"/>`;
+    s += `<text x="${x0+w/2}" y="${y0+h/2-4}" fill="#5fbf8f" font-size="10" text-anchor="middle" font-family="Courier New">M_a,pos / M_b,pos</text>`;
+    s += `<text x="${x0+w/2}" y="${y0+h/2+12}" fill="#5fbf8f" font-size="9" text-anchor="middle" font-family="Courier New">(midspan, bottom steel)</text>`;
+    s += `<text x="${x0+w/2}" y="${y0+22}" fill="#d9634c" font-size="9" text-anchor="middle" font-family="Courier New">M_a,neg / M_b,neg (top steel, continuous edges)</text>`;
+
+    s += `<line x1="${x0}" y1="${y0+h+30}" x2="${x0+w}" y2="${y0+h+30}" stroke="#a8c2de" stroke-width="1"/>`;
+    s += `<text x="${x0+w/2}" y="${y0+h+45}" fill="#a8c2de" font-size="10" text-anchor="middle" font-family="Courier New">S_b = ${Sb.toFixed(2)} ft (long)</text>`;
+    s += `<line x1="${x0-30}" y1="${y0}" x2="${x0-30}" y2="${y0+h}" stroke="#a8c2de" stroke-width="1"/>`;
+    s += `<text x="${x0-45}" y="${y0+h/2}" fill="#a8c2de" font-size="10" text-anchor="middle" font-family="Courier New" transform="rotate(-90 ${x0-45} ${y0+h/2})">S_a = ${Sa.toFixed(2)} ft (short)</text>`;
+
+    s += `<text x="350" y="20" fill="#eef3f8" font-size="12" text-anchor="middle" font-family="Courier New" font-weight="bold">PANEL MOMENT ZONES — PLAN VIEW</text>`;
+    svg.innerHTML = s;
+  }
+
+  function drawDetailDiagram(results, Sa, Sb){
+    const svg = document.getElementById('tw_detailSvg');
+    const x0=90, y0=40, w=440, h=220;
+    let s='';
+    s += `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="none" stroke="#eef3f8" stroke-width="2"/>`;
+    s += `<g stroke="#3d6ea5" stroke-width="5">
+      <line x1="${x0}" y1="${y0}" x2="${x0+w}" y2="${y0}"/>
+      <line x1="${x0}" y1="${y0+h}" x2="${x0+w}" y2="${y0+h}"/>
+      <line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y0+h}"/>
+      <line x1="${x0+w}" y1="${y0}" x2="${x0+w}" y2="${y0+h}"/></g>`;
+
+    // bottom bars: short direction (vertical lines)
+    let gA = '<g stroke="#e8a33d" stroke-width="2">';
+    for (let i=1;i<=8;i++){
+      const x = x0 + (i/9)*w;
+      gA += `<line x1="${x}" y1="${y0+10}" x2="${x}" y2="${y0+h-10}"/>`;
+    }
+    gA += '</g>';
+    s += gA;
+    // bottom bars: long direction (horizontal lines)
+    let gB = '<g stroke="#f2c46a" stroke-width="2">';
+    for (let i=1;i<=6;i++){
+      const y = y0 + (i/7)*h;
+      gB += `<line x1="${x0+10}" y1="${y}" x2="${x0+w-10}" y2="${y}"/>`;
+    }
+    gB += '</g>';
+    s += gB;
+
+    // top bars near edges (negative)
+    s += `<g stroke="#d9634c" stroke-width="4" stroke-dasharray="8 5">
+      <line x1="${x0}" y1="${y0+8}" x2="${x0+w}" y2="${y0+8}"/>
+      <line x1="${x0}" y1="${y0+h-8}" x2="${x0+w}" y2="${y0+h-8}"/>
+      <line x1="${x0+8}" y1="${y0}" x2="${x0+8}" y2="${y0+h}"/>
+      <line x1="${x0+w-8}" y1="${y0}" x2="${x0+w-8}" y2="${y0+h}"/>
+    </g>`;
+
+    // labels using computed spacing — pick the positive row by exact name, and the
+    // governing (largest |Mu|) negative row per direction (there may be 0, 1, or 2 of them)
+    function lblExact(loc){
+      const r = results.find(r => r.name === loc);
+      if (!r || !r.barInfo) return '-';
+      return '#'+r.barInfo.size+' @ '+r.barInfo.spacing.toFixed(1)+'"';
+    }
+    function lblGovNeg(dir){
+      const negs = results.filter(r => r.dir === dir && r.kind === 'neg');
+      if (!negs.length) return 'none (disc. both edges — min. steel)';
+      const gov = negs.reduce((a,b) => Math.abs(b.M) > Math.abs(a.M) ? b : a);
+      if (!gov.barInfo) return '-';
+      return '#'+gov.barInfo.size+' @ '+gov.barInfo.spacing.toFixed(1)+'"';
+    }
+    s += `<text x="${x0+w/2}" y="${y0+h/2+40}" fill="#e8a33d" font-size="10" text-anchor="middle" font-family="Courier New">A (short, bottom): ${lblExact('M_a,pos (short, midspan)')}</text>`;
+    s += `<text x="${x0+w/2}" y="${y0+h/2+55}" fill="#f2c46a" font-size="10" text-anchor="middle" font-family="Courier New">B (long, bottom): ${lblExact('M_b,pos (long, midspan)')}</text>`;
+    s += `<text x="${x0+w/2}" y="${y0-8}" fill="#d9634c" font-size="9" text-anchor="middle" font-family="Courier New">top (neg., gov.), short dir: ${lblGovNeg('A')}</text>`;
+    s += `<text x="${x0-30}" y="${y0+h/2}" fill="#d9634c" font-size="9" text-anchor="middle" font-family="Courier New" transform="rotate(-90 ${x0-30} ${y0+h/2})">top (neg., gov.), long dir: ${lblGovNeg('B')}</text>`;
+
+    s += `<text x="350" y="20" fill="#eef3f8" font-size="12" text-anchor="middle" font-family="Courier New" font-weight="bold">REINFORCEMENT DETAILING — PLAN</text>`;
+    svg.innerHTML = s;
+  }
+
+})();
+</script>
+
+<script>
+(function(){
+  const btnOne = document.getElementById('modeBtnOneWay');
+  const btnTwo = document.getElementById('modeBtnTwoWay');
+  const panelOne = document.getElementById('onewayMode');
+  const panelTwo = document.getElementById('twowayMode');
+
+  function showMode(mode){
+    const isOne = mode === 'oneway';
+    panelOne.classList.toggle('active', isOne);
+    panelTwo.classList.toggle('active', !isOne);
+    btnOne.classList.toggle('active', isOne);
+    btnTwo.classList.toggle('active', !isOne);
+  }
+
+  btnOne.addEventListener('click', () => showMode('oneway'));
+  btnTwo.addEventListener('click', () => showMode('twoway'));
+})();
+</script>
+
+</body>
+</html>

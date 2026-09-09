@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RC Column Design Calculator — US Units / BNBC Detailing</title>
+<style>
+  :root{
+    --blue-deep:#0b2a4a;
+    --blue-mid:#12406e;
+    --blue-line:#3d6ea5;
+    --paper:#eef3f8;
+    --ink:#0b2a4a;
+    --accent:#e8a33d;
+    --grid:rgba(255,255,255,0.06);
+    --ok:#5fbf8f;
+    --warn:#d9634c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Courier New', Consolas, monospace;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/24px 24px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/24px 24px,
+      var(--blue-deep);
+    color:var(--paper);
+    min-height:100vh;
+    padding:32px 16px 64px;
+  }
+  .sheet{max-width:1040px; margin:0 auto;}
+  .title-block{
+    border:2px solid var(--blue-line);
+    background:var(--blue-mid);
+    padding:18px 24px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:12px;
+    margin-bottom:16px;
+  }
+  .title-block h1{
+    margin:0; font-size:1.4rem; letter-spacing:1.5px;
+    text-transform:uppercase; font-weight:700;
+  }
+  .title-block .sub{
+    font-size:0.72rem; color:var(--accent); letter-spacing:2px;
+    text-transform:uppercase; margin-top:4px;
+  }
+  .stamp{font-size:0.68rem; text-align:right; line-height:1.5; color:#a8c2de; letter-spacing:1px;}
+  .disclaimer{
+    border:1px solid var(--warn);
+    background:rgba(217,99,76,0.08);
+    color:#f0b8ab;
+    font-size:0.72rem;
+    line-height:1.6;
+    padding:12px 16px;
+    margin-bottom:20px;
+  }
+  .grid-layout{display:grid; grid-template-columns:1fr 1.2fr; gap:20px;}
+  @media (max-width:820px){.grid-layout{grid-template-columns:1fr;}}
+  .panel{border:1px solid var(--blue-line); background:rgba(18,64,110,0.5); padding:20px;}
+  .panel h2{
+    margin:0 0 14px; font-size:0.82rem; letter-spacing:2px; text-transform:uppercase;
+    color:var(--accent); border-bottom:1px dashed var(--blue-line); padding-bottom:8px;
+  }
+  .field{margin-bottom:13px;}
+  .field label{
+    display:block; font-size:0.7rem; letter-spacing:0.5px; text-transform:uppercase;
+    color:#a8c2de; margin-bottom:5px;
+  }
+  .field .unit{color:var(--accent);}
+  .field input, .field select{
+    width:100%; padding:8px 10px; background:var(--paper); color:var(--ink);
+    border:1px solid var(--blue-line); font-family:inherit; font-size:0.92rem;
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--accent); outline-offset:-1px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+  button.calc{
+    width:100%; padding:13px; background:var(--accent); color:var(--blue-deep);
+    border:none; font-family:inherit; font-weight:700; letter-spacing:2px;
+    text-transform:uppercase; font-size:0.85rem; cursor:pointer; margin-top:6px;
+  }
+  button.calc:hover{background:#f2b658;}
+  .section-title{
+    font-size:0.75rem; letter-spacing:2px; text-transform:uppercase; color:var(--accent);
+    margin:18px 0 8px; padding-top:14px; border-top:1px dashed var(--blue-line);
+  }
+  .section-title:first-child{margin-top:0; padding-top:0; border-top:none;}
+  .results{display:none;}
+  .results.show{display:block;}
+  .result-row{
+    display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+    padding:8px 0; border-bottom:1px solid rgba(61,110,165,0.4);
+  }
+  .result-row:last-child{border-bottom:none;}
+  .result-row .label{font-size:0.72rem; letter-spacing:0.5px; text-transform:uppercase; color:#a8c2de;}
+  .result-row .value{font-size:0.98rem; font-weight:700; color:var(--paper); text-align:right;}
+  .result-row .value .u{font-size:0.68rem; color:var(--accent); font-weight:400; margin-left:3px;}
+  .status-banner{margin-top:10px; padding:11px 14px; font-size:0.75rem; letter-spacing:0.5px; border:1px solid;}
+  .status-banner.ok{border-color:var(--ok); color:var(--ok); background:rgba(95,191,143,0.08);}
+  .status-banner.warn{border-color:var(--warn); color:var(--warn); background:rgba(217,99,76,0.08);}
+  .placeholder{color:#7fa1c7; font-size:0.8rem; text-align:center; padding:30px 10px;}
+  .formula-note{
+    margin-top:16px; font-size:0.66rem; color:#7fa1c7; line-height:1.7;
+    border-top:1px dashed var(--blue-line); padding-top:12px;
+  }
+  .code-ref{color:var(--accent); font-weight:700;}
+  .col-diagram{margin:6px 0 18px; padding:14px; border:1px dashed var(--blue-line); text-align:center;}
+  .col-diagram svg{max-width:230px; width:100%; height:auto;}
+  .col-diagram .caption{
+    margin-top:8px; font-size:0.68rem; letter-spacing:0.5px; color:#a8c2de; line-height:1.5;
+  }
+  .col-diagram .caption b{color:var(--accent); font-weight:700;}
+  .diagrams-row{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .diagrams-row .col-diagram svg{max-width:100%;}
+  @media (max-width:520px){.diagrams-row{grid-template-columns:1fr;}}
+  .live-calc{
+    font-size:0.72rem; color:var(--accent); letter-spacing:0.3px; margin:-6px 0 12px;
+    padding:6px 10px; border:1px dashed var(--blue-line); background:rgba(232,163,61,0.06);
+  }
+  .live-calc b{color:var(--paper);}
+  .subgroup-label{
+    font-size:0.66rem; letter-spacing:1.5px; text-transform:uppercase; color:#7fa1c7;
+    margin:2px 0 8px;
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="title-block">
+    <div>
+      <h1>RC Column Design Calculator</h1>
+      <div class="sub">Short / Slender Tied or Spiral Column &middot; US Customary Units &middot; BNBC / ACI 318 Basis</div>
+    </div>
+    <div class="stamp">
+      DRAWING NO. CD-001<br>
+      UNITS: ft / in / kip / psi<br>
+      REF: BNBC 2020 Part 6, Ch. 8 &amp; 10
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    ⚠ This tool gives preliminary strength design (USD) results for axial + uniaxial bending using ACI 318
+    provisions as adopted by BNBC 2020 Part 6 (Reinforced Concrete Structures). Axial load is built up from just
+    two full column-to-column spans (tributary area = (S₁/2)×(S₂/2), beam length = S₁/2+S₂/2, per standard
+    interior-column tributary convention): slab self-weight, floor finish, beam self-weight
+    (auto from beam section), optional wall load, and live load, accumulated over the number of stories above the
+    column, factored per §5.3.1
+    (1.2D + 1.6L). It assumes uniform floor-to-floor loads, no live-load reduction, and no lateral (wind/seismic)
+    load — enter uniaxial moment separately. It does not generate a full P-M interaction diagram or biaxial
+    check. Final column sizing, detailing, and construction drawings must be verified and sealed by a licensed
+    structural engineer.
+  </div>
+
+  <div class="grid-layout">
+
+    <!-- INPUT PANEL -->
+    <div class="panel">
+      <h2>Inputs</h2>
+
+      <div class="section-title">Column Type &amp; Geometry</div>
+      <div class="field">
+        <label>Lateral Reinforcement Type</label>
+        <select id="colType">
+          <option value="tied" selected>Tied Column</option>
+          <option value="spiral">Spiral Column</option>
+        </select>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Width, b <span class="unit">(in)</span></label>
+          <input type="number" id="width" value="16" min="1">
+        </div>
+        <div class="field">
+          <label>Depth, h <span class="unit">(in, bending direction)</span></label>
+          <input type="number" id="height" value="16" min="1">
+        </div>
+      </div>
+      <div class="field">
+        <label>Clear Cover to Tie <span class="unit">(in)</span></label>
+        <input type="number" id="cover" value="1.5" min="0.5" step="0.25">
+      </div>
+
+      <div class="section-title">Length &amp; Bracing</div>
+      <div class="row2">
+        <div class="field">
+          <label>Unsupported Length, L<sub>u</sub> <span class="unit">(ft)</span></label>
+          <input type="number" id="lu" value="10" min="1" step="0.5">
+        </div>
+        <div class="field">
+          <label>Bracing Condition</label>
+          <select id="bracing">
+            <option value="braced" selected>Braced</option>
+            <option value="unbraced">Unbraced (sway)</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Effective Length Factor, k</label>
+        <input type="number" id="kfactor" value="1.0" min="0.5" step="0.05">
+      </div>
+
+      <div class="section-title">① Two Full Spans — Tributary Area (auto)</div>
+      <div class="row2">
+        <div class="field">
+          <label>Full Span 1, S<sub>1</sub> <span class="unit">(ft, X-direction, col-to-col)</span></label>
+          <input type="number" id="span1" value="20" min="0" step="0.5">
+        </div>
+        <div class="field">
+          <label>Full Span 2, S<sub>2</sub> <span class="unit">(ft, Y-direction, col-to-col)</span></label>
+          <input type="number" id="span2" value="20" min="0" step="0.5">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Slab Thickness, t <span class="unit">(in)</span></label>
+          <input type="number" id="slabThk" value="6" min="0" step="0.5">
+        </div>
+        <div class="field">
+          <label>Unit Weight, &gamma;<sub>c</sub> <span class="unit">(pcf)</span></label>
+          <input type="number" id="unitWt" value="150" min="0" step="5">
+        </div>
+      </div>
+      <div class="live-calc" id="taLive">TA = (S&#8321;/2)&times;(S&#8322;/2) = <b>100.0 ft&sup2;</b> &middot; Beam trib. length = S&#8321;/2+S&#8322;/2 = <b>20.0 ft</b> &middot; Slab self wt = <b>75.0 psf</b></div>
+
+      <div class="section-title">② / ③ Floor Finish &amp; Live Load</div>
+      <div class="row2">
+        <div class="field">
+          <label>Floor Finish <span class="unit">(psf)</span></label>
+          <input type="number" id="floorFinish" value="25" min="0" step="1">
+        </div>
+        <div class="field">
+          <label>Live Load <span class="unit">(psf)</span></label>
+          <input type="number" id="liveLoad" value="40" min="0" step="5">
+        </div>
+      </div>
+
+      <div class="section-title">④ Beam Self Weight (auto from section)</div>
+      <div class="row2">
+        <div class="field">
+          <label>Beam Width, b<sub>w</sub> <span class="unit">(in)</span></label>
+          <input type="number" id="beamWidth" value="12" min="0" step="1">
+        </div>
+        <div class="field">
+          <label>Beam Depth, h<sub>b</sub> <span class="unit">(in)</span></label>
+          <input type="number" id="beamDepth" value="18" min="0" step="1">
+        </div>
+      </div>
+      <div class="live-calc" id="beamLive">Beam self weight = <b>225 plf</b> &times; (S&#8321;+S&#8322;) = <b>7.2 kip</b>/floor</div>
+
+      <div class="section-title">Wall Load (auto, tributary length = S&#8321;/2+S&#8322;/2)</div>
+      <div class="row2">
+        <div class="field">
+          <label>Wall Type</label>
+          <select id="wallType">
+            <option value="0">None</option>
+            <option value="125" selected>Brick (125 pcf)</option>
+            <option value="150">Concrete (150 pcf)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Wall Thickness <span class="unit">(in)</span></label>
+          <input type="number" id="wallThk" value="5" min="0" step="0.5">
+        </div>
+      </div>
+      <div class="field">
+        <label>Wall Height <span class="unit">(ft)</span></label>
+        <input type="number" id="wallHt" value="10" min="0" step="0.5">
+      </div>
+      <div class="live-calc" id="wallLive">Wall load = <b>0 plf</b> &times; 20.0 ft = <b>0.0 kip</b>/floor</div>
+
+      <div class="section-title">⑤ Column Self Weight &amp; ⑦ Number of Story</div>
+      <div class="row2">
+        <div class="field">
+          <label>Typical Story Height <span class="unit">(ft)</span></label>
+          <input type="number" id="storyHt" value="10" min="1" step="0.5">
+        </div>
+        <div class="field">
+          <label>Number of Stories, N <span class="unit">(above/incl. this column)</span></label>
+          <input type="number" id="numStory" value="5" min="1" step="1">
+        </div>
+      </div>
+
+      <div class="section-title">Design Moment</div>
+      <div class="field">
+        <label>Moment, M<sub>u</sub> <span class="unit">(kip&middot;ft, uniaxial — from frame analysis / wind / seismic)</span></label>
+        <input type="number" id="mu" value="40" min="0">
+      </div>
+
+      <div class="section-title">Materials</div>
+      <div class="row2">
+        <div class="field">
+          <label>f'<sub>c</sub> <span class="unit">(psi)</span></label>
+          <input type="number" id="fc" value="4000" min="2000" step="500">
+        </div>
+        <div class="field">
+          <label>f<sub>y</sub> <span class="unit">(psi)</span></label>
+          <input type="number" id="fy" value="60000" min="40000" step="1000">
+        </div>
+      </div>
+
+      <div class="section-title">Reinforcement</div>
+      <div class="row2">
+        <div class="field">
+          <label>Longitudinal Bar Size</label>
+          <select id="mainBar">
+            <option value="4">#4</option>
+            <option value="5">#5</option>
+            <option value="6">#6</option>
+            <option value="7">#7</option>
+            <option value="8" selected>#8</option>
+            <option value="9">#9</option>
+            <option value="10">#10</option>
+            <option value="11">#11</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Number of Bars <span class="unit">(&ge;4 tied / &ge;6 spiral)</span></label>
+          <input type="number" id="nBars" value="8" min="4" step="1">
+        </div>
+      </div>
+
+      <button class="calc" id="calcBtn">Design Column &rarr;</button>
+    </div>
+
+    <!-- OUTPUT PANEL -->
+    <div class="panel">
+      <h2>Design Results</h2>
+
+      <div class="diagrams-row">
+        <div class="col-diagram">
+          <div id="colDiagramContainer"></div>
+          <div class="caption" id="colDiagramCaption"></div>
+        </div>
+        <div class="col-diagram">
+          <div id="colElevContainer"></div>
+          <div class="caption" id="colElevCaption"></div>
+        </div>
+      </div>
+
+      <div id="placeholder" class="placeholder">
+        Enter geometry, load takedown items, materials, and reinforcement, then click<br>
+        Design Column to see accumulated axial load, capacity, slenderness, and tie detailing results.
+      </div>
+
+      <div class="results" id="results">
+
+        <div class="section-title">Load Takedown — One Story</div>
+        <div class="result-row"><span class="label">Tributary Area, TA = (S<sub>1</sub>/2)&times;(S<sub>2</sub>/2)</span><span class="value" id="rTA">-</span></div>
+        <div class="result-row"><span class="label">Slab Self Weight</span><span class="value" id="rSlabSW">-</span></div>
+        <div class="result-row"><span class="label">Floor Finish</span><span class="value" id="rFF">-</span></div>
+        <div class="result-row"><span class="label">Beam Load (auto)</span><span class="value" id="rBeamSW">-</span></div>
+        <div class="result-row"><span class="label">Column Self Weight</span><span class="value" id="rColSW1">-</span></div>
+        <div class="result-row"><span class="label">Wall Load (auto)</span><span class="value" id="rWallSW">-</span></div>
+        <div class="result-row"><span class="label">Live Load</span><span class="value" id="rLL1">-</span></div>
+        <div class="result-row"><span class="label">DL/story = slab+finish+beam+column+wall</span><span class="value" id="rDLperStory">-</span></div>
+
+        <div class="section-title">Load Takedown — Total (&times; N Stories)</div>
+        <div class="result-row"><span class="label">Total Service Dead Load, &Sigma;DL = DL/story &times; N</span><span class="value" id="rDLtotal">-</span></div>
+        <div class="result-row"><span class="label">&nbsp;&nbsp;&middot; incl. Column Self Weight (all stories)</span><span class="value" id="rColSW">-</span></div>
+        <div class="result-row"><span class="label">Total Service Live Load, &Sigma;LL = LL/story &times; N</span><span class="value" id="rLLtotal">-</span></div>
+
+        <div class="section-title">Section &amp; Reinforcement</div>
+        <div class="result-row"><span class="label">Gross Area, A<sub>g</sub></span><span class="value" id="rAg">-</span></div>
+        <div class="result-row"><span class="label">Steel Area Provided, A<sub>st</sub></span><span class="value" id="rAst">-</span></div>
+        <div class="result-row"><span class="label">Reinforcement Ratio, &rho;<sub>g</sub> (limit 1%&ndash;8%)</span><span class="value" id="rRhoG">-</span></div>
+
+        <div class="section-title">Factored Design Forces</div>
+        <div class="result-row"><span class="label">Factored Axial Load, P<sub>u</sub> = 1.2&Sigma;DL+1.6&Sigma;LL</span><span class="value" id="rPu">-</span></div>
+        <div class="result-row"><span class="label">Minimum Design Moment, M<sub>2,min</sub></span><span class="value" id="rM2min">-</span></div>
+        <div class="result-row"><span class="label">Governing Design Moment, M<sub>u,design</sub></span><span class="value" id="rMuDesign">-</span></div>
+        <div class="result-row"><span class="label">Resulting Eccentricity, e = M<sub>u</sub>/P<sub>u</sub></span><span class="value" id="rEcc">-</span></div>
+
+        <div class="section-title">Axial Capacity Check</div>
+        <div class="result-row"><span class="label">Max. Axial Capacity, &phi;P<sub>n,max</sub></span><span class="value" id="rPhiPnMax">-</span></div>
+        <div class="result-row"><span class="label">Capacity Ratio, P<sub>u</sub> / &phi;P<sub>n,max</sub></span><span class="value" id="rUtil">-</span></div>
+
+        <div class="section-title">Slenderness Check</div>
+        <div class="result-row"><span class="label">Radius of Gyration, r &asymp; 0.3h</span><span class="value" id="rGyr">-</span></div>
+        <div class="result-row"><span class="label">Slenderness Ratio, kL<sub>u</sub>/r</span><span class="value" id="rSlender">-</span></div>
+        <div class="result-row"><span class="label">Classification</span><span class="value" id="rClass">-</span></div>
+
+        <div class="section-title">Tie Detailing — Ordinary Moment Frame (BNBC Part 6 Ch.8 / ACI 318 §18.3.4)</div>
+        <div class="result-row"><span class="label">Recommended Tie/Spiral Bar</span><span class="value" id="rTieBar">-</span></div>
+        <div class="result-row"><span class="label">End Zone Length, l<sub>o</sub> (from each joint face)</span><span class="value" id="rLo">-</span></div>
+        <div class="result-row"><span class="label">End Zone Tie Spacing, s<sub>o</sub> (within l<sub>o</sub>)</span><span class="value" id="rTieSpacing">-</span></div>
+        <div class="result-row"><span class="label">First Tie from Joint Face</span><span class="value" id="rFirstTie">-</span></div>
+        <div class="result-row"><span class="label">Middle Zone Tie Spacing, s</span><span class="value" id="rMidSpacing">-</span></div>
+        <div class="result-row"><span class="label">Min. Clear Bar Spacing Required</span><span class="value" id="rBarClear">-</span></div>
+
+        <div id="statusBanner" class="status-banner ok">PASS</div>
+      </div>
+
+      <div class="formula-note">
+        <span class="code-ref">Load takedown, one story:</span>
+        TA = (S<sub>1</sub>/2)&times;(S<sub>2</sub>/2); beam trib. length = S<sub>1</sub>/2+S<sub>2</sub>/2; slab self wt (psf) = &gamma;<sub>c</sub>&middot;t/12;
+        beam load = [(b<sub>w</sub>&middot;h<sub>b</sub>/144)&middot;&gamma;<sub>c</sub>]&middot;trib. length; wall load = [wall &gamma;&middot;(t<sub>wall</sub>/12)&middot;h<sub>wall</sub>]&middot;trib. length;
+        column self wt = (b&middot;h/144)&middot;&gamma;<sub>c</sub>&middot;story ht<br>
+        <span class="code-ref">Total load in one story:</span> DL/story = slab self wt + floor finish + beam load + column self wt + wall load; LL/story = LL(psf)&middot;TA<br>
+        <span class="code-ref">Total over N stories:</span> &Sigma;DL = DL/story &times; N; &Sigma;LL = LL/story &times; N<br>
+        <span class="code-ref">Load factoring (BNBC 6.2.3 / ACI 318-19 §5.3.1):</span> P<sub>u</sub> = 1.2&Sigma;DL + 1.6&Sigma;LL (gravity-only; add wind/seismic combos separately for M<sub>u</sub> if governing)<br>
+        <span class="code-ref">Axial capacity (BNBC 6.8 / ACI 318-19 §22.4.2):</span>
+        &phi;P<sub>n,max</sub> = &alpha;&middot;&phi;&middot;[0.85f'<sub>c</sub>(A<sub>g</sub>&minus;A<sub>st</sub>) + f<sub>y</sub>A<sub>st</sub>];
+        &alpha;=0.80, &phi;=0.65 (tied); &alpha;=0.85, &phi;=0.75 (spiral)<br>
+        <span class="code-ref">Reinforcement limits (§10.6.1.1):</span> 0.01 &le; A<sub>st</sub>/A<sub>g</sub> &le; 0.08; min. 4 bars (tied) / 6 bars (spiral)<br>
+        <span class="code-ref">Minimum moment (§6.6.4.5.4):</span> M<sub>2,min</sub> = P<sub>u</sub>(0.6 + 0.03h), h in inches<br>
+        <span class="code-ref">Slenderness (§6.2.5):</span> may be neglected if kL<sub>u</sub>/r &le; 34&minus;12(M1/M2) &le; 40 (braced) or &le; 22 (unbraced) — shown here as a simplified conservative check only<br>
+        <span class="code-ref">Tie spacing, middle zone (§25.7.2 / BNBC 8.1.9):</span> s &le; min(16d<sub>b,long</sub>, 48d<sub>b,tie</sub>, least column dimension)<br>
+        <span class="code-ref">Tie spacing, end zone — OMF columns (§18.3.4 / BNBC Part 6 Ch.8):</span>
+        over length l<sub>o</sub> = max(clear height/6, max cross-section dim., 18 in) from each joint face,
+        s<sub>o</sub> &le; min(8d<sub>b,long</sub>, 24d<sub>b,tie</sub>, 0.5&middot;least dim., 12 in); first tie &le; s<sub>o</sub>/2 from the joint face<br>
+        Tie bar: #3 min. for long. bars &le;#10, #4 min. for #11/#14/#18 or bundled bars<br>
+        This load takedown assumes uniform per-floor loads and no live-load reduction — a simplification for
+        preliminary sizing only. It does not replace a full P-M interaction diagram, biaxial check, or slenderness
+        moment magnification per §6.6.4 required for final design. The cross-section diagram above is a schematic
+        bar-layout illustration only.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const barDB = {
+    3:{db:0.375, Ab:0.11}, 4:{db:0.500, Ab:0.20}, 5:{db:0.625, Ab:0.31},
+    6:{db:0.750, Ab:0.44}, 7:{db:0.875, Ab:0.60}, 8:{db:1.000, Ab:0.79},
+    9:{db:1.128, Ab:1.00}, 10:{db:1.270, Ab:1.27}, 11:{db:1.410, Ab:1.56}
+  };
+
+  // OMF column tie zones per BNBC 2020 Part 6 Ch.8 (Ductility) / ACI 318-19 §18.3.4.
+  // lo = end-zone length from each joint face; so = tie spacing within lo;
+  // sMid = tie spacing outside lo (standard §25.7.2 spacing).
+  function computeTieZones(b, h, LuFt, mainSize, tieSize){
+    const mainBar = barDB[mainSize];
+    const tieBar  = barDB[tieSize];
+    const clearHtIn = LuFt * 12;
+    const lo = Math.max(clearHtIn/6, Math.max(b,h), 18);
+    const sEnd = Math.min(8*mainBar.db, 24*tieBar.db, 0.5*Math.min(b,h), 12);
+    const sMid = Math.min(16*mainBar.db, 48*tieBar.db, Math.min(b,h));
+    return {lo, sEnd, sMid};
+  }
+
+  /* ===================== DYNAMIC COLUMN SECTION DIAGRAM ===================== */
+
+  function generatePerimeterBars(w, h, n) {
+    n = Math.max(4, Math.round(n));
+    const corners = [[0,0],[w,0],[w,h],[0,h]];
+    if (n === 4) return corners;
+
+    let remaining = n - 4;
+    let a = Math.round((remaining * w / (w + h)) / 2) * 2;
+    a = Math.max(0, Math.min(remaining, a));
+    let c = remaining - a;
+    if ((a + c) < remaining) { if (w >= h) a++; else c++; }
+
+    const nxInt = a / 2;
+    const nyInt = c / 2;
+
+    function edgePts(x1,y1,x2,y2,count){
+      const pts=[];
+      for (let i=1;i<=count;i++){
+        const t=i/(count+1);
+        pts.push([x1+(x2-x1)*t, y1+(y2-y1)*t]);
+      }
+      return pts;
+    }
+
+    const pts=[];
+    pts.push([0,0]);
+    pts.push(...edgePts(0,0,w,0,nxInt));
+    pts.push([w,0]);
+    pts.push(...edgePts(w,0,w,h,nyInt));
+    pts.push([w,h]);
+    pts.push(...edgePts(w,h,0,h,nxInt));
+    pts.push([0,h]);
+    pts.push(...edgePts(0,h,0,0,nyInt));
+    return pts;
+  }
+
+  function generateCircularBars(radius, n) {
+    n = Math.max(3, Math.round(n));
+    const pts=[];
+    for (let i=0;i<n;i++){
+      const theta = (2*Math.PI*i/n) - Math.PI/2;
+      pts.push([radius*Math.cos(theta), radius*Math.sin(theta)]);
+    }
+    return pts;
+  }
+
+  function drawColumnSection(colType, b, h, cover, mainSize, nBars, tieSize) {
+    const mainBar = barDB[mainSize];
+    const tieBar  = barDB[tieSize];
+    const W=260, H=260, pad=42;
+    const drawMax = Math.min(W,H) - 2*pad;
+    let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="'Courier New',monospace">`;
+
+    if (colType === 'tied') {
+      const scale = drawMax / Math.max(b,h);
+      const bw=b*scale, bh=h*scale;
+      const ox=(W-bw)/2, oy=(H-bh)/2;
+
+      svg += `<rect x="${ox}" y="${oy}" width="${bw}" height="${bh}" fill="#0b2a4a" fill-opacity="0.35" stroke="#eef3f8" stroke-width="2.5"/>`;
+
+      const tieInset = (cover + tieBar.db/2) * scale;
+      const tw = Math.max(bw - 2*tieInset, 2), th = Math.max(bh - 2*tieInset, 2);
+      svg += `<rect x="${ox+tieInset}" y="${oy+tieInset}" width="${tw}" height="${th}" rx="${Math.min(6,4*scale)}" fill="none" stroke="#3d6ea5" stroke-width="1.6" stroke-dasharray="4 3"/>`;
+
+      const barInset = (cover + tieBar.db + mainBar.db/2) * scale;
+      const bw2 = Math.max(bw - 2*barInset, 0.001), bh2 = Math.max(bh - 2*barInset, 0.001);
+      const pts = generatePerimeterBars(bw2, bh2, nBars);
+      const barR = Math.max(mainBar.db*scale*0.9, 3.2);
+      pts.forEach(([x,y])=>{
+        svg += `<circle cx="${ox+barInset+x}" cy="${oy+barInset+y}" r="${barR}" fill="#e8a33d" stroke="#0b2a4a" stroke-width="0.8"/>`;
+      });
+
+      svg += `<text x="${ox+bw/2}" y="${oy-12}" font-size="11" fill="#eef3f8" text-anchor="middle">b = ${fmtNum(b)}"</text>`;
+      svg += `<line x1="${ox}" y1="${oy-6}" x2="${ox+bw}" y2="${oy-6}" stroke="#a8c2de" stroke-width="1"/>`;
+      svg += `<text x="${ox+bw+14}" y="${oy+bh/2}" font-size="11" fill="#eef3f8" text-anchor="middle" transform="rotate(90 ${ox+bw+14} ${oy+bh/2})">h = ${fmtNum(h)}"</text>`;
+      svg += `<line x1="${ox+bw+6}" y1="${oy}" x2="${ox+bw+6}" y2="${oy+bh}" stroke="#a8c2de" stroke-width="1"/>`;
+    } else {
+      const dia = Math.min(b,h);
+      const scale = drawMax / dia;
+      const R = dia/2*scale;
+      const cx=W/2, cy=H/2;
+
+      svg += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="#0b2a4a" fill-opacity="0.35" stroke="#eef3f8" stroke-width="2.5"/>`;
+
+      const tieR = Math.max(R - (cover + tieBar.db/2)*scale, 2);
+      svg += `<circle cx="${cx}" cy="${cy}" r="${tieR}" fill="none" stroke="#3d6ea5" stroke-width="1.6" stroke-dasharray="4 3"/>`;
+
+      const barCircleR = Math.max(R - (cover + tieBar.db + mainBar.db/2)*scale, 0.001);
+      const barR = Math.max(mainBar.db*scale*0.9, 3.2);
+      const pts = generateCircularBars(barCircleR, nBars);
+      pts.forEach(([x,y])=>{
+        svg += `<circle cx="${cx+x}" cy="${cy+y}" r="${barR}" fill="#e8a33d" stroke="#0b2a4a" stroke-width="0.8"/>`;
+      });
+
+      svg += `<text x="${cx}" y="${cy-R-14}" font-size="11" fill="#eef3f8" text-anchor="middle">dia = ${fmtNum(dia)}"</text>`;
+      if (b !== h) {
+        svg += `<text x="${cx}" y="${cy+R+22}" font-size="9.5" fill="#a8c2de" text-anchor="middle">(circular — using min(b,h); enter equal b &amp; h for a true spiral column)</text>`;
+      }
+    }
+    svg += '</svg>';
+    return svg;
+  }
+
+  function fmtNum(x){ return (Math.round(x*100)/100).toString(); }
+
+  // Schematic column elevation showing OMF tie spacing pattern: closely
+  // spaced ties over length lo at each joint face, widely spaced ties
+  // (spacing s) over the middle region. Not to true scale — proportioned
+  // for legibility.
+  function drawColumnElevation(b, h, mainSize, tieSize, lo, sEnd, sMid) {
+    const mainBar = barDB[mainSize];
+    const tieBar  = barDB[tieSize];
+    const W = 230, H = 340;
+    const colW = Math.min(70, Math.max(34, b * 2.2));
+    const cx = W/2;
+    const colTop = 46, colBot = H - 46;
+    const colH = colBot - colTop;
+    const x1 = cx - colW/2, x2 = cx + colW/2;
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="'Courier New',monospace">`;
+
+    // joint stubs (beam faces) top & bottom
+    svg += `<rect x="${cx-46}" y="${colTop-22}" width="92" height="22" fill="#12406e" stroke="#eef3f8" stroke-width="1.4"/>`;
+    svg += `<rect x="${cx-46}" y="${colBot}" width="92" height="22" fill="#12406e" stroke="#eef3f8" stroke-width="1.4"/>`;
+    svg += `<text x="${cx}" y="${colTop-8}" font-size="8.5" fill="#a8c2de" text-anchor="middle">joint face</text>`;
+    svg += `<text x="${cx}" y="${colBot+15}" font-size="8.5" fill="#a8c2de" text-anchor="middle">joint face</text>`;
+
+    // column outline
+    svg += `<rect x="${x1}" y="${colTop}" width="${colW}" height="${colH}" fill="#0b2a4a" fill-opacity="0.35" stroke="#eef3f8" stroke-width="2"/>`;
+
+    // longitudinal bars (near/far face, schematic)
+    svg += `<line x1="${x1+6}" y1="${colTop}" x2="${x1+6}" y2="${colBot}" stroke="#e8a33d" stroke-width="2.2"/>`;
+    svg += `<line x1="${x2-6}" y1="${colTop}" x2="${x2-6}" y2="${colBot}" stroke="#e8a33d" stroke-width="2.2"/>`;
+
+    // proportion end-zone height on the drawing (visually emphasized, capped)
+    const loFrac = Math.min(0.34, Math.max(0.16, lo / (lo*2 + sMid*3)));
+    const loPx = colH * loFrac;
+
+    function tieLine(y){
+      return `<line x1="${x1-4}" y1="${y}" x2="${x2+4}" y2="${y}" stroke="#3d6ea5" stroke-width="2"/>`;
+    }
+
+    // top end zone ties (closely spaced)
+    const nEndTop = 5;
+    for (let i=0;i<=nEndTop;i++){
+      svg += tieLine(colTop + (loPx*i/nEndTop));
+    }
+    // bottom end zone ties
+    const nEndBot = 5;
+    for (let i=0;i<=nEndBot;i++){
+      svg += tieLine(colBot - (loPx*i/nEndBot));
+    }
+    // middle zone ties (wider spacing)
+    const midTop = colTop + loPx, midBot = colBot - loPx;
+    const nMid = 3;
+    for (let i=1;i<nMid;i++){
+      svg += tieLine(midTop + (midBot-midTop)*i/nMid);
+    }
+
+    // lo bracket + label, top
+    svg += `<line x1="${x1-16}" y1="${colTop}" x2="${x1-16}" y2="${colTop+loPx}" stroke="#e8a33d" stroke-width="1"/>`;
+    svg += `<line x1="${x1-20}" y1="${colTop}" x2="${x1-12}" y2="${colTop}" stroke="#e8a33d" stroke-width="1"/>`;
+    svg += `<line x1="${x1-20}" y1="${colTop+loPx}" x2="${x1-12}" y2="${colTop+loPx}" stroke="#e8a33d" stroke-width="1"/>`;
+    svg += `<text x="${x1-24}" y="${colTop+loPx/2+3}" font-size="9" fill="#e8a33d" text-anchor="end">l&#8320;</text>`;
+
+    // lo bracket + label, bottom
+    svg += `<line x1="${x1-16}" y1="${colBot-loPx}" x2="${x1-16}" y2="${colBot}" stroke="#e8a33d" stroke-width="1"/>`;
+    svg += `<line x1="${x1-20}" y1="${colBot-loPx}" x2="${x1-12}" y2="${colBot-loPx}" stroke="#e8a33d" stroke-width="1"/>`;
+    svg += `<line x1="${x1-20}" y1="${colBot}" x2="${x1-12}" y2="${colBot}" stroke="#e8a33d" stroke-width="1"/>`;
+    svg += `<text x="${x1-24}" y="${colBot-loPx/2+3}" font-size="9" fill="#e8a33d" text-anchor="end">l&#8320;</text>`;
+
+    // spacing callouts
+    svg += `<text x="${x2+10}" y="${colTop+loPx*0.4}" font-size="8.5" fill="#eef3f8" text-anchor="start">s&#8320; = ${fmtNum(sEnd)}"</text>`;
+    svg += `<text x="${x2+10}" y="${(midTop+midBot)/2}" font-size="8.5" fill="#eef3f8" text-anchor="start">s = ${fmtNum(sMid)}"</text>`;
+    svg += `<text x="${x2+10}" y="${colBot-loPx*0.4}" font-size="8.5" fill="#eef3f8" text-anchor="start">s&#8320; = ${fmtNum(sEnd)}"</text>`;
+
+    svg += '</svg>';
+    return svg;
+  }
+
+  function updateColumnDiagram(){
+    const colType = document.getElementById('colType').value;
+    const b = parseFloat(document.getElementById('width').value);
+    const h = parseFloat(document.getElementById('height').value);
+    const cover = parseFloat(document.getElementById('cover').value);
+    const Lu = parseFloat(document.getElementById('lu').value);
+    const mainSize = parseInt(document.getElementById('mainBar').value);
+    const nBars = parseInt(document.getElementById('nBars').value);
+    const minBars = colType === 'tied' ? 4 : 6;
+
+    const container = document.getElementById('colDiagramContainer');
+    const caption = document.getElementById('colDiagramCaption');
+    const elevContainer = document.getElementById('colElevContainer');
+    const elevCaption = document.getElementById('colElevCaption');
+
+    if ([b,h,cover,Lu,mainSize,nBars].some(v=>isNaN(v)) || b<=0 || h<=0 || cover<0 || Lu<=0 || nBars < 4) {
+      container.innerHTML = '';
+      caption.innerHTML = 'Enter valid geometry &amp; reinforcement to preview the section.';
+      elevContainer.innerHTML = '';
+      elevCaption.innerHTML = '';
+      return;
+    }
+    const effNBars = Math.max(nBars, minBars);
+    const tieSize = mainSize >= 11 ? 4 : 3;
+
+    container.innerHTML = drawColumnSection(colType, b, h, cover, mainSize, effNBars, tieSize);
+    caption.innerHTML = `<b>${effNBars}-#${mainSize}</b> longitudinal &middot; <b>#${tieSize}</b> ${colType==='spiral'?'spiral':'ties'} &middot; ${b}"&times;${h}" ${colType==='spiral'?'(circular, dia='+Math.min(b,h)+'")':'section'}`;
+
+    const {lo, sEnd, sMid} = computeTieZones(b, h, Lu, mainSize, tieSize);
+    elevContainer.innerHTML = drawColumnElevation(b, h, mainSize, tieSize, lo, sEnd, sMid);
+    elevCaption.innerHTML = `OMF tie zones &middot; l&#8320;=<b>${fmtNum(lo)}"</b> &middot; s&#8320;=<b>${fmtNum(sEnd)}"</b> near joints &middot; s=<b>${fmtNum(sMid)}"</b> mid-height`;
+  }
+
+  /* ===================== LOAD TAKEDOWN (live preview) ===================== */
+  function updateLoadPreview(){
+    const S1 = parseFloat(document.getElementById('span1').value) || 0;
+    const S2 = parseFloat(document.getElementById('span2').value) || 0;
+    const t = parseFloat(document.getElementById('slabThk').value) || 0;
+    const gc = parseFloat(document.getElementById('unitWt').value) || 0;
+    const bw = parseFloat(document.getElementById('beamWidth').value) || 0;
+    const hb = parseFloat(document.getElementById('beamDepth').value) || 0;
+    const wallUnitWt = parseFloat(document.getElementById('wallType').value) || 0;
+    const wallThk = parseFloat(document.getElementById('wallThk').value) || 0;
+    const wallHt = parseFloat(document.getElementById('wallHt').value) || 0;
+
+    const TA = (S1/2) * (S2/2);
+    const beamTribLen = S1/2 + S2/2;
+    const slabPsf = gc * (t/12);
+    const beamPlf = (bw * hb / 144) * gc;
+    const beamKip = beamPlf * beamTribLen / 1000;
+    const wallPlf = wallUnitWt * (wallThk/12) * wallHt;
+    const wallKip = wallPlf * beamTribLen / 1000;
+
+    document.getElementById('taLive').innerHTML =
+      'TA = (S&#8321;/2)&times;(S&#8322;/2) = <b>' + TA.toFixed(1) + ' ft&sup2;</b> &middot; Beam trib. length = S&#8321;/2+S&#8322;/2 = <b>' +
+      beamTribLen.toFixed(1) + ' ft</b> &middot; Slab self wt = <b>' + slabPsf.toFixed(1) + ' psf</b>';
+    document.getElementById('beamLive').innerHTML =
+      'Beam self weight = <b>' + beamPlf.toFixed(0) + ' plf</b> &times; ' + beamTribLen.toFixed(1) + ' ft = <b>' + beamKip.toFixed(1) + ' kip</b>/floor';
+    document.getElementById('wallLive').innerHTML =
+      'Wall load = <b>' + wallPlf.toFixed(0) + ' plf</b> &times; ' + beamTribLen.toFixed(1) + ' ft = <b>' + wallKip.toFixed(1) + ' kip</b>/floor';
+  }
+
+  document.getElementById('bracing').addEventListener('change', function(){
+    document.getElementById('kfactor').value = this.value === 'braced' ? 1.0 : 1.2;
+  });
+
+  ['colType','width','height','cover','lu','mainBar','nBars'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', updateColumnDiagram);
+    document.getElementById(id).addEventListener('change', updateColumnDiagram);
+  });
+
+  ['span1','span2','slabThk','unitWt','beamWidth','beamDepth','wallType','wallThk','wallHt'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', updateLoadPreview);
+    document.getElementById(id).addEventListener('change', updateLoadPreview);
+  });
+
+  document.getElementById('calcBtn').addEventListener('click', () => {
+    const colType = document.getElementById('colType').value;
+    const b = parseFloat(document.getElementById('width').value);
+    const h = parseFloat(document.getElementById('height').value);
+    const cover = parseFloat(document.getElementById('cover').value);
+    const Lu = parseFloat(document.getElementById('lu').value);
+    const bracing = document.getElementById('bracing').value;
+    const k = parseFloat(document.getElementById('kfactor').value);
+
+    const S1 = parseFloat(document.getElementById('span1').value);
+    const S2 = parseFloat(document.getElementById('span2').value);
+    const slabThk = parseFloat(document.getElementById('slabThk').value);
+    const unitWt = parseFloat(document.getElementById('unitWt').value);
+    const floorFinish = parseFloat(document.getElementById('floorFinish').value);
+    const liveLoad = parseFloat(document.getElementById('liveLoad').value);
+    const beamWidth = parseFloat(document.getElementById('beamWidth').value);
+    const beamDepth = parseFloat(document.getElementById('beamDepth').value);
+    const wallUnitWt = parseFloat(document.getElementById('wallType').value);
+    const wallThk = parseFloat(document.getElementById('wallThk').value);
+    const wallHt = parseFloat(document.getElementById('wallHt').value);
+    const storyHt = parseFloat(document.getElementById('storyHt').value);
+    const numStory = parseFloat(document.getElementById('numStory').value);
+
+    const Mu = parseFloat(document.getElementById('mu').value);
+    const fc = parseFloat(document.getElementById('fc').value);
+    const fy = parseFloat(document.getElementById('fy').value);
+    const mainSize = parseInt(document.getElementById('mainBar').value);
+    const nBars = parseInt(document.getElementById('nBars').value);
+
+    const vals = [b,h,cover,Lu,k,Mu,fc,fy,nBars,S1,S2,slabThk,unitWt,floorFinish,liveLoad,beamWidth,beamDepth,wallUnitWt,wallThk,wallHt,storyHt,numStory];
+    if (vals.some(v => isNaN(v) || v < 0) || b<=0 || h<=0 || Lu<=0 || fc<=0 || fy<=0 || nBars < 4 || storyHt<=0 || numStory<1) {
+      alert('Please enter valid values. Minimum 4 bars, story height > 0, and at least 1 story required.');
+      return;
+    }
+
+    const mainBar = barDB[mainSize];
+    const minBars = colType === 'tied' ? 4 : 6;
+    if (nBars < minBars) {
+      alert('Minimum ' + minBars + ' bars required for a ' + colType + ' column.');
+      return;
+    }
+
+    // --- ① Load Takedown (from two full spans, halved per tributary convention) ---
+    const TA = (S1/2) * (S2/2); // ft²
+    const beamTribLen = S1/2 + S2/2; // ft — beams framing into column, both directions
+    const slabPsf = unitWt * (slabThk/12); // psf
+    const slabSelfWtKip = slabPsf * TA / 1000; // kip/floor
+    const floorFinishKip = floorFinish * TA / 1000; // kip/floor
+    const liveLoadKip = liveLoad * TA / 1000; // kip/floor
+    const beamPlf = (beamWidth * beamDepth / 144) * unitWt; // plf, auto from beam section
+    const beamKip = beamPlf * beamTribLen / 1000; // kip/floor
+    const wallPlf = wallUnitWt * (wallThk/12) * wallHt; // plf, auto from wall type/thickness/height
+    const wallKip = wallPlf * beamTribLen / 1000; // kip/floor
+    const colSelfWtKip = (b * h / 144) * unitWt * storyHt / 1000; // kip/story
+
+    // --- Total load in one story = (slab + floor finish + beam + column + wall) ---
+    const DLperStory = slabSelfWtKip + floorFinishKip + beamKip + colSelfWtKip + wallKip; // kip
+    const LLperStory = liveLoadKip; // kip
+
+    const DLtotal = DLperStory * numStory; // kip, over N stories
+    const LLtotal = LLperStory * numStory; // kip
+    const colSelfWtTotal = colSelfWtKip * numStory;
+
+    // --- Factored axial load ---
+    const Pu = 1.2 * DLtotal + 1.6 * LLtotal; // kip
+
+    // --- Section & reinforcement ---
+    const Ag = b * h;
+    const Ast = nBars * mainBar.Ab;
+    const rhoG = Ast / Ag;
+    const rhoOk = rhoG >= 0.01 && rhoG <= 0.08;
+
+    // --- Axial capacity ---
+    const alpha = colType === 'tied' ? 0.80 : 0.85;
+    const phi = colType === 'tied' ? 0.65 : 0.75;
+    const Pn0 = (0.85 * fc * (Ag - Ast) + fy * Ast) / 1000; // kip
+    const phiPnMax = alpha * phi * Pn0; // kip
+    const util = Pu / phiPnMax;
+
+    // --- Minimum moment & eccentricity ---
+    const M2min = (Pu * (0.6 + 0.03 * h)) / 12; // kip-ft
+    const MuDesign = Math.max(Mu, M2min);
+    const ecc = Pu > 0 ? (MuDesign * 12) / Pu : 0; // in
+
+    // --- Slenderness ---
+    const r = 0.3 * h; // in
+    const klr = (k * Lu * 12) / r;
+    const limit = bracing === 'braced' ? 40 : 22;
+    const isSlender = klr > limit;
+
+    // --- Tie detailing — Ordinary Moment Frame (BNBC Ch.8 / ACI 318 §18.3.4) ---
+    const tieSize = mainSize >= 11 ? 4 : 3;
+    const {lo, sEnd, sMid} = computeTieZones(b, h, Lu, mainSize, tieSize);
+    const barClearMin = Math.max(1.5 * mainBar.db, 1.5);
+
+    // --- Render: load takedown ---
+    document.getElementById('rTA').innerHTML = TA.toFixed(1) + '<span class="u">ft&sup2;</span>';
+    document.getElementById('rSlabSW').innerHTML = slabSelfWtKip.toFixed(1) + '<span class="u">kip/story</span>';
+    document.getElementById('rFF').innerHTML = floorFinishKip.toFixed(1) + '<span class="u">kip/story</span>';
+    document.getElementById('rBeamSW').innerHTML = beamPlf.toFixed(0) + '<span class="u">plf</span> &times; ' + beamTribLen.toFixed(1) + 'ft = ' + beamKip.toFixed(1) + '<span class="u">kip/story</span>';
+    document.getElementById('rColSW1').innerHTML = colSelfWtKip.toFixed(1) + '<span class="u">kip/story</span>';
+    document.getElementById('rWallSW').innerHTML = wallPlf.toFixed(0) + '<span class="u">plf</span> &times; ' + beamTribLen.toFixed(1) + 'ft = ' + wallKip.toFixed(1) + '<span class="u">kip/story</span>';
+    document.getElementById('rLL1').innerHTML = liveLoadKip.toFixed(1) + '<span class="u">kip/story</span>';
+    document.getElementById('rDLperStory').innerHTML = DLperStory.toFixed(1) + '<span class="u">kip/story</span>';
+    document.getElementById('rDLtotal').innerHTML = DLperStory.toFixed(1) + ' &times; ' + numStory + ' = ' + DLtotal.toFixed(1) + '<span class="u">kip</span>';
+    document.getElementById('rColSW').innerHTML = colSelfWtTotal.toFixed(1) + '<span class="u">kip</span>';
+    document.getElementById('rLLtotal').innerHTML = LLperStory.toFixed(1) + ' &times; ' + numStory + ' = ' + LLtotal.toFixed(1) + '<span class="u">kip</span>';
+
+    // --- Render: section ---
+    document.getElementById('rAg').innerHTML = Ag.toFixed(0) + '<span class="u">in&sup2;</span>';
+    document.getElementById('rAst').innerHTML = Ast.toFixed(2) + '<span class="u">in&sup2;</span> (' + nBars + '&times;#' + mainSize + ')';
+    document.getElementById('rRhoG').innerHTML = (rhoG*100).toFixed(2) + '<span class="u">%</span>' + (rhoOk ? ' (OK)' : ' (OUT OF RANGE)');
+
+    document.getElementById('rPu').innerHTML = Pu.toFixed(1) + '<span class="u">kip</span>';
+    document.getElementById('rM2min').innerHTML = M2min.toFixed(1) + '<span class="u">kip&middot;ft</span>';
+    document.getElementById('rMuDesign').innerHTML = MuDesign.toFixed(1) + '<span class="u">kip&middot;ft</span>';
+    document.getElementById('rEcc').innerHTML = ecc.toFixed(2) + '<span class="u">in</span>';
+
+    document.getElementById('rPhiPnMax').innerHTML = phiPnMax.toFixed(1) + '<span class="u">kip</span>';
+    document.getElementById('rUtil').innerHTML = (util*100).toFixed(1) + '<span class="u">%</span>' + (util <= 1 ? ' (OK)' : ' (OVER CAPACITY)');
+
+    document.getElementById('rGyr').innerHTML = r.toFixed(2) + '<span class="u">in</span>';
+    document.getElementById('rSlender').innerHTML = klr.toFixed(1) + ' (limit &asymp; ' + limit + ')';
+    document.getElementById('rClass').innerHTML = isSlender ? 'SLENDER — moment magnification required' : 'SHORT — slenderness may be neglected';
+
+    document.getElementById('rTieBar').innerHTML = '#' + tieSize + (colType === 'spiral' ? ' (spiral, pitch per §25.7.3, tightened within l&#8320; per §18.3.4)' : '');
+    document.getElementById('rLo').innerHTML = lo.toFixed(1) + '<span class="u">in</span>';
+    document.getElementById('rTieSpacing').innerHTML = colType === 'tied' ? sEnd.toFixed(1) + '<span class="u">in o.c.</span>' : 'see spiral pitch equation';
+    document.getElementById('rFirstTie').innerHTML = (colType === 'tied' ? (sEnd/2).toFixed(1) : '-') + '<span class="u">in (max)</span>';
+    document.getElementById('rMidSpacing').innerHTML = colType === 'tied' ? sMid.toFixed(1) + '<span class="u">in o.c.</span>' : 'see spiral pitch equation';
+    document.getElementById('rBarClear').innerHTML = barClearMin.toFixed(2) + '<span class="u">in</span>';
+
+    // --- Overall status ---
+    const banner = document.getElementById('statusBanner');
+    let fails = [];
+    if (!rhoOk) fails.push('reinforcement ratio outside 1%–8% range');
+    if (util > 1) fails.push('axial demand exceeds capacity — enlarge section or add steel');
+    if (isSlender) fails.push('column is slender — magnified moments must be computed (§6.6.4)');
+    if (Mu > 0 && ecc > 0.4 * h) fails.push('large eccentricity — verify with full P-M interaction diagram, not axial-only check');
+
+    if (fails.length === 0) {
+      banner.className = 'status-banner ok';
+      banner.textContent = 'PASS — preliminary axial design satisfies BNBC/ACI 318 checks (short column basis)';
+    } else {
+      banner.className = 'status-banner warn';
+      banner.textContent = 'REVIEW NEEDED — ' + fails.join('; ');
+    }
+
+    updateColumnDiagram();
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('results').classList.add('show');
+  });
+
+  // initial renders using default input values
+  updateColumnDiagram();
+  updateLoadPreview();
+</script>
+
+</body>
+</html>

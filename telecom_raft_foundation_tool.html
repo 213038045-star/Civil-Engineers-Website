@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3-Legged Tower Raft Foundation — Design Sheet</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  :root{
+    --page-bg:#0b3d66;
+    --panel-bg:#ffffff;
+    --header-bg:#bdd6ee;
+    --border:#808080;
+    --border-soft:#c0c0c0;
+    --input:#ffff00;
+    --assumed:#92d050;
+    --output:#fce4d6;
+    --ink:#1a1a1a;
+    --sub:#4a4a4a;
+    --ok:#ff0000;
+    --fail:#ff0000;
+    --link:#215a8a;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--page-bg); color:var(--ink); font-family:'Inter',Arial,system-ui,sans-serif; font-size:13px;}
+  .wrap{max-width:1400px; margin:0 auto; padding:18px 18px 60px;}
+  h1{font-size:19px; margin:0 0 4px; font-weight:800; color:#ffffff;}
+  .subtitle{font-size:12px; color:#c9dcef; margin-bottom:16px;}
+
+  /* ---- Excel-like panel ---- */
+  .sheet{background:var(--panel-bg); border:1px solid var(--border); margin-bottom:14px;}
+  .sheet .bar{background:var(--header-bg); border-bottom:1px solid var(--border); padding:6px 10px; font-weight:700; font-size:12.5px; letter-spacing:0.2px;}
+  .rows{width:100%; border-collapse:collapse;}
+  .rows td{border:1px solid var(--border-soft); padding:5px 8px; vertical-align:middle; font-size:12.5px;}
+  .rows td.k{width:56%; color:var(--ink);}
+  .rows td.v{width:26%; text-align:center; font-weight:600;}
+  .rows td.u{width:18%; color:var(--sub); font-size:11.5px;}
+  .rows input, .rows select{
+    width:100%; border:none; background:transparent; text-align:center; font-weight:700;
+    font-family:'Inter',Arial,sans-serif; font-size:12.5px; color:var(--ink); padding:2px 2px;
+  }
+  .rows input:focus, .rows select:focus{outline:2px solid var(--link); outline-offset:-2px;}
+  td.cell-input{background:var(--input);}
+  td.cell-assumed{background:var(--assumed);}
+  td.cell-output{background:var(--output);}
+  .status{font-weight:800; color:var(--ok);}
+  .status.ok{color:var(--ok); background:none;}
+  .status.fail{color:var(--fail); background:#ffe1de; padding:1px 6px; border-radius:3px;}
+  .numfield.invalid input{outline:2px solid var(--fail); outline-offset:-2px;}
+
+  /* ---- top strip ---- */
+  .topgrid{display:grid; grid-template-columns: 1.6fr 1fr; gap:14px; margin-bottom:14px;}
+  @media (max-width:980px){ .topgrid{grid-template-columns:1fr;} }
+
+  /* ---- main two-column layout ---- */
+  .maingrid{display:grid; grid-template-columns: 1fr 1fr 300px; gap:14px; align-items:start;}
+  @media (max-width:1150px){ .maingrid{grid-template-columns:1fr 1fr;} }
+  @media (max-width:760px){ .maingrid{grid-template-columns:1fr;} }
+
+  /* ---- legend / status side panel ---- */
+  .legend-box{background:var(--panel-bg); border:1px solid var(--border); padding:10px;}
+  .legend-row{display:grid; grid-template-columns: 22px 1fr; gap:8px; align-items:center; margin-bottom:6px; font-size:12px;}
+  .swatch{width:20px; height:16px; border:1px solid var(--border);}
+  .status-list{margin-top:10px; border-top:1px solid var(--border-soft); padding-top:8px;}
+  .status-list .srow{display:flex; justify-content:space-between; padding:3px 0; font-size:12.5px;}
+  .status-list .srow b{font-weight:700;}
+
+  .mini-elev{margin-top:10px; border:1px solid var(--border); background:#f4f2fa; padding:6px;}
+  .mini-elev svg{width:100%; height:auto; display:block;}
+
+  .notes{background:var(--panel-bg); border:1px solid var(--border); padding:10px 12px; font-size:12px; color:var(--sub); line-height:1.6;}
+  .notes h3{font-size:12.5px; margin:0 0 6px; color:var(--ink); font-weight:800;}
+  .notes ol{margin:4px 0 0 18px; padding:0;}
+
+  /* ---- detailed section (kept from full engineering tool) ---- */
+  .detail-toggle{margin:22px 0 10px; display:flex; align-items:center; gap:10px;}
+  .detail-toggle button{background:var(--header-bg); border:1px solid var(--border); padding:8px 14px; font-weight:700; font-size:12.5px; cursor:pointer; border-radius:4px;}
+  .detail{display:none;}
+  .detail.show{display:block;}
+  .drawings{display:grid; grid-template-columns: 1.3fr 1fr; gap:14px; margin-bottom:14px; align-items:start;}
+  @media (max-width: 1000px){ .drawings{grid-template-columns:1fr;} }
+  .card{background:var(--panel-bg); border:1px solid var(--border); padding:10px;}
+  .card .label{font-size:11px; color:var(--sub); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; display:flex; justify-content:space-between;}
+  .card svg{width:100%; height:auto; display:block;}
+  .results{background:var(--panel-bg); border:1px solid var(--border); margin-bottom:14px;}
+  .results h3{margin:0; padding:8px 10px; font-size:12px; background:var(--header-bg); border-bottom:1px solid var(--border); font-weight:800;}
+  table.dt{width:100%; border-collapse:collapse; font-size:12px;}
+  table.dt th{text-align:left; font-size:10.5px; color:var(--sub); text-transform:uppercase; padding:7px 10px; border-bottom:1px solid var(--border-soft);}
+  table.dt td{padding:7px 10px; border-bottom:1px solid #e6e6e6;}
+  table.dt tr:last-child td{border-bottom:none;}
+  .badge{display:inline-block; padding:1px 8px; border-radius:10px; font-size:10px; font-weight:800;}
+  .badge.pass{background:rgba(26,122,52,0.12); color:var(--ok); border:1px solid rgba(26,122,52,0.35);}
+  .badge.fail{background:rgba(192,40,28,0.12); color:var(--fail); border:1px solid rgba(192,40,28,0.35);}
+  .footnote{font-size:10.5px; color:#777; margin-top:8px; border-top:1px dashed var(--border-soft); padding-top:8px;}
+  .warnbar{display:none; font-size:11px; color:var(--fail); margin:6px 0 0; padding:6px 8px; background:rgba(192,40,28,0.08); border:1px solid rgba(192,40,28,0.3); border-radius:4px;}
+  .warnbar.show{display:block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>3-Legged Tower Raft Foundation — Design Sheet</h1>
+  <div class="subtitle">Yellow = input · Green = assumed · Peach = output (calculated) — edit any yellow or green cell and every output updates live.</div>
+
+  <!-- ===== TOP STRIP: tower type / wind ===== -->
+  <div class="sheet">
+    <div class="bar">Tower &amp; Wind</div>
+    <table class="rows">
+      <tr>
+        <td class="k">Tower Type <span style="color:var(--sub); font-weight:400;">(selecting a type auto-fills the reaction loads below from the load table — switch to "Custom" to enter your own)</span></td>
+        <td class="v cell-input"><select id="towerType">
+          <optgroup label="KTBL (guyed) types">
+            <option value="KTBL_35_210_BW3.5">KTBL_35_210_BW3.5</option>
+            <option value="KTBL_35_210_BW4">KTBL_35_210_BW4</option>
+            <option value="KTBL_40_210_BW4.5">KTBL_40_210_BW4.5</option>
+            <option value="KTBL_35_260_BW4">KTBL_35_260_BW4</option>
+            <option value="KTBL_40_260_BW4.5">KTBL_40_260_BW4.5</option>
+          </optgroup>
+          <optgroup label="STL (self-supporting) types">
+            <option value="STL_35_210_18_EPA">STL_35_210_18_EPA</option>
+            <option value="STL_32_210">STL_32_210</option>
+            <option value="STL_32_260">STL_32_260</option>
+            <option value="STL_35_210" selected>STL_35_210</option>
+            <option value="STL_35_210_LA">STL_35_210_LA</option>
+            <option value="STL_35_260">STL_35_260</option>
+            <option value="STL_40_210">STL_40_210</option>
+            <option value="STL_40_210_LA">STL_40_210_LA</option>
+            <option value="STL_40_260">STL_40_260</option>
+            <option value="STL_42_210">STL_42_210</option>
+            <option value="STL_42_210_LA">STL_42_210_LA</option>
+            <option value="STL_42_260">STL_42_260</option>
+            <option value="STL_35_185">STL_35_185</option>
+          </optgroup>
+          <option value="Custom">Custom</option>
+        </select></td>
+        <td class="u">—</td>
+      </tr>
+      <tr>
+        <td class="k">Design wind speed</td>
+        <td class="v cell-input"><div class="numfield" id="wrap_designWind"><input type="number" id="designWind" value="210"></div></td>
+        <td class="u">km/h</td>
+      </tr>
+      <tr>
+        <td class="k">Actual site wind</td>
+        <td class="v cell-input"><div class="numfield" id="wrap_actualWind"><input type="number" id="actualWind" value="185"></div></td>
+        <td class="u">km/h</td>
+      </tr>
+    </table>
+    <div class="warnbar" id="windWarn" style="margin:0 10px 8px;">Enter a valid, non-zero wind speed — using last valid value until you do.</div>
+  </div>
+
+  <!-- ===== MAIN 3-COLUMN GRID ===== -->
+  <div class="maingrid">
+
+    <!-- LEFT COLUMN -->
+    <div>
+      <div class="sheet">
+        <div class="bar">Soil Properties</div>
+        <table class="rows">
+          <tr><td class="k">Soil Type at Foundation Base</td>
+            <td class="v cell-input"><select id="soilType"><option value="SAND">SAND</option><option value="CLAY" selected>CLAY</option></select></td>
+            <td class="u">—</td></tr>
+          <tr><td class="k">SPT at foundation depth, N</td>
+            <td class="v cell-input"><div class="numfield"><input type="number" id="N" value="5"></div></td>
+            <td class="u">blows/ft</td></tr>
+          <tr><td class="k">Allowable bearing capacity of soil, Qa</td>
+            <td class="v cell-output" id="out_qall">—</td>
+            <td class="u">kN/m²</td></tr>
+          <tr><td class="k">Allow. settlement basis</td>
+            <td class="v cell-input"><div class="numfield"><input type="number" id="allowSettlement" value="75"></div></td>
+            <td class="u">mm</td></tr>
+          <tr><td class="k">γ soil (submerged)</td>
+            <td class="v cell-input"><div class="numfield"><input type="number" id="gammaSoilSub" value="8.2" step="0.1"></div></td>
+            <td class="u">kN/m³</td></tr>
+          <tr><td class="k">γ concrete (submerged)</td>
+            <td class="v cell-input"><div class="numfield"><input type="number" id="gammaConcSub" value="14.2" step="0.1"></div></td>
+            <td class="u">kN/m³</td></tr>
+        </table>
+      </div>
+
+      <div class="sheet">
+        <div class="bar">Materials Data</div>
+        <table class="rows">
+          <tr><td class="k">Yield of steel, fy</td>
+            <td class="v cell-assumed"><div class="numfield"><input type="number" id="fy" value="500"></div></td>
+            <td class="u">MPa</td></tr>
+          <tr><td class="k">Concrete strength, f'c</td>
+            <td class="v cell-input"><div class="numfield"><input type="number" id="fc" value="21"></div></td>
+            <td class="u">MPa</td></tr>
+          <tr><td class="k">Pad bar dia</td>
+            <td class="v cell-input"><div class="numfield"><input type="number" id="padBarDia" value="16"></div></td>
+            <td class="u">mm</td></tr>
+          <tr><td class="k">Pedestal bar dia</td>
+            <td class="v cell-input"><div class="numfield"><input type="number" id="pedBarDia" value="16"></div></td>
+            <td class="u">mm</td></tr>
+          <tr><td class="k">Tie bar dia</td>
+            <td class="v cell-input"><div class="numfield"><input type="number" id="tieBarDia" value="10"></div></td>
+            <td class="u">mm</td></tr>
+          <tr><td class="k">Load factor</td>
+            <td class="v cell-assumed"><div class="numfield"><input type="number" id="loadFactor" value="1.6" step="0.1"></div></td>
+            <td class="u">—</td></tr>
+        </table>
+      </div>
+
+      <div class="sheet">
+        <div class="bar">Rebar (summary)</div>
+        <table class="rows">
+          <tr><td class="k">PAD (both directions)</td><td class="v cell-output" id="out_padRebar">—</td><td class="u">c/c</td></tr>
+          <tr><td class="k">Pedestal longitudinal</td><td class="v cell-output" id="out_pedRebar">—</td><td class="u">bars</td></tr>
+          <tr><td class="k">Pedestal tie</td><td class="v cell-output" id="out_tieRebar">—</td><td class="u">c/c</td></tr>
+        </table>
+      </div>
+
+      <div class="notes">
+        <h3>Notes</h3>
+        <ol>
+          <li>Confirm whether the foundation sits submerged; γ values above already assume submerged unit weights.</li>
+          <li>Scouring action of soil is not considered in this sheet — add extra depth or protection if it applies to your site.</li>
+          <li>Keep additional depth allowance for scouring / soil protection where relevant.</li>
+          <li>Include the tower base chair in the final detailing.</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- MIDDLE COLUMN -->
+    <div>
+      <div class="sheet">
+        <div class="bar">Geometry</div>
+        <table class="rows">
+          <tr><td class="k">Size of raft, L</td>
+            <td class="v cell-input"><div class="numfield"><input type="number" id="L" value="6" step="0.1"></div></td>
+            <td class="u">m</td></tr>
+          <tr><td class="k">Column-to-column, Wbase <span style="color:var(--sub); font-weight:400;">(triangle side, needed for the 3-leg plan)</span></td>
+            <td class="v cell-input"><div class="numfield"><input type="number" id="Wbase" value="4" step="0.1"></div></td>
+            <td class="u">m</td></tr>
+          <tr><td class="k">Width of pedestal</td>
+            <td class="v cell-input"><div class="numfield"><input type="number" id="dp_mm" value="700"></div></td>
+            <td class="u">mm</td></tr>
+          <tr><td class="k">Depth of foundation, Df</td>
+            <td class="v cell-input"><div class="numfield"><input type="number" id="Df" value="2" step="0.1"></div></td>
+            <td class="u">m</td></tr>
+          <tr><td class="k">Depth above ground, h</td>
+            <td class="v cell-input"><div class="numfield"><input type="number" id="h_mm" value="900"></div></td>
+            <td class="u">mm</td></tr>
+          <tr><td class="k">Thickness of pad, t</td>
+            <td class="v cell-input"><div class="numfield"><input type="number" id="t_mm" value="350"></div></td>
+            <td class="u">mm</td></tr>
+        </table>
+      </div>
+
+      <div class="sheet">
+        <div class="bar">Factor of Safety</div>
+        <table class="rows">
+          <tr><td class="k">Factor of Safety (Overturning)</td><td class="v cell-output"><span id="fs_over">—</span></td><td class="u"><span id="fs_over_s" class="status">—</span></td></tr>
+          <tr><td class="k">Factor of Safety (Punching)</td><td class="v cell-output"><span id="fs_punch">—</span></td><td class="u"><span id="fs_punch_s" class="status">—</span></td></tr>
+          <tr><td class="k">Factor of Safety (Bearing)</td><td class="v cell-output"><span id="fs_bear">—</span></td><td class="u"><span id="fs_bear_s" class="status">—</span></td></tr>
+          <tr><td class="k">Factor of Safety (Sliding)</td><td class="v cell-output"><span id="fs_slide">—</span></td><td class="u"><span id="fs_slide_s" class="status">—</span></td></tr>
+        </table>
+      </div>
+
+      <div class="sheet">
+        <div class="bar">Settlement</div>
+        <table class="rows">
+          <tr><td class="k">Settlement of foundation</td><td class="v cell-output"><span id="out_settlement">—</span></td><td class="u"><span id="out_settlement_s" class="status">—</span></td></tr>
+        </table>
+      </div>
+
+      <div class="sheet">
+        <div class="bar">Tower reactions — at pedestal (design wind)</div>
+        <table class="rows">
+          <tr><td class="k">Max. compression</td><td class="v cell-input"><div class="numfield"><input type="number" id="Cmax_d" value="481.25"></div></td><td class="u">kN</td></tr>
+          <tr><td class="k">Max. uplift</td><td class="v cell-input"><div class="numfield"><input type="number" id="Umax_d" value="406.25"></div></td><td class="u">kN</td></tr>
+          <tr><td class="k">Shear x</td><td class="v cell-input"><div class="numfield"><input type="number" id="Vx_p_d" value="25"></div></td><td class="u">kN</td></tr>
+          <tr><td class="k">Shear y</td><td class="v cell-input"><div class="numfield"><input type="number" id="Vy_p_d" value="40.625"></div></td><td class="u">kN</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: legend + status + mini elevation -->
+    <div>
+      <div class="legend-box">
+        <div class="legend-row"><div class="swatch" style="background:var(--input);"></div><div>= INPUT (type your value here)</div></div>
+        <div class="legend-row"><div class="swatch" style="background:var(--assumed);"></div><div>= Assumed (editable default)</div></div>
+        <div class="legend-row"><div class="swatch" style="background:var(--output);"></div><div>= OUTPUT (calculated)</div></div>
+
+        <div class="status-list">
+          <div class="srow"><span>Bearing</span><b id="st_bearing" class="status">—</b></div>
+          <div class="srow"><span>Punching</span><b id="st_punching" class="status">—</b></div>
+          <div class="srow"><span>Rebar Uplift</span><b id="st_uplift" class="status">—</b></div>
+          <div class="srow"><span>Rebar shearing</span><b id="st_shear" class="status">—</b></div>
+          <div class="srow"><span>Buckling</span><b id="st_buckling" class="status">—</b></div>
+        </div>
+
+        <div class="mini-elev">
+          <div id="svgElevMini"></div>
+        </div>
+      </div>
+
+      <div class="sheet" style="margin-top:14px;">
+        <div class="bar">Tower reactions — at centroid (design wind)</div>
+        <table class="rows">
+          <tr><td class="k">Mxo</td><td class="v cell-input"><div class="numfield"><input type="number" id="Mxo_d" value="1293.75"></div></td><td class="u">kN·m</td></tr>
+          <tr><td class="k">Myo</td><td class="v cell-input"><div class="numfield"><input type="number" id="Myo_d" value="812.5"></div></td><td class="u">kN·m</td></tr>
+          <tr><td class="k">Shear x</td><td class="v cell-input"><div class="numfield"><input type="number" id="Vx_c_d" value="65.625"></div></td><td class="u">kN</td></tr>
+          <tr><td class="k">Shear y</td><td class="v cell-input"><div class="numfield"><input type="number" id="Vy_c_d" value="40.625"></div></td><td class="u">kN</td></tr>
+          <tr><td class="k">Compression</td><td class="v cell-input"><div class="numfield"><input type="number" id="C_c_d" value="31.25"></div></td><td class="u">kN</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DETAILED ENGINEERING SECTION (kept from the full tool) ===== -->
+  <div class="detail-toggle">
+    <button id="toggleDetailBtn" type="button">Show full drawings &amp; detailed calc tables ▾</button>
+  </div>
+
+  <div class="detail" id="detailSection">
+    <div class="drawings">
+      <div class="card">
+        <div class="label"><span>Plan — raft, legs &amp; pad rebar</span><span id="planDims"></span></div>
+        <div id="svgPlan"></div>
+      </div>
+      <div class="card">
+        <div class="label"><span>Elevation — one leg</span><span id="elevDims"></span></div>
+        <div id="svgElev"></div>
+      </div>
+    </div>
+
+    <div class="results">
+      <h3>Global stability &amp; strength checks</h3>
+      <table class="dt">
+        <thead><tr><th>Check</th><th>Demand</th><th>Capacity</th><th>F.S. / ratio</th><th>Status</th></tr></thead>
+        <tbody id="globalBody"></tbody>
+      </table>
+    </div>
+
+    <div class="results">
+      <h3>Pad reinforcement</h3>
+      <table class="dt"><thead><tr><th>Quantity</th><th>Value</th></tr></thead><tbody id="padBody"></tbody></table>
+    </div>
+
+    <div class="results">
+      <h3>Pedestal reinforcement</h3>
+      <table class="dt"><thead><tr><th>Quantity</th><th>Value</th></tr></thead><tbody id="pedBody"></tbody></table>
+    </div>
+
+    <div class="notes">
+      <h3>Method &amp; assumptions</h3>
+      <ul style="margin:6px 0 10px 18px; padding:0;">
+        <li>Bearing capacity from SPT-N uses a settlement-based correlation (Terzaghi/Peck-type): Qa scaled by a depth factor Kd = min(1.33, 1+0.33·Df/L) and by your allowable settlement ÷ 25mm reference basis.</li>
+        <li>Overturning and bearing pressure checks combine both moment directions using a resultant/diagonal (0.707×L) lever-arm approach.</li>
+        <li>Sliding resistance combines a reduced friction term (55% mobilized φ) with an adhesion term from an SPT-correlated cohesion.</li>
+        <li>Pedestal bending credits passive soil pressure resistance (Rankine Kp) against the ground-level shear before sizing the main bars.</li>
+        <li>Column-to-column distance (Wbase) is taken as the side of an equilateral triangle (typical self-supporting 3-legged tower).</li>
+      </ul>
+      <div class="footnote">This reproduces the original workbook's calculation method as closely as the extracted formulas allow — it is not an independent code derivation. Verify against your own workbook for a real project and have the final design checked by a licensed engineer.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const TOWER_PRESETS = {
+  "KTBL_35_210_BW3.5": {Q:55, Hxc:100, Hyc:60, Mx:1065, My:1825, BW:3.5, U:790, C:675, Hxb:100, Hyb:60, Wind:210},
+  "KTBL_35_210_BW4":   {Q:50, Hxc:70,  Hyc:70, Mx:1295, My:1310, BW:4,   U:540, C:453, Hxb:59,  Hyb:59, Wind:210},
+  "KTBL_40_210_BW4.5": {Q:55, Hxc:75,  Hyc:50, Mx:1500, My:875,  BW:4.5, U:600, C:500, Hxb:25,  Hyb:50, Wind:210},
+  "KTBL_35_260_BW4":   {Q:55, Hxc:110, Hyc:110,Mx:2070, My:2000, BW:4,   U:745, C:860, Hxb:80,  Hyb:50, Wind:260},
+  "KTBL_40_260_BW4.5": {Q:70, Hxc:130, Hyc:130,Mx:2790, My:2770, BW:4.5, U:890, C:1030,Hxb:95,  Hyb:60, Wind:260},
+
+  "STL_35_210_18_EPA": {Q:44.58598726114649, Hxc:60.509554140127385, Hyc:101.9108280254777, Mx:1910.828025477707, My:1210.1910828025477, BW:4, U:579.6178343949044, C:668.7898089171974, Hxb:31.84713375796178, Hyb:57.324840764331206, Wind:210},
+  "STL_32_210":        {Q:31.25, Hxc:59.375,  Hyc:37.5,  Mx:1075,   My:681.25,  BW:4,   U:343.75, C:400,    Hxb:25,    Hyb:40.625, Wind:210},
+  "STL_32_260":        {Q:34.375,Hxc:93.75,   Hyc:50,    Mx:1737.5, My:1093.75, BW:4,   U:546.875,C:640.625,Hxb:37.5,  Hyb:65.625, Wind:260},
+  "STL_35_210":        {Q:31.25, Hxc:65.625,  Hyc:40.625,Mx:1293.75,My:812.5,   BW:4,   U:406.25, C:481.25, Hxb:25,    Hyb:40.625, Wind:210},
+  "STL_35_210_LA":     {Q:35,    Hxc:75,      Hyc:50,    Mx:1390,   My:870,     BW:4,   U:435,    C:515,    Hxb:30,    Hyb:50,     Wind:210},
+  "STL_35_260":        {Q:40.625,Hxc:109.375, Hyc:68.75, Mx:2112.5, My:1325,    BW:4,   U:662.5,  C:775,    Hxb:40.625,Hyb:68.75,  Wind:260},
+  "STL_40_210":        {Q:40,    Hxc:75,      Hyc:45,    Mx:1740,   My:1090,    BW:4.7, U:460,    C:545,    Hxb:30,    Hyb:50,     Wind:210},
+  "STL_40_210_LA":     {Q:45,    Hxc:85,      Hyc:50,    Mx:1835,   My:1145,    BW:4.7, U:475,    C:575,    Hxb:35,    Hyb:55,     Wind:210},
+  "STL_40_260":        {Q:50,    Hxc:130,     Hyc:85,    Mx:2855,   My:1775,    BW:4.7, U:745,    C:890,    Hxb:50,    Hyb:85,     Wind:260},
+  "STL_42_210":        {Q:40.625,Hxc:84.375,  Hyc:50,    Mx:1875,   My:1174.375,BW:4.7, U:487.5,  C:587.5,  Hxb:31.25, Hyb:53.125, Wind:210},
+  "STL_42_210_LA":     {Q:45,    Hxc:95,      Hyc:60,    Mx:2065,   My:1285,    BW:4.7, U:535,    C:645,    Hxb:35,    Hyb:60,     Wind:210},
+  "STL_42_260":        {Q:53.125,Hxc:137.5,   Hyc:87.5,  Mx:3075,   My:1912.5,  BW:4.7, U:800,    C:968.75, Hxb:50,    Hyb:87.5,   Wind:260},
+  "STL_35_185":        {Q:29,    Hxc:32,      Hyc:51,    Mx:1020,   My:510,     BW:4,   U:317,    C:380,    Hxb:19,    Hyb:32,     Wind:185}
+};
+
+const REBAR = {8:{a:50.3,w:0.395},10:{a:78.5,w:0.616},12:{a:113.1,w:0.888},14:{a:153.86,w:1.21},
+  16:{a:201.1,w:1.579},18:{a:254.34,w:2},20:{a:314.2,w:2.466},22:{a:380.3,w:2.985},
+  25:{a:490.9,w:3.854},28:{a:616,w:4.836},32:{a:804.2,w:6.313}};
+function barArea(dia){ if(REBAR[dia]) return REBAR[dia].a; return Math.PI/4*dia*dia; }
+function roundUp(num,dec){ const f=Math.pow(10,dec); return Math.ceil((num-1e-9)*f)/f; }
+function floorMult(num,mult){ return Math.floor(num/mult)*mult; }
+function ceilInt(num){ return Math.ceil(num-1e-9); }
+
+// NOTE: dp_mm, t_mm, h_mm are entered in millimetres (matching the reference
+// sheet) but the calc engine below works in metres internally, same as the
+// original tool. They're converted in readState() just before compute().
+const ids = ['fy','fc','padBarDia','pedBarDia','tieBarDia','loadFactor','soilType','N','allowSettlement',
+  'gammaSoilSub','gammaConcSub','L','Wbase','dp_mm','t_mm','Df','h_mm',
+  'Mxo_d','Myo_d','Vy_c_d','Vx_c_d','C_c_d','Cmax_d','Umax_d','Vy_p_d','Vx_p_d','designWind','actualWind'];
+const els = {}; ids.forEach(id=>{ els[id]=document.getElementById(id); });
+
+const lastValid = {};
+ids.forEach(id=>{
+  const el = els[id];
+  if(el.tagName!=='SELECT') lastValid[id] = parseFloat(el.value);
+});
+const NONZERO_FIELDS = new Set(['designWind','actualWind','L','fc']);
+
+function fmt(n,d=2){ if(n===null||n===undefined||isNaN(n)||!isFinite(n)) return '—'; return Number(n).toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:d}); }
+
+function applyTowerPreset(name){
+  const p = TOWER_PRESETS[name];
+  if(!p) return; // "Custom" — leave fields as they are
+  const map = {
+    Mxo_d: p.Mx, Myo_d: p.My,
+    Vx_c_d: p.Hxc, Vy_c_d: p.Hyc, C_c_d: p.Q,
+    Cmax_d: p.C, Umax_d: p.U,
+    Vx_p_d: p.Hxb, Vy_p_d: p.Hyb,
+    designWind: p.Wind, Wbase: p.BW
+  };
+  Object.keys(map).forEach(id=>{
+    const val = map[id];
+    els[id].value = val;
+    lastValid[id] = val;
+    const wrap = els[id].parentElement;
+    if(wrap) wrap.classList.remove('invalid');
+  });
+}
+
+function readState(){
+  const s = {};
+  ids.forEach(id=>{
+    const el = els[id];
+    if(el.tagName==='SELECT'){ s[id]=el.value; return; }
+    const raw = parseFloat(el.value);
+    const isValid = Number.isFinite(raw) && (!NONZERO_FIELDS.has(id) || raw>0);
+    const wrap = el.parentElement;
+    if(isValid){
+      lastValid[id] = raw;
+      if(wrap) wrap.classList.remove('invalid');
+    } else {
+      if(wrap) wrap.classList.add('invalid');
+    }
+    s[id] = lastValid[id];
+  });
+  // mm -> m conversions for geometry fields entered in mm
+  s.dp = s.dp_mm/1000;
+  s.t  = s.t_mm/1000;
+  s.h  = s.h_mm/1000;
+
+  const windWarn = document.getElementById('windWarn');
+  const windInvalid = !Number.isFinite(parseFloat(els.designWind.value)) || parseFloat(els.designWind.value)<=0 ||
+                       !Number.isFinite(parseFloat(els.actualWind.value)) || parseFloat(els.actualWind.value)<=0;
+  windWarn.classList.toggle('show', windInvalid);
+  return s;
+}
+
+function compute(s){
+  const factor = Math.pow(s.actualWind/s.designWind, 2);
+  const Mxo=s.Mxo_d*factor, Myo=s.Myo_d*factor, Vy_c=s.Vy_c_d*factor, Vx_c=s.Vx_c_d*factor, C_c=s.C_c_d*factor;
+  const Cmax=s.Cmax_d*factor, Umax=s.Umax_d*factor, Vy_p=s.Vy_p_d*factor, Vx_p=s.Vx_p_d*factor;
+
+  const L=s.L, Df=s.Df, t=s.t, h=s.h, dp=s.dp, N=s.N;
+  const Ap = dp*dp;
+  const phiDeg = 20+Math.sqrt(20*N);
+  const phiRad = phiDeg*Math.PI/180;
+  const cohesion = (N/16)*95.76;
+
+  const Kd = Math.min(1.33, 1+0.33*(Df/L));
+  const Qa1 = (N/0.05)*Kd;
+  const Qa2 = (N/0.08)*Math.pow((L+0.3)/L,2)*Kd;
+  const QaBase = (L>1.2)? Qa2 : Qa1;
+  const qall = QaBase*(s.allowSettlement/25);
+
+  const gammaSoil = s.gammaSoilSub, gammaConc = s.gammaConcSub;
+
+  const heightPedestal = Df+h-t;
+  const topWidth = roundUp(L+2*(Df-t)*Math.tan(phiRad), 3);
+  const volSoilPyramid = roundUp( ((L*L+topWidth*topWidth+L*topWidth)*(Df-t)/3) - 3*Ap*heightPedestal, 2);
+  const weightSoil = volSoilPyramid*gammaSoil;
+
+  const volPad = roundUp(L*L*t, 2);
+  const volEachColumn = roundUp(Ap*heightPedestal, 2);
+  const totalVolConcrete = volPad + 3*volEachColumn;
+  const weightConcrete = totalVolConcrete*gammaConc;
+
+  const bearingWeightConcrete = (3*Ap*h*gammaConc) + (3*Ap*(Df-t)+L*L*t)*(gammaConc-gammaSoil);
+
+  const Z = Math.pow(L,3)/6;
+  const momentArm = Df+h;
+  const MxBase = Mxo + Vy_c*momentArm;
+  const MyBase = Myo + Vx_c*momentArm;
+
+  const resistingForceUplift = weightSoil + bearingWeightConcrete;
+  const upliftFS = resistingForceUplift/Umax;
+
+  const Qbearing = bearingWeightConcrete + C_c;
+  const A2 = L*L;
+  const sigmaMax = Qbearing/A2 + (MxBase+MyBase)/Z;
+  const compressionLoadOnFooting = sigmaMax;
+  const bearingFS = qall/compressionLoadOnFooting;
+
+  const maxOverturnMoment = Math.sqrt(Mxo*Mxo+Myo*Myo) + Math.sqrt(Vx_c*Vx_c+Vy_c*Vy_c)*momentArm;
+  const resistingMoment = (weightSoil+weightConcrete)*(0.707*L);
+  const overturningFS = resistingMoment/maxOverturnMoment;
+
+  const vAllow = 0.75*0.33*Math.sqrt(s.fc);
+  const punchLoad = Math.max(Cmax,Umax);
+  const vPunch = punchLoad/(4*(dp+t-0.1)*(t-0.1))/1000;
+  const punchingFS = vAllow/vPunch;
+
+  const slidingResistance = Math.floor((bearingWeightConcrete+weightSoil)*Math.tan(0.01745329252*phiDeg*0.55) + L*0.55*cohesion);
+  const shearResultantCentroid = Math.sqrt(Vx_c*Vx_c+Vy_c*Vy_c);
+  const slidingFS = slidingResistance/shearResultantCentroid;
+
+  const sigma1 = s.loadFactor*(C_c+bearingWeightConcrete)/(L*L) + s.loadFactor*(MxBase+MyBase)/Z;
+  const sigma2 = s.loadFactor*(C_c+bearingWeightConcrete)/(L*L) + s.loadFactor*Math.abs(MxBase-MyBase)/Z;
+  const Lpad = L, Bpad = s.Wbase-dp, dpad = t-0.075;
+  const sigmaB = sigma2 + ((sigma1-sigma2)/Lpad)*((Lpad-Bpad)/2);
+  const sigmaA = sigma2 + ((sigma1-sigma2)/Lpad)*((Lpad+Bpad)/2);
+  const sigmaC = sigmaA-sigmaB;
+  const wuni = sigmaB, wtri = sigmaC;
+  const Mpad = (wtri*Bpad*Bpad/20) + (wuni*Bpad*Bpad/12);
+  const Mn = Mpad/0.9;
+  const term1 = 0.85*(s.fc/s.fy)*1000*( (dpad*1000) - Math.sqrt(Math.max(0,(dpad*1000)*(dpad*1000) - (2.35*Mn*1e6)/(1000*s.fc))) );
+  const term2 = (Mn*1e6)/(s.fy*0.75*t*1000);
+  const AsReqPad = Math.max(term1, term2);
+  const AsMinPad = 0.0018*1000*t*1000*(415/s.fy);
+  const AProvidedPad = Math.max(AsReqPad, AsMinPad);
+  const padArea = barArea(s.padBarDia);
+  const nosBarsPad = ceilInt((AProvidedPad*Lpad)/padArea);
+  const padSpacing = floorMult((Lpad*1000)/nosBarsPad, 5);
+
+  const AsReqUplift = s.loadFactor*Umax*1000/(s.fy*0.9);
+  const As1pct = 0.01*Ap*1e6;
+  const AsProvidedMain = Math.max(As1pct, AsReqUplift);
+  const pedArea = barArea(s.pedBarDia);
+  const nosBarUplift = ceilInt(AsProvidedMain/pedArea);
+  const upliftCapacity = Math.floor(AsProvidedMain*s.fy*0.001);
+
+  const I_sec = Math.pow(dp,4)/12;
+  const rmin = Math.sqrt(I_sec/Ap);
+  const kLr = 1*heightPedestal/rmin;
+
+  const Mbend = s.loadFactor*Math.max(Vy_p,Vx_p)*heightPedestal/0.9;
+  const b_mm = dp*1000, d_mm = b_mm-75;
+  const X = 0.85*s.fc*b_mm*d_mm;
+  const Y = 0.85*s.fc*b_mm*0.5;
+  const Kp = (1+Math.sin(phiRad))/(1-Math.sin(phiRad));
+  const passiveForce = s.loadFactor*0.5*Kp*gammaSoil*Df*dp*Df;
+  const passiveMoment = passiveForce*Df/3;
+  const resultantMoment = Mbend - passiveMoment;
+  const Mnmm = resultantMoment*1e6;
+  const disc = X*X-4*Y*Mnmm;
+  let root1=0, root2=0;
+  if(disc>=0){ root1=(X+Math.sqrt(disc))/(2*Y); root2=(X-Math.sqrt(disc))/(2*Y); }
+  const clamp = r => (r<0 || r>d_mm) ? 0 : r;
+  const aActual = Math.max(clamp(root1), clamp(root2));
+  const AsBend = (resultantMoment>0) ? (Mnmm)/(s.fy*(d_mm-aActual/2)) : 0;
+  const nosBoltPerFace = ceilInt(AsBend/pedArea);
+  const totalBolts = Math.max(0, 4*nosBoltPerFace-4);
+  const nosBarActual = Math.max(nosBarUplift, totalBolts);
+
+  const Vu = s.loadFactor*Math.sqrt(Vx_p*Vx_p+Vy_p*Vy_p);
+  const phiVc = 0.75*(Math.sqrt(s.fc)/6)*(dp*1000)*(dp-0.075);
+  const tieArea = barArea(s.tieBarDia);
+  const areaProvidedTie = 2*tieArea;
+  const spacingReqA = areaProvidedTie*s.fy/Math.sqrt(s.fc)/(dp*1000)/0.062;
+  const spacingReqB = areaProvidedTie*s.fy/0.35/(dp*1000);
+  const spacingReq = Math.max(spacingReqA, spacingReqB);
+  const minSpacingTie = Math.min(48*s.tieBarDia, 16*s.pedBarDia, dp*1000);
+  const maxSpacingTie = dp*1000*0.5;
+  const spacingProvidedTie = floorMult(Math.min(spacingReq,minSpacingTie,maxSpacingTie), 100);
+
+  const Esoil = (s.soilType==='SAND') ? 7000*Math.sqrt(N) : 320*(N+15);
+  const Be = Math.sqrt(4*L*L/Math.PI);
+  const IG=0.4, IF_=0.8, IE=0.8, mu=0.5;
+  const bearingLoad = compressionLoadOnFooting;
+  const elasticSettlementClay = 1000*(bearingLoad*Be*IG*IF_*IE*(1-mu*mu)/Esoil);
+  const allowSettlementClay = 3*elasticSettlementClay;
+  const terzaghi = (N>3) ? ((((0.722*bearingLoad)/(N-3))*Math.pow((2*L)/(L+0.3),2))/1.5) : null;
+  let meyerhof;
+  if(L<1.25) meyerhof = 1.6*bearingLoad/N;
+  else if(L>5) meyerhof = 2.8*bearingLoad/N;
+  else meyerhof = (2.8*bearingLoad/N)*Math.pow(L/(L+0.3),2);
+  const allowSettlementSand = (terzaghi!==null) ? Math.min(terzaghi, meyerhof) : meyerhof;
+  const actualSettlement = (s.soilType==='CLAY') ? allowSettlementClay : allowSettlementSand;
+
+  const R = s.Wbase/Math.sqrt(3);
+  const legs = [0,1,2].map(i=>{ const ang = Math.PI/2 + i*2*Math.PI/3; return {x:R*Math.cos(ang), y:-R*Math.sin(ang)}; });
+  let minEdge = Infinity;
+  legs.forEach(p=>{
+    const clearances = [ L/2-(p.x+dp/2), L/2+(p.x-dp/2), L/2-(p.y+dp/2), L/2+(p.y-dp/2) ];
+    minEdge = Math.min(minEdge, ...clearances);
+  });
+
+  return {factor,Mxo,Myo,Vy_c,Vx_c,C_c,Cmax,Umax,Vy_p,Vx_p,
+    phiDeg,cohesion,Kd,Qa1,Qa2,qall,heightPedestal,topWidth,volSoilPyramid,weightSoil,
+    volPad,volEachColumn,totalVolConcrete,weightConcrete,bearingWeightConcrete,Z,momentArm,MxBase,MyBase,
+    resistingForceUplift,upliftFS,sigmaMax,compressionLoadOnFooting,bearingFS,
+    maxOverturnMoment,resistingMoment,overturningFS,vAllow,punchLoad,vPunch,punchingFS,
+    slidingResistance,shearResultantCentroid,slidingFS,
+    sigma1,sigma2,Bpad,dpad,sigmaB,sigmaA,sigmaC,Mpad,Mn,AsReqPad,AsMinPad,AProvidedPad,nosBarsPad,padSpacing,
+    AsReqUplift,As1pct,AsProvidedMain,nosBarUplift,upliftCapacity,kLr,Mbend,passiveForce,passiveMoment,resultantMoment,
+    AsBend,nosBoltPerFace,totalBolts,nosBarActual,Vu,phiVc,areaProvidedTie,spacingReq,minSpacingTie,maxSpacingTie,spacingProvidedTie,
+    Esoil,Be,elasticSettlementClay,allowSettlementClay,terzaghi,meyerhof,allowSettlementSand,actualSettlement,
+    legs, minEdge, R};
+}
+
+function svg(tag,attrs,children){ const ns="http://www.w3.org/2000/svg"; const el=document.createElementNS(ns,tag); for(const k in attrs) el.setAttribute(k,attrs[k]); (children||[]).forEach(c=>el.appendChild(c)); return el; }
+function text(x,y,str,opts={}){ const t=svg('text',Object.assign({x,y,fill:opts.fill||'#4a4a4a','font-size':opts.size||11,'font-family':"Inter,Arial,sans-serif",'text-anchor':opts.anchor||'middle'},opts.attrs||{})); t.textContent=str; return t; }
+function line(x1,y1,x2,y2,opts={}){ return svg('line',Object.assign({x1,y1,x2,y2,stroke:opts.stroke||'#4a4a6a','stroke-width':opts.w||1.4},opts.attrs||{})); }
+function dimLine(x1,y1,x2,y2,label,offset,vertical){
+  const g=svg('g',{}); const dc='#4a4a6a'; g.appendChild(line(x1,y1,x2,y2,{stroke:dc,w:1})); const tick=5;
+  if(vertical){
+    g.appendChild(line(x1-tick,y1,x1+tick,y1,{stroke:dc,w:1})); g.appendChild(line(x2-tick,y2,x2+tick,y2,{stroke:dc,w:1}));
+    g.appendChild(text(x1+(offset||14),(y1+y2)/2,label,{size:10.5,anchor:'middle',attrs:{transform:`rotate(-90 ${x1+(offset||14)} ${(y1+y2)/2})`}}));
+  } else {
+    g.appendChild(line(x1,y1-tick,x1,y1+tick,{stroke:dc,w:1})); g.appendChild(line(x2,y2-tick,x2,y2+tick,{stroke:dc,w:1}));
+    g.appendChild(text((x1+x2)/2,y1+(offset||-8),label,{size:10.5}));
+  }
+  return g;
+}
+
+function drawPlan(s,c){
+  const container=document.getElementById('svgPlan'); container.innerHTML='';
+  const pad=56; const scale=Math.min(420/s.L,420/s.L);
+  const W=s.L*scale;
+  const vw=W+pad*2, vh=W+pad*2+30;
+  const root=svg('svg',{viewBox:`0 0 ${vw} ${vh}`,width:'100%'});
+  const ox=pad, oy=pad+18;
+  const toX=x=>ox+W/2+x*scale, toY=y=>oy+W/2+y*scale;
+
+  root.appendChild(svg('rect',{x:ox,y:oy,width:W,height:W,fill:'none',stroke:'#4a4a6a','stroke-width':2}));
+
+  const nBarsRaw = (s.L*1000)/c.padSpacing;
+  const nBars = Number.isFinite(nBarsRaw) ? Math.min(200, Math.max(2, Math.round(nBarsRaw))) : 20;
+  for(let i=0;i<=nBars;i++){
+    const p = ox + 6 + (W-12)*(i/nBars);
+    root.appendChild(line(p,oy+4,p,oy+W-4,{stroke:'#dbe2e8',w:0.8,attrs:{opacity:0.7}}));
+  }
+  for(let i=0;i<=nBars;i++){
+    const p = oy + 6 + (W-12)*(i/nBars);
+    root.appendChild(line(ox+4,p,ox+W-4,p,{stroke:'#dbe2e8',w:0.8,attrs:{opacity:0.7}}));
+  }
+
+  const pr = s.dp*scale;
+  c.legs.forEach((p,i)=>{
+    const px=toX(p.x), py=toY(p.y);
+    root.appendChild(svg('rect',{x:px-pr/2,y:py-pr/2,width:pr,height:pr,fill:'rgba(230,120,20,0.14)',stroke:'#c97a1e','stroke-width':2}));
+    root.appendChild(text(px,py+4,`L${i+1}`,{size:11,fill:'#a35a12',attrs:{'font-weight':'bold'}}));
+  });
+
+  const p1=c.legs[0], p2=c.legs[1];
+  const x1=toX(p1.x), y1=toY(p1.y), x2=toX(p2.x), y2=toY(p2.y);
+  const mx=(x1+x2)/2, my=(y1+y2)/2;
+  root.appendChild(line(x1,y1,x2,y2,{stroke:'#2f8f7a',w:1.4,attrs:{'stroke-dasharray':'5,3'}}));
+  const ang = Math.atan2(y2-y1,x2-x1)*180/Math.PI;
+  const angN = (ang>90||ang<-90)? ang+180 : ang;
+  root.appendChild(svg('text',{x:mx,y:my-6,fill:'#2f8f7a','font-size':11,'font-weight':600,'font-family':"Inter,Arial,sans-serif",'text-anchor':'middle',transform:`rotate(${angN} ${mx} ${my})`, },[document.createTextNode(`Wbase=${fmt(s.Wbase,2)} m`)]));
+
+  root.appendChild(dimLine(ox,oy+W+18,ox+W,oy+W+18,`L = ${fmt(s.L,2)} m`,-8,false));
+  root.appendChild(dimLine(ox+W+16,oy,ox+W+16,oy+W,`L = ${fmt(s.L,2)} m`,26,true));
+
+  container.appendChild(root);
+  document.getElementById('planDims').textContent = `edge dist. ≈ ${fmt(c.minEdge,2)} m`;
+}
+
+function drawElev(s,c,containerId,dimsId){
+  const container=document.getElementById(containerId); container.innerHTML='';
+  const pad=44; const scale= containerId==='svgElevMini' ? 55 : 90;
+  const hPx=s.h*scale, dfPx=s.Df*scale, tPx=s.t*scale, dpPx=s.dp*scale;
+  const stemW = dpPx*0.7;
+  const W = Math.max(dpPx*2.2, 130);
+  const totalH = hPx+dfPx+20;
+  const vw=W+pad*2, vh=totalH+pad*1.7;
+  const root=svg('svg',{viewBox:`0 0 ${vw} ${vh}`,width:'100%'});
+  const ox=pad, oy=pad*0.7;
+  const groundY = oy+hPx;
+
+  root.appendChild(line(ox-14,groundY,ox+W+14,groundY,{stroke:'#4a4a6a',w:1.6}));
+  for(let i=0;i<10;i++){
+    const gx = ox-10+i*(W+28)/9;
+    root.appendChild(line(gx,groundY,gx-8,groundY+8,{stroke:'#4a4a6a',w:0.8,attrs:{opacity:0.5}}));
+  }
+
+  root.appendChild(svg('rect',{x:ox+W/2-stemW/2,y:oy,width:stemW,height:hPx+dfPx-tPx,fill:'#dbe2e8',stroke:'#4a4a6a','stroke-width':1.6}));
+
+  const padW = Math.min(W, dpPx*3.6);
+  root.appendChild(svg('rect',{x:ox+W/2-padW/2,y:groundY+dfPx-tPx,width:padW,height:tPx,fill:'#8a7a63',stroke:'#4a4a6a','stroke-width':1.6}));
+
+  [-1,1].forEach(dir=>{
+    for(let i=0;i<5;i++){
+      const yy = groundY+ (dfPx-tPx)*(i/5);
+      const x1 = ox+W/2+dir*stemW/2;
+      root.appendChild(line(x1, yy, x1+dir*10, yy+10, {stroke:'#4a4a6a',w:0.7,attrs:{opacity:0.45}}));
+    }
+  });
+
+  root.appendChild(dimLine(ox-22,oy,ox-22,groundY,`h=${fmt(s.h,2)}`,-30,true));
+  root.appendChild(dimLine(ox-22,groundY,ox-22,groundY+dfPx,`Df=${fmt(s.Df,2)}`,-30,true));
+  root.appendChild(dimLine(ox+W+18,groundY+dfPx-tPx,ox+W+18,groundY+dfPx,`t=${fmt(s.t,2)}`,26,true));
+  root.appendChild(dimLine(ox,oy+totalH-4,ox+W,oy+totalH-4,`L=${fmt(s.L,2)}`,14,false));
+
+  container.appendChild(root);
+  if(dimsId){ document.getElementById(dimsId).textContent = `pedestal ht ≈ ${fmt(c.heightPedestal,2)} m`; }
+}
+
+function statusEl(el, ok){ el.textContent = ok ? 'OK' : 'FAIL'; el.className = 'status ' + (ok?'ok':'fail'); }
+
+function render(){
+  const s = readState();
+  const c = compute(s);
+  drawPlan(s,c);
+  drawElev(s,c,'svgElev','elevDims');
+  drawElev(s,c,'svgElevMini',null);
+
+  // ---- top summary sheet ----
+  document.getElementById('out_qall').textContent = fmt(c.qall,2);
+  document.getElementById('out_padRebar').textContent = `Ø${s.padBarDia}@${fmt(c.padSpacing,0)}mm`;
+  document.getElementById('out_pedRebar').textContent = `Ø${s.pedBarDia} nos.${c.nosBarActual}`;
+  document.getElementById('out_tieRebar').textContent = `Ø${s.tieBarDia}@${fmt(c.spacingProvidedTie,0)}mm`;
+
+  document.getElementById('fs_over').textContent = fmt(c.overturningFS,3);
+  statusEl(document.getElementById('fs_over_s'), c.overturningFS>1.5);
+  document.getElementById('fs_bear').textContent = fmt(c.bearingFS,3);
+  statusEl(document.getElementById('fs_bear_s'), c.bearingFS>2);
+  document.getElementById('fs_punch').textContent = fmt(c.punchingFS,3);
+  statusEl(document.getElementById('fs_punch_s'), c.punchingFS>1.6);
+  document.getElementById('fs_slide').textContent = fmt(c.slidingFS,3);
+  statusEl(document.getElementById('fs_slide_s'), c.slidingFS>1.5);
+
+  document.getElementById('out_settlement').textContent = fmt(c.actualSettlement,1)+' mm';
+  statusEl(document.getElementById('out_settlement_s'), c.actualSettlement<s.allowSettlement);
+
+  statusEl(document.getElementById('st_bearing'), c.bearingFS>2);
+  statusEl(document.getElementById('st_punching'), c.punchingFS>1.6);
+  statusEl(document.getElementById('st_uplift'), c.upliftCapacity>c.Umax);
+  statusEl(document.getElementById('st_shear'), c.phiVc>c.Vu);
+  statusEl(document.getElementById('st_buckling'), c.kLr<22);
+
+  // ---- detailed section (unchanged full tables) ----
+  let g='';
+  g += `<tr><td>Overturning</td><td>${fmt(c.maxOverturnMoment,1)} kN·m</td><td>${fmt(c.resistingMoment,1)} kN·m</td><td>${fmt(c.overturningFS,2)}</td><td><span class="badge ${c.overturningFS>1.5?'pass':'fail'}">${c.overturningFS>1.5?'PASS':'FAIL'}</span></td></tr>`;
+  g += `<tr><td>Bearing capacity</td><td>${fmt(c.compressionLoadOnFooting,2)} kN/m²</td><td>${fmt(c.qall,2)} kN/m²</td><td>${fmt(c.bearingFS,2)}</td><td><span class="badge ${c.bearingFS>2?'pass':'fail'}">${c.bearingFS>2?'PASS':'FAIL'}</span></td></tr>`;
+  g += `<tr><td>Punching shear</td><td>${fmt(c.vPunch,3)} MPa</td><td>${fmt(c.vAllow,3)} MPa</td><td>${fmt(c.punchingFS,2)}</td><td><span class="badge ${c.punchingFS>1.6?'pass':'fail'}">${c.punchingFS>1.6?'PASS':'FAIL'}</span></td></tr>`;
+  g += `<tr><td>Sliding</td><td>${fmt(c.shearResultantCentroid,2)} kN</td><td>${fmt(c.slidingResistance,2)} kN</td><td>${fmt(c.slidingFS,2)}</td><td><span class="badge ${c.slidingFS>1.5?'pass':'fail'}">${c.slidingFS>1.5?'PASS':'FAIL'}</span></td></tr>`;
+  g += `<tr><td>Uplift (soil+concrete weight)</td><td>${fmt(c.Umax,2)} kN</td><td>${fmt(c.resistingForceUplift,2)} kN</td><td>${fmt(c.upliftFS,2)}</td><td><span class="badge ${c.upliftFS>1.5?'pass':'fail'}">${c.upliftFS>1.5?'PASS':'FAIL'}</span></td></tr>`;
+  g += `<tr><td>Rebar uplift capacity</td><td>${fmt(c.Umax,2)} kN</td><td>${fmt(c.upliftCapacity,2)} kN</td><td>${fmt(c.upliftCapacity/c.Umax,2)}</td><td><span class="badge ${c.upliftCapacity>c.Umax?'pass':'fail'}">${c.upliftCapacity>c.Umax?'PASS':'FAIL'}</span></td></tr>`;
+  g += `<tr><td>Pedestal shear (ties)</td><td>${fmt(c.Vu,2)} kN</td><td>${fmt(c.phiVc,2)} kN</td><td>${fmt(c.phiVc/c.Vu,2)}</td><td><span class="badge ${c.phiVc>c.Vu?'pass':'fail'}">${c.phiVc>c.Vu?'PASS':'FAIL'}</span></td></tr>`;
+  g += `<tr><td>Pedestal buckling, kL/r</td><td>${fmt(c.kLr,2)}</td><td>22.00</td><td>${fmt(22/c.kLr,2)}</td><td><span class="badge ${c.kLr<22?'pass':'fail'}">${c.kLr<22?'PASS':'FAIL'}</span></td></tr>`;
+  g += `<tr><td>Settlement</td><td>${fmt(c.actualSettlement,2)} mm</td><td>${fmt(s.allowSettlement,2)} mm</td><td>${fmt(s.allowSettlement/c.actualSettlement,2)}</td><td><span class="badge ${c.actualSettlement<s.allowSettlement?'pass':'fail'}">${c.actualSettlement<s.allowSettlement?'PASS':'FAIL'}</span></td></tr>`;
+  g += `<tr><td>Raft sizing check</td><td>edge≈${fmt((s.L-s.Wbase-s.dp)/2,2)} m</td><td>≥${fmt(s.t/2,2)} m</td><td>${fmt(((s.L-s.Wbase-s.dp)/2)/(s.t/2),2)}</td><td><span class="badge ${((s.L-s.Wbase-s.dp)/2>=s.t/2)?'pass':'fail'}">${((s.L-s.Wbase-s.dp)/2>=s.t/2)?'PASS':'FAIL'}</span></td></tr>`;
+  document.getElementById('globalBody').innerHTML = g;
+
+  let p='';
+  p += `<tr><td>Bearing pressure, σ1 (comp.)</td><td>${fmt(c.sigma1,2)} kN/m²</td></tr>`;
+  p += `<tr><td>Bearing pressure, σ2 (uplift)</td><td>${fmt(c.sigma2,2)} kN/m²</td></tr>`;
+  p += `<tr><td>Design moment, Mpad</td><td>${fmt(c.Mpad,2)} kN·m/m</td></tr>`;
+  p += `<tr><td>As required</td><td>${fmt(c.AsReqPad,0)} mm²/m</td></tr>`;
+  p += `<tr><td>As minimum</td><td>${fmt(c.AsMinPad,0)} mm²/m</td></tr>`;
+  p += `<tr><td>As provided</td><td>${fmt(c.AProvidedPad,0)} mm²/m</td></tr>`;
+  p += `<tr><td><b>Pad rebar (both directions)</b></td><td><b>Ø${s.padBarDia}@${fmt(c.padSpacing,0)} mm c/c</b></td></tr>`;
+  document.getElementById('padBody').innerHTML = p;
+
+  let pd='';
+  pd += `<tr><td>As required (uplift)</td><td>${fmt(c.AsReqUplift,0)} mm²</td></tr>`;
+  pd += `<tr><td>As min. (1% of section)</td><td>${fmt(c.As1pct,0)} mm²</td></tr>`;
+  pd += `<tr><td>As provided</td><td>${fmt(c.AsProvidedMain,0)} mm²</td></tr>`;
+  pd += `<tr><td><b>Pedestal main bars</b></td><td><b>Ø${s.pedBarDia} nos. ${c.nosBarActual}</b></td></tr>`;
+  pd += `<tr><td>Uplift capacity provided</td><td>${fmt(c.upliftCapacity,0)} kN</td></tr>`;
+  pd += `<tr><td><b>Pedestal ties</b></td><td><b>Ø${s.tieBarDia}@${fmt(c.spacingProvidedTie,0)} mm c/c</b></td></tr>`;
+  document.getElementById('pedBody').innerHTML = pd;
+}
+
+Object.values(els).forEach(el=>{ el.addEventListener('input',render); el.addEventListener('change',render); });
+
+document.getElementById('towerType').addEventListener('change', (e)=>{
+  applyTowerPreset(e.target.value);
+  render();
+});
+
+document.getElementById('toggleDetailBtn').addEventListener('click', ()=>{
+  const d = document.getElementById('detailSection');
+  const btn = document.getElementById('toggleDetailBtn');
+  d.classList.toggle('show');
+  btn.textContent = d.classList.contains('show') ? 'Hide full drawings & detailed calc tables ▴' : 'Show full drawings & detailed calc tables ▾';
+});
+
+render();
+</script>
+</body>
+</html>

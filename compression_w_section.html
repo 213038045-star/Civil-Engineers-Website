@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Compression Member (Column) Design Calculator — AISC Chapter E</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:        #101c26;
+    --panel:     #142230;
+    --panel-2:   #0d1720;
+    --line:      #2b3f4f;
+    --line-lt:   #3a5266;
+    --amber:     #e2a13a;
+    --amber-dim: #7a5a26;
+    --text:      #e7edf3;
+    --text-dim:  #8fa3b5;
+    --text-mute: #5d7284;
+    --ok:        #6ec6a0;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--line) 1px, transparent 1px) 0 0/32px 32px,
+      linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0/32px 32px,
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    padding:28px 16px 60px;
+  }
+  .wrap{max-width:960px;margin:0 auto;background:rgba(16,28,38,0.55);}
+
+  .titleblock{
+    border:1px solid var(--line-lt);
+    background:var(--panel-2);
+    padding:18px 22px;
+    margin-bottom:20px;
+    position:relative;
+  }
+  .titleblock::before{
+    content:"";
+    position:absolute; top:6px; left:6px; right:6px; bottom:6px;
+    border:1px solid var(--line);
+    pointer-events:none;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    color:var(--amber);
+    text-transform:uppercase;
+  }
+  h1{
+    font-family:'Oswald',sans-serif;
+    font-weight:600;
+    font-size:26px;
+    letter-spacing:.02em;
+    margin:4px 0 6px;
+    color:var(--text);
+  }
+  .sub{color:var(--text-dim);font-size:13px;line-height:1.6;max-width:640px;}
+  .refline{
+    margin-top:10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--text-mute);
+    border-top:1px dashed var(--line);
+    padding-top:8px;
+  }
+
+  .grid{display:grid;grid-template-columns: 1fr 1fr;gap:18px;}
+  @media(max-width:720px){.grid{grid-template-columns:1fr;}}
+
+  .card{background:var(--panel);border:1px solid var(--line);padding:18px 20px;}
+  .card h2{
+    font-family:'Oswald',sans-serif;font-weight:500;font-size:14px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--amber);margin:0 0 14px;padding-bottom:8px;
+    border-bottom:1px solid var(--line);
+  }
+
+  label{display:block;font-size:12px;color:var(--text-dim);margin:12px 0 5px;}
+  label:first-of-type{margin-top:0;}
+  select, input[type=number]{
+    width:100%;background:var(--panel-2);border:1px solid var(--line-lt);color:var(--text);
+    font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px 10px;
+  }
+  select:focus, input:focus{outline:1px solid var(--amber);}
+  .hint{font-size:11px;color:var(--text-mute);margin-top:4px;line-height:1.5;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  @media(max-width:560px){.row3{grid-template-columns:1fr;}}
+
+  .result{background:var(--panel-2);border:1px solid var(--line-lt);padding:20px;}
+  .result .u-label{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;
+    color:var(--text-mute);text-transform:uppercase;
+  }
+  .u-value{
+    font-family:'Oswald',sans-serif;font-size:44px;font-weight:600;color:var(--amber);
+    line-height:1.1;margin:6px 0 10px;
+  }
+  .u-value span{font-size:18px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;}
+  .case-tag{
+    display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ok);
+    border:1px solid var(--ok);padding:2px 8px;margin-bottom:10px;
+  }
+  .formula{
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--text-dim);
+    background:var(--bg);border:1px solid var(--line);padding:10px 12px;margin-top:10px;
+    white-space:pre-wrap;line-height:1.7;
+  }
+  .note{margin-top:12px;font-size:12px;color:var(--text-dim);line-height:1.6;border-top:1px dashed var(--line);padding-top:10px;}
+  .note b{color:var(--amber);}
+  .err{color:#e28080;font-size:12px;margin-top:10px;}
+
+  .wide{margin-top:20px;}
+  .capgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:720px){.capgrid{grid-template-columns:1fr;}}
+
+  table.cap{width:100%;border-collapse:collapse;margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+  table.cap th{
+    text-align:left;color:var(--text-mute);font-weight:500;font-size:11px;text-transform:uppercase;
+    letter-spacing:.05em;padding:6px 8px;border-bottom:1px solid var(--line-lt);
+  }
+  table.cap td{padding:7px 8px;border-bottom:1px solid var(--line);color:var(--text);}
+  table.cap tr.gov td{color:var(--amber);}
+  table.cap tr.best td{color:var(--ok);}
+
+  .final{margin-top:14px;padding:14px 16px;background:var(--bg);border:1px solid var(--line-lt);}
+  .final .flabel{font-size:11px;color:var(--text-mute);text-transform:uppercase;letter-spacing:.08em;font-family:'IBM Plex Mono',monospace;}
+  .final .fval{font-family:'Oswald',sans-serif;font-size:26px;color:var(--amber);margin-top:4px;}
+
+  .steps{margin-top:14px;}
+  .step{display:grid;grid-template-columns:34px 1fr;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);}
+  .step:last-child{border-bottom:none;}
+  .step .num{
+    font-family:'Oswald',sans-serif;font-size:14px;color:var(--amber-dim);border:1px solid var(--amber-dim);
+    width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+  }
+  .step .body .stitle{font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+  .step .body .sform{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--text);line-height:1.7;white-space:pre-wrap;}
+  .step .body .sval{font-family:'Oswald',sans-serif;font-size:18px;color:var(--amber);margin-top:2px;}
+
+  .method-toggle{display:flex;gap:0;margin-top:0;}
+  .method-toggle button{
+    flex:1;background:var(--panel-2);border:1px solid var(--line-lt);color:var(--text-dim);
+    font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px 0;cursor:pointer;
+  }
+  .method-toggle button.active{background:var(--amber-dim);color:var(--text);border-color:var(--amber);}
+
+  .checkgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:720px){.checkgrid{grid-template-columns:1fr;}}
+  .propline{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--line);}
+  .propline span:first-child{color:var(--text-dim);}
+  .checkrow{
+    display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:8px 0;border-bottom:1px solid var(--line);
+  }
+  .checkrow .have{color:var(--text-dim);}
+  .pass{color:var(--ok);font-weight:600;}
+  .fail{color:#e28080;font-weight:600;}
+  .verdict{margin-top:14px;padding:16px;text-align:center;font-family:'Oswald',sans-serif;font-size:22px;letter-spacing:.03em;}
+  .verdict.pass{background:rgba(110,198,160,0.12);border:1px solid var(--ok);color:var(--ok);}
+  .verdict.fail{background:rgba(226,128,128,0.12);border:1px solid #e28080;color:#e28080;}
+
+  .bigbtn{
+    width:100%;background:var(--amber-dim);color:var(--text);border:1px solid var(--amber);
+    font-family:'IBM Plex Mono',monospace;font-size:12px;padding:9px 0;cursor:pointer;
+  }
+  .smallbtn{
+    background:var(--panel-2);color:var(--text-dim);border:1px solid var(--line-lt);
+    font-family:'IBM Plex Mono',monospace;font-size:11px;padding:6px 10px;cursor:pointer;
+  }
+  .smallbtn:hover{color:var(--text);border-color:var(--amber);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="titleblock">
+    <div class="eyebrow">AISC 360 &middot; Chapter E (Flexural Buckling) &amp; Manual Table 4-1</div>
+    <h1>Compression member (column) design</h1>
+    <div class="sub">Sizing a column is iterative — the critical stress F<sub>cr</sub> depends on KL/r, which depends on the section you haven't picked yet. Section 02 lets you assume a trial KL/r and back out a target Ag and r. Section 03 checks a real W-shape's actual capacity. Section 04 keeps a log of your trials so you can pick the lightest one that passes — exactly like the manual trial-and-error process.</div>
+    <div class="refline">Pn = Fcr &middot; Ag &nbsp;|&nbsp; Fcr = 0.658^(Fy/Fe)&middot;Fy for KL/r &le; 4.71&radic;(E/Fy), else Fcr = 0.877Fe &nbsp;|&nbsp; Fe = &pi;&sup2;E/(KL/r)&sup2;</div>
+  </div>
+
+  <div class="card">
+    <button type="button" id="loadExampleBtn" class="bigbtn" style="margin-bottom:16px;">
+      Load Example 6.10.1 — D=115k, L=125k, A992 (Fy=50), 16 ft, K=1.0, ASD → W10x49
+    </button>
+
+    <h2>01 &middot; Member, material &amp; loads</h2>
+    <div class="capgrid">
+      <div>
+        <label>Design method</label>
+        <div class="method-toggle">
+          <button type="button" id="btnLRFD">LRFD</button>
+          <button type="button" id="btnASD" class="active">ASD</button>
+        </div>
+
+        <label style="margin-top:16px;">Service dead load, D (kip)</label>
+        <input type="number" id="D" step="0.1" value="115">
+        <label>Service live load, L (kip)</label>
+        <input type="number" id="L" step="0.1" value="125">
+
+        <label style="margin-top:16px;">Yield stress, F<sub>y</sub> (ksi)</label>
+        <input type="number" id="Fy" step="0.1" value="50">
+        <label>Modulus of elasticity, E (ksi)</label>
+        <input type="number" id="E" step="1" value="29000">
+      </div>
+      <div>
+        <label>Unbraced length, L<sub>col</sub> (ft)</label>
+        <input type="number" id="Lft" step="0.5" value="16">
+
+        <label style="margin-top:16px;">Effective length factor, K</label>
+        <select id="Kfac">
+          <option value="1.0" selected>K = 1.0 — both ends pinned</option>
+          <option value="0.5">K = 0.5 — both ends fixed</option>
+          <option value="0.7">K = 0.7 — one fixed, one pinned</option>
+          <option value="2.0">K = 2.0 — fixed base, free top (cantilever)</option>
+          <option value="1.2">K = 1.2 — design value, both ends fixed (AISC recommended)</option>
+          <option value="2.1">K = 2.1 — design value, fixed-free (AISC recommended)</option>
+          <option value="0.8">K = 0.8 — design value, fixed-pinned (AISC recommended)</option>
+          <option value="0.65">K = 0.65 — design value, both ends fixed (AISC recommended)</option>
+        </select>
+        <div class="hint">AISC Table C-A-7.1: theoretical vs. recommended design K values.</div>
+      </div>
+    </div>
+    <div id="loadOut" style="margin-top:16px;"></div>
+  </div>
+
+  <div class="card wide">
+    <h2>02 &middot; Trial iteration — assume KL/r, find required A<sub>g</sub></h2>
+    <div class="hint" style="margin-bottom:10px;">Since F<sub>cr</sub> depends only on KL/r (not on the section itself), assume a slenderness ratio, compute F<sub>cr</sub>, then back out the required gross area. Look for a W-shape with r &ge; the required r below and A<sub>g</sub> &ge; the required area — then check it for real in section 03. Adjust the assumed KL/r and repeat until it stops improving (this mirrors the manual's Trial-1 / Trial-2 / Trial-3 process).</div>
+    <label>Assumed KL/r</label>
+    <input type="number" id="assumedRatio" step="1" value="90">
+    <div id="trialOut" class="steps"></div>
+  </div>
+
+  <div class="card wide">
+    <h2>03 &middot; Check a real W-shape — AISC Manual Table 1-1</h2>
+    <div class="hint" style="margin-bottom:12px;">A<sub>g</sub> and r<sub>y</sub> (weak-axis, governs for typical bracing) are from AISC v16 shape data (verify against your current Manual for final design). Pick a shape and its <b>actual</b> properties are used to compute the real F<sub>cr</sub>, P<sub>n</sub>, and design capacity — compared directly against your demand load from section 01.</div>
+    <div class="checkgrid">
+      <div>
+        <label>W-shape</label>
+        <select id="wSelect"></select>
+        <div id="wProps" style="margin-top:10px;"></div>
+      </div>
+      <div>
+        <div class="hint">Demand, from section 01:</div>
+        <div class="propline"><span>Design load</span><span id="reqLoadOut">—</span></div>
+        <div class="propline"><span>Method</span><span id="reqMethodOut">—</span></div>
+        <div class="propline"><span>KL (total)</span><span id="reqKLOut">—</span></div>
+        <button type="button" id="addTrialBtn" class="bigbtn" style="margin-top:12px;">Add this shape to the trial log &darr;</button>
+      </div>
+    </div>
+    <div id="wCapOut" style="margin-top:16px;"></div>
+    <div id="checkRows" style="margin-top:8px;"></div>
+    <div id="verdictOut"></div>
+  </div>
+
+  <div class="card wide">
+    <h2>04 &middot; Trial log</h2>
+    <div class="hint" style="margin-bottom:10px;">Every shape you add from section 03 shows up here. The lightest shape that passes both checks (capacity and KL/r &le; 200) is highlighted — that's your final selection, same logic as "based on the above trials, the section with the lightest weight is chosen."</div>
+    <div id="trialLogOut"></div>
+  </div>
+
+</div>
+
+<script>
+/* ---------------- W-shape data: [name, Ag(in2), ry(in)] ---------------- */
+/* Ag from AISC v16 shape database; ry computed from ry = sqrt(Iy/Ag). Verify against current AISC Manual for final design. */
+const WSHAPES = [
+["W4x13",3.83,1.004],["W5x16",4.71,1.263],["W5x19",5.56,1.281],
+["W6x9",2.68,0.906],["W6x12",3.55,0.918],["W6x15",4.43,1.45],["W6x16",4.74,0.967],["W6x20",5.87,1.505],["W6x25",7.34,1.526],
+["W8x10",2.96,0.84],["W8x13",3.84,0.843],["W8x15",4.44,0.876],["W8x18",5.26,1.231],["W8x21",6.16,1.259],["W8x24",7.08,1.608],
+["W8x28",8.25,1.622],["W8x31",9.13,2.016],["W8x35",10.3,2.034],["W8x40",11.7,2.049],["W8x48",14.1,2.078],["W8x58",17.1,2.096],["W8x67",19.7,2.121],
+["W10x12",3.54,0.785],["W10x15",4.41,0.81],["W10x17",4.99,0.845],["W10x19",5.62,0.874],["W10x22",6.49,1.325],["W10x26",7.61,1.361],
+["W10x30",8.84,1.374],["W10x33",9.71,1.941],["W10x39",11.5,1.978],["W10x45",13.3,2.004],["W10x49",14.4,2.547],["W10x54",15.8,2.553],
+["W10x60",17.7,2.56],["W10x68",19.9,2.595],["W10x77",22.7,2.605],["W10x88",26,2.624],["W10x100",29.3,2.658],["W10x112",32.9,2.678],
+["W12x14",4.16,0.753],["W12x16",4.71,0.774],["W12x19",5.57,0.822],["W12x22",6.48,0.848],["W12x26",7.65,1.504],["W12x30",8.79,1.52],
+["W12x35",10.3,1.542],["W12x40",11.7,1.941],["W12x45",13.1,1.954],["W12x50",14.6,1.964],["W12x53",15.6,2.478],["W12x58",17,2.509],
+["W12x65",19.1,3.018],["W12x72",21.1,3.04],["W12x79",23.2,3.051],["W12x87",25.6,3.068],["W12x96",28.2,3.094],["W12x106",31.2,3.106],
+["W12x120",35.2,3.131],["W12x136",39.9,3.158],["W12x152",44.7,3.187],["W12x170",50,3.216],["W12x190",56,3.243],["W12x210",61.8,3.278],
+["W12x230",67.7,3.311],["W12x252",74.1,3.343],["W12x279",81.9,3.382],["W12x305",89.5,3.425],["W12x336",98.9,3.469],
+["W14x22",6.49,1.039],["W14x26",7.69,1.076],["W14x30",8.85,1.488],["W14x34",10,1.526],["W14x38",11.2,1.544],["W14x43",12.6,1.894],
+["W14x48",14.1,1.909],["W14x53",15.6,1.923],["W14x61",17.9,2.445],["W14x68",20,2.46],["W14x74",21.8,2.479],["W14x82",24,2.483],
+["W14x90",26.5,3.696],["W14x99",29.1,3.717],["W14x109",32,3.737],["W14x120",35.3,3.745],["W14x132",38.8,3.758],["W14x145",42.7,3.982],
+["W14x159",46.7,4.002],["W14x176",51.8,4.022],["W14x193",56.8,4.049],["W14x211",62,4.076],["W14x233",68.5,4.097],["W14x257",75.6,4.131],
+["W14x283",83.3,4.158],["W14x311",91.4,4.197],["W14x342",101,4.233]
+].map(a => ({name:a[0], Ag:a[1], ry:a[2], wt:parseFloat(a[0].split('x')[1])}));
+
+const wSelect = document.getElementById('wSelect');
+wSelect.innerHTML = WSHAPES.map((a,i) => `<option value="${i}">${a.name} — Ag=${a.Ag} in², ry=${a.ry} in, ${a.wt} lb/ft</option>`).join('');
+
+function num(id){
+  const el = document.getElementById(id);
+  if(!el) return null;
+  const v = parseFloat(el.value);
+  return isNaN(v) ? null : v;
+}
+
+let designMethod = 'ASD';
+const btnLRFD = document.getElementById('btnLRFD');
+const btnASD  = document.getElementById('btnASD');
+btnLRFD.addEventListener('click', ()=>{ designMethod='LRFD'; btnLRFD.classList.add('active'); btnASD.classList.remove('active'); computeAll(); });
+btnASD.addEventListener('click',  ()=>{ designMethod='ASD';  btnASD.classList.add('active');  btnLRFD.classList.remove('active'); computeAll(); });
+
+/* Critical stress per AISC E3 */
+function fcrFromRatio(ratio, Fy, E){
+  const boundary = 4.71*Math.sqrt(E/Fy);
+  const Fe = (Math.PI*Math.PI*E)/(ratio*ratio);
+  let Fcr, inelastic;
+  if(ratio <= boundary || Fe >= 0.44*Fy){
+    Fcr = Math.pow(0.658, Fy/Fe) * Fy;
+    inelastic = true;
+  } else {
+    Fcr = 0.877*Fe;
+    inelastic = false;
+  }
+  return {Fe, Fcr, boundary, inelastic};
+}
+
+const state = { PnReq:null, demandLoad:null, method:null, Fy:null, E:null, KLin:null };
+const trials = []; // {name, Ag, ry, wt, ratio, Fcr, Pn, cap, pass, klrPass}
+
+function computeLoads(){
+  const D=num('D'), L=num('L'), Fy=num('Fy'), E=num('E'), Lft=num('Lft'), K=parseFloat(document.getElementById('Kfac').value);
+  const out = document.getElementById('loadOut');
+  if([D,L,Fy,E,Lft].some(v=>v===null)){
+    out.innerHTML = '<div class="err">Fill in D, L, Fy, E and length.</div>';
+    return null;
+  }
+  const KLin = K*Lft*12;
+  let demandLoad, PnReq, loadFormula;
+  if(designMethod==='LRFD'){
+    demandLoad = 1.2*D + 1.6*L;
+    PnReq = demandLoad/0.90;
+    loadFormula = `Pu = 1.2D + 1.6L = 1.2(${D}) + 1.6(${L}) = ${demandLoad.toFixed(2)} kip\nRequired Pn = Pu / φ = ${demandLoad.toFixed(2)} / 0.90 = ${PnReq.toFixed(2)} kip`;
+  } else {
+    demandLoad = D + L;
+    PnReq = demandLoad*1.67;
+    loadFormula = `P = D + L = ${D} + ${L} = ${demandLoad.toFixed(2)} kip\nRequired Pn = Ω × P = 1.67 × ${demandLoad.toFixed(2)} = ${PnReq.toFixed(2)} kip`;
+  }
+  out.innerHTML = `
+    <div class="formula">${loadFormula}\nKL = K×L×12 = ${K}×${Lft}×12 = ${KLin.toFixed(1)} in</div>
+  `;
+  state.PnReq = PnReq;
+  state.demandLoad = demandLoad;
+  state.method = designMethod;
+  state.Fy = Fy;
+  state.E = E;
+  state.KLin = KLin;
+  return state;
+}
+
+function computeTrial(){
+  const out = document.getElementById('trialOut');
+  if(state.PnReq===null){ out.innerHTML=''; return; }
+  const ratio = num('assumedRatio');
+  if(ratio===null || ratio<=0){ out.innerHTML = '<div class="err">Enter an assumed KL/r (try 60–120).</div>'; return; }
+
+  const rReq = state.KLin/ratio;
+  const {Fe, Fcr, boundary, inelastic} = fcrFromRatio(ratio, state.Fy, state.E);
+  const AgReq = state.PnReq/Fcr;
+
+  const steps = [
+    {title:'1 &middot; Assumed slenderness', formula:`Assume KL/r = ${ratio}\nr_required = KL / (KL/r) = ${state.KLin.toFixed(1)} / ${ratio} = ${rReq.toFixed(3)} in`, val:`r_required ≈ ${rReq.toFixed(3)} in`},
+    {title:'2 &middot; Elastic buckling stress', formula:`Fe = π²E/(KL/r)² = π²×${state.E}/(${ratio})² = ${Fe.toFixed(2)} ksi\n4.71√(E/Fy) = 4.71√(${state.E}/${state.Fy}) = ${boundary.toFixed(1)}`, val:`Fe = ${Fe.toFixed(2)} ksi`},
+    {title:'3 &middot; Critical stress, Fcr', formula: inelastic
+        ? `KL/r = ${ratio} ≤ ${boundary.toFixed(1)}  →  inelastic buckling (AISC Eq. E3-2)\nFcr = 0.658^(Fy/Fe) × Fy = 0.658^(${state.Fy}/${Fe.toFixed(2)}) × ${state.Fy} = ${Fcr.toFixed(2)} ksi`
+        : `KL/r = ${ratio} > ${boundary.toFixed(1)}  →  elastic buckling (AISC Eq. E3-3)\nFcr = 0.877×Fe = 0.877×${Fe.toFixed(2)} = ${Fcr.toFixed(2)} ksi`,
+      val:`Fcr = ${Fcr.toFixed(2)} ksi`},
+    {title:'4 &middot; Required gross area', formula:`Pn = Fcr×Ag  →  Ag,req = Pn,req / Fcr = ${state.PnReq.toFixed(2)} / ${Fcr.toFixed(2)} = ${AgReq.toFixed(2)} in²`, val:`Ag,req ≈ ${AgReq.toFixed(2)} in²`},
+    {title:'5 &middot; Go to the shape table', formula:`Look for a W-shape in section 03 with:\n  ry ≥ ${rReq.toFixed(3)} in   and   Ag ≥ ${AgReq.toFixed(2)} in²\nThen check its ACTUAL capacity for real (its actual ry ≠ your assumed r_required in general) — add it to the trial log, and if it's not efficient, come back up here, change the assumed KL/r to something closer to the actual shape's KL/ry, and try again.`, val:''}
+  ];
+
+  out.innerHTML = steps.map(s => `
+    <div class="step">
+      <div class="num">${s.title.split('&middot;')[0].trim()}</div>
+      <div class="body">
+        <div class="stitle">${s.title.split('&middot;')[1] ? s.title.split('&middot;')[1].trim() : ''}</div>
+        <div class="sform">${s.formula}</div>
+        ${s.val ? `<div class="sval">${s.val}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderWCheck(){
+  document.getElementById('reqLoadOut').textContent = state.demandLoad===null ? '—' : `${state.demandLoad.toFixed(2)} kip`;
+  document.getElementById('reqMethodOut').textContent = state.method || '—';
+  document.getElementById('reqKLOut').textContent = state.KLin===null ? '—' : `${state.KLin.toFixed(1)} in`;
+
+  const idx = wSelect.value;
+  const propsEl = document.getElementById('wProps');
+  const capEl = document.getElementById('wCapOut');
+  const rowsEl = document.getElementById('checkRows');
+  const verdictEl = document.getElementById('verdictOut');
+
+  if(idx==='' || idx===undefined){ propsEl.innerHTML=''; capEl.innerHTML=''; rowsEl.innerHTML=''; verdictEl.innerHTML=''; return; }
+  const w = WSHAPES[parseInt(idx,10)];
+
+  propsEl.innerHTML = `
+    <div class="propline"><span>A<sub>g</sub></span><span>${w.Ag.toFixed(2)} in²</span></div>
+    <div class="propline"><span>r<sub>y</sub> (min. r)</span><span>${w.ry.toFixed(3)} in</span></div>
+    <div class="propline"><span>Weight</span><span>${w.wt.toFixed(1)} lb/ft</span></div>
+  `;
+
+  if(state.PnReq===null){
+    capEl.innerHTML = '';
+    rowsEl.innerHTML = '<div class="hint">Fill in section 01 to check this shape against the real demand load.</div>';
+    verdictEl.innerHTML = '';
+    return;
+  }
+
+  const result = evalShape(w);
+
+  capEl.innerHTML = `
+    <div class="stitle" style="font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Real capacity check — using ${w.name}'s actual ry = ${w.ry.toFixed(3)} in</div>
+    <div class="formula">KL/r = ${state.KLin.toFixed(1)} / ${w.ry.toFixed(3)} = ${result.ratio.toFixed(2)}
+${result.inelastic ? 'Inelastic buckling (Eq. E3-2)' : 'Elastic buckling (Eq. E3-3)'}: Fcr = ${result.Fcr.toFixed(2)} ksi
+Pn = Fcr × Ag = ${result.Fcr.toFixed(2)} × ${w.Ag.toFixed(2)} = ${result.Pn.toFixed(2)} kip</div>
+    <table class="cap">
+      <tr><th>Method</th><th>Nominal P<sub>n</sub></th><th>${state.method==='LRFD' ? 'φPn (φ=0.90)' : 'Pn/Ω (Ω=1.67)'}</th></tr>
+      <tr class="gov">
+        <td>Flexural buckling</td>
+        <td>${result.Pn.toFixed(2)} kip</td>
+        <td>${result.cap.toFixed(2)} kip</td>
+      </tr>
+    </table>
+  `;
+
+  const checks = [
+    {label:`Capacity ≥ demand ${state.demandLoad.toFixed(2)} kip`, have:`${result.cap.toFixed(2)} kip`, pass: result.cap >= state.demandLoad},
+    {label:`KL/r ≤ 200 (AISC E2, preferred)`, have:`${result.ratio.toFixed(1)}`, pass: result.ratio <= 200}
+  ];
+  rowsEl.innerHTML = checks.map(c => `
+    <div class="checkrow"><span>${c.label}</span><span class="have">have ${c.have}</span><span class="${c.pass?'pass':'fail'}">${c.pass?'OK':'NG'}</span></div>
+  `).join('');
+  const allPass = checks.every(c=>c.pass);
+  verdictEl.innerHTML = `<div class="verdict ${allPass?'pass':'fail'}">${w.name} — ${allPass?'OK, ADEQUATE':'NOT ADEQUATE'}</div>`;
+}
+
+function evalShape(w){
+  const ratio = state.KLin/w.ry;
+  const {Fcr, inelastic} = fcrFromRatio(ratio, state.Fy, state.E);
+  const Pn = Fcr*w.Ag;
+  const cap = state.method==='LRFD' ? 0.90*Pn : Pn/1.67;
+  const pass = cap >= state.demandLoad && ratio <= 200;
+  return {ratio, Fcr, Pn, cap, inelastic, pass};
+}
+
+function renderTrialLog(){
+  const out = document.getElementById('trialLogOut');
+  if(trials.length===0){
+    out.innerHTML = '<div class="hint">No trials added yet — pick a shape in section 03 and click "Add this shape to the trial log."</div>';
+    return;
+  }
+  const passing = trials.filter(t=>t.pass);
+  let lightestName = null;
+  if(passing.length){
+    lightestName = passing.reduce((a,b)=> a.wt<=b.wt ? a : b).name;
+  }
+  const rows = trials.map((t,i) => {
+    const isBest = t.name===lightestName;
+    return `
+    <tr class="${isBest ? 'best' : ''}">
+      <td>${t.name}${isBest ? ' <span class="case-tag" style="margin-left:4px;">LIGHTEST OK</span>' : ''}</td>
+      <td>${t.wt.toFixed(1)}</td>
+      <td>${t.Ag.toFixed(2)}</td>
+      <td>${t.ry.toFixed(3)}</td>
+      <td>${t.ratio.toFixed(1)}</td>
+      <td>${t.cap.toFixed(1)}</td>
+      <td class="${t.pass?'pass':'fail'}">${t.pass?'OK':'NG'}</td>
+      <td><button type="button" class="smallbtn" data-idx="${i}">remove</button></td>
+    </tr>`;
+  }).join('');
+  out.innerHTML = `
+    <table class="cap">
+      <tr><th>Shape</th><th>Wt (lb/ft)</th><th>Ag (in²)</th><th>ry (in)</th><th>KL/r</th><th>Capacity (kip)</th><th>Check</th><th></th></tr>
+      ${rows}
+    </table>
+  `;
+  out.querySelectorAll('button[data-idx]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      trials.splice(parseInt(btn.dataset.idx,10),1);
+      renderTrialLog();
+    });
+  });
+}
+
+document.getElementById('addTrialBtn').addEventListener('click', ()=>{
+  const idx = wSelect.value;
+  if(idx==='' || idx===undefined || state.PnReq===null) return;
+  const w = WSHAPES[parseInt(idx,10)];
+  const result = evalShape(w);
+  trials.push({name:w.name, Ag:w.Ag, ry:w.ry, wt:w.wt, ratio:result.ratio, Fcr:result.Fcr, Pn:result.Pn, cap:result.cap, pass:result.pass});
+  renderTrialLog();
+  document.getElementById('trialLogOut').scrollIntoView({behavior:'smooth', block:'center'});
+});
+
+function computeAll(){
+  computeLoads();
+  computeTrial();
+  renderWCheck();
+  renderTrialLog();
+}
+
+['D','L','Fy','E','Lft','assumedRatio'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', computeAll);
+});
+document.getElementById('Kfac').addEventListener('change', computeAll);
+wSelect.addEventListener('change', renderWCheck);
+
+document.getElementById('loadExampleBtn').addEventListener('click', ()=>{
+  designMethod = 'ASD';
+  btnASD.classList.add('active');
+  btnLRFD.classList.remove('active');
+
+  document.getElementById('D').value = '115';
+  document.getElementById('L').value = '125';
+  document.getElementById('Fy').value = '50';
+  document.getElementById('E').value = '29000';
+  document.getElementById('Lft').value = '16';
+  document.getElementById('Kfac').value = '1.0';
+  document.getElementById('assumedRatio').value = '90';
+
+  trials.length = 0;
+  computeAll();
+
+  // Reproduce the slide's three trials automatically
+  ['W12x53','W10x49','W12x65'].forEach(name=>{
+    const idx = WSHAPES.findIndex(a=>a.name===name);
+    if(idx>=0){
+      wSelect.value = String(idx);
+      renderWCheck();
+      const w = WSHAPES[idx];
+      const result = evalShape(w);
+      trials.push({name:w.name, Ag:w.Ag, ry:w.ry, wt:w.wt, ratio:result.ratio, Fcr:result.Fcr, Pn:result.Pn, cap:result.cap, pass:result.pass});
+    }
+  });
+  renderTrialLog();
+  document.getElementById('trialLogOut').scrollIntoView({behavior:'smooth', block:'center'});
+});
+
+computeAll();
+</script>
+</body>
+</html>

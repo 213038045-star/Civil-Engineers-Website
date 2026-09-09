@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flexible Pavement Design Tool</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --bg:#14171d;
+    --panel:#1b1f27;
+    --panel2:#20242d;
+    --line:#2e3542;
+    --line-soft:#252b35;
+    --ink:#eef1f5;
+    --sub:#8d98a8;
+    --blue-bg:#0c2c4a;
+    --blue-bg2:#081f38;
+    --draw-line:#eaf4ff;
+    --draw-dim:#7fd4e8;
+    --accent:#f0a63c;
+    --accent2:#4fe0c4;
+    --pass:#4cc38a;
+    --fail:#f0704a;
+    --asphalt:#2a2e35;
+    --base-mat:#8a7a63;
+    --subbase-mat:#b8a889;
+    --subgrade:#6b5644;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  header{
+    padding:24px 30px 18px; border-bottom:1px solid var(--line);
+    display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
+    background:linear-gradient(180deg, rgba(79,224,196,0.04), transparent);
+  }
+  header h1{font-size:21px; margin:0; letter-spacing:0.2px; font-weight:800;}
+  header .tag{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--accent2); background:rgba(79,224,196,0.09); padding:4px 10px; border-radius:20px; border:1px solid rgba(79,224,196,0.25);}
+  header .sub{font-size:13px; color:var(--sub);}
+
+  .layout{ display:grid; grid-template-columns: 340px 1fr; gap:0; min-height:calc(100vh - 80px); }
+  @media (max-width: 950px){ .layout{grid-template-columns:1fr;} }
+
+  .controls{ padding:22px 20px 60px; border-right:1px solid var(--line); background:var(--panel); overflow-y:auto; }
+  .group{margin-bottom:22px;}
+  .group h3{
+    font-size:10.5px; text-transform:uppercase; letter-spacing:1.4px; color:var(--accent2);
+    margin:0 0 12px; font-weight:700; display:flex; align-items:center; gap:8px;
+  }
+  .group h3::after{content:""; flex:1; height:1px; background:var(--line);}
+  .field{margin-bottom:11px;}
+  .field label{ display:block; font-size:12px; color:var(--sub); margin-bottom:5px; font-weight:500; }
+  .numfield{
+    display:flex; align-items:stretch; border:1px solid var(--line); border-radius:9px;
+    background:var(--panel2); overflow:hidden; transition:border-color .15s ease;
+  }
+  .numfield:focus-within{border-color:var(--accent2); box-shadow:0 0 0 3px rgba(79,224,196,0.12);}
+  .numfield input{
+    flex:1; min-width:0; border:none; background:transparent; padding:9px 10px;
+    color:var(--ink); font-family:'JetBrains Mono',monospace; font-size:13.5px; font-weight:600;
+  }
+  .numfield input:focus{outline:none;}
+  .numfield .unit{
+    padding:9px 10px; color:var(--sub); font-size:11.5px; font-family:'JetBrains Mono',monospace;
+    display:flex; align-items:center; border-left:1px solid var(--line); background:rgba(255,255,255,0.015);
+    white-space:nowrap;
+  }
+  select{
+    width:100%; padding:9px 10px; background:var(--panel2); border:1px solid var(--line);
+    color:var(--ink); border-radius:9px; font-family:'JetBrains Mono',monospace; font-size:13px;
+  }
+  select:focus{outline:none; border-color:var(--accent2);}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;}
+
+  .guidance{
+    margin-top:10px; padding:11px 13px; background:var(--panel2); border:1px solid var(--line);
+    border-left:3px solid var(--accent2); border-radius:6px; font-size:11.5px; color:var(--sub); line-height:1.6;
+  }
+  .guidance b{color:var(--ink);}
+
+  .main{padding:24px 28px; overflow-x:hidden;}
+  .drawings{display:grid; grid-template-columns: 1fr 1.3fr; gap:18px; margin-bottom:22px; align-items:start;}
+  @media (max-width: 1150px){ .drawings{grid-template-columns:1fr;} }
+  .card{
+    background: linear-gradient(165deg, var(--blue-bg) 0%, var(--blue-bg2) 100%);
+    border:1px solid #123b5e; border-radius:12px; padding:16px 16px 12px; position:relative;
+    box-shadow:0 8px 24px rgba(0,0,0,0.18);
+  }
+  .card .label{
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--draw-dim);
+    text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; display:flex; justify-content:space-between;
+  }
+  .card svg{width:100%; height:auto; display:block;}
+
+  .results{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:22px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.12);
+  }
+  .results h3{margin:0; padding:13px 18px; font-size:11.5px; text-transform:uppercase; letter-spacing:1.2px; color:var(--accent2); border-bottom:1px solid var(--line); font-weight:700;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{text-align:left; font-size:10.5px; color:var(--sub); text-transform:uppercase; letter-spacing:0.6px; padding:10px 18px; border-bottom:1px solid var(--line);}
+  td{padding:10px 18px; border-bottom:1px solid var(--line-soft); font-family:'JetBrains Mono',monospace;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(255,255,255,0.015);}
+  .badge{ display:inline-block; padding:2px 10px; border-radius:20px; font-size:10.5px; font-weight:700; font-family:'Inter',sans-serif; }
+  .badge.pass{background:rgba(76,195,138,0.14); color:var(--pass); border:1px solid rgba(76,195,138,0.35);}
+  .badge.fail{background:rgba(240,112,74,0.14); color:var(--fail); border:1px solid rgba(240,112,74,0.35);}
+
+  .notes{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px 20px; font-size:12.5px; color:var(--sub); line-height:1.65; }
+  .notes b{color:var(--ink);}
+  .notes h3{font-size:11.5px; text-transform:uppercase; letter-spacing:1.2px; color:var(--accent2); margin:0 0 10px; font-weight:700;}
+  .notes ul{margin:6px 0 10px 18px; padding:0;}
+  .footnote{font-size:11px; color:#66707f; margin-top:14px; border-top:1px dashed var(--line); padding-top:10px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Flexible Pavement Design Tool</h1>
+  <span class="tag">AASHTO 1993 · layered structural number method</span>
+  <span class="sub">Type in traffic, material, and layer inputs — the cross-section and SN checks update live</span>
+</header>
+
+<div class="layout">
+  <div class="controls">
+
+    <div class="group">
+      <h3>Traffic &amp; reliability</h3>
+      <div class="field"><label>Design ESALs, W18</label>
+        <div class="numfield"><input type="number" id="w18" placeholder="5000000" value="5000000"><span class="unit">18-kip</span></div></div>
+      <div class="field"><label>Reliability, R</label>
+        <select id="reliability">
+          <option value="50">50%</option>
+          <option value="60">60%</option>
+          <option value="70">70%</option>
+          <option value="75">75%</option>
+          <option value="80">80%</option>
+          <option value="85">85%</option>
+          <option value="90" selected>90%</option>
+          <option value="95">95%</option>
+          <option value="99">99%</option>
+          <option value="99.9">99.9%</option>
+        </select>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Overall S0</label>
+          <div class="numfield"><input type="number" id="s0" placeholder="0.45" value="0.45" step="0.01"><span class="unit">—</span></div></div>
+        <div class="field"><label>&nbsp;</label>
+          <div class="guidance" id="zrShow" style="margin-top:0;"></div></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3>Serviceability</h3>
+      <div class="row2">
+        <div class="field"><label>Initial, p0</label>
+          <div class="numfield"><input type="number" id="p0" placeholder="4.2" value="4.2" step="0.1"><span class="unit">psi</span></div></div>
+        <div class="field"><label>Terminal, pt</label>
+          <div class="numfield"><input type="number" id="pt" placeholder="2.5" value="2.5" step="0.1"><span class="unit">psi</span></div></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3>Resilient modulus, MR</h3>
+      <div class="field"><label>Subgrade</label>
+        <div class="numfield"><input type="number" id="mrSub" placeholder="5000" value="5000"><span class="unit">psi</span></div></div>
+      <div class="field"><label>Subbase (as "subgrade" for SN2)</label>
+        <div class="numfield"><input type="number" id="mrSb" placeholder="12000" value="12000"><span class="unit">psi</span></div></div>
+      <div class="field"><label>Base course (as "subgrade" for SN1)</label>
+        <div class="numfield"><input type="number" id="mrBase" placeholder="25000" value="25000"><span class="unit">psi</span></div></div>
+    </div>
+
+    <div class="group">
+      <h3>Layer &amp; drainage coefficients</h3>
+      <div class="row3">
+        <div class="field"><label>a1 (surface)</label>
+          <div class="numfield"><input type="number" id="a1" placeholder="0.44" value="0.44" step="0.01"></div></div>
+        <div class="field"><label>a2 (base)</label>
+          <div class="numfield"><input type="number" id="a2" placeholder="0.14" value="0.14" step="0.01"></div></div>
+        <div class="field"><label>a3 (subbase)</label>
+          <div class="numfield"><input type="number" id="a3" placeholder="0.11" value="0.11" step="0.01"></div></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>m2 (base drainage)</label>
+          <div class="numfield"><input type="number" id="m2" placeholder="1.00" value="1.00" step="0.05"></div></div>
+        <div class="field"><label>m3 (subbase drainage)</label>
+          <div class="numfield"><input type="number" id="m3" placeholder="1.00" value="1.00" step="0.05"></div></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3>Proposed layer thicknesses</h3>
+      <div class="field"><label>Surface (asphalt), D1</label>
+        <div class="numfield"><input type="number" id="d1" placeholder="7" value="7" step="0.5"><span class="unit">in</span></div></div>
+      <div class="field"><label>Base, D2</label>
+        <div class="numfield"><input type="number" id="d2" placeholder="10" value="10" step="0.5"><span class="unit">in</span></div></div>
+      <div class="field"><label>Subbase, D3</label>
+        <div class="numfield"><input type="number" id="d3" placeholder="8" value="8" step="0.5"><span class="unit">in</span></div></div>
+      <div class="guidance" id="minThkNote"></div>
+    </div>
+
+  </div>
+
+  <div class="main">
+
+    <div class="drawings">
+      <div class="card">
+        <div class="label"><span>Typical cross-section</span><span id="sectionDims"></span></div>
+        <div id="svgSection"></div>
+      </div>
+      <div class="card">
+        <div class="label"><span>Structural number build-up</span><span id="snDims"></span></div>
+        <div id="svgSN"></div>
+      </div>
+    </div>
+
+    <div class="results">
+      <h3>Structural number checks</h3>
+      <table>
+        <thead><tr><th>Check (protects...)</th><th>SN required</th><th>SN provided</th><th>Ratio</th><th>Status</th></tr></thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+
+    <div class="results">
+      <h3>Minimum thickness (AASHTO 1993 practice, by traffic level)</h3>
+      <table>
+        <thead><tr><th>Layer</th><th>Provided</th><th>Recommended min.</th><th>Ratio</th><th>Status</th></tr></thead>
+        <tbody id="minBody"></tbody>
+      </table>
+    </div>
+
+    <div class="notes">
+      <h3>Reference basis &amp; assumptions</h3>
+      <ul>
+        <li>Design equation: <b>log10(W18) = ZR·S0 + 9.36·log10(SN+1) − 0.2 + [log10(ΔPSI/2.7)] / [0.4 + 1094/(SN+1)^5.19] + 2.32·log10(MR) − 8.07</b> — the 1993 AASHTO Guide for Design of Pavement Structures flexible pavement equation. It's implicit in SN, so this tool solves it by bisection.</li>
+        <li>The <b>2.7 in the ΔPSI term is a fixed constant</b> (4.2 − 1.5, from the original AASHO Road Test), not your actual p0 − pt — that difference is the numerator, ΔPSI, which you do control.</li>
+        <li><b>Layered design method:</b> SN1 (protects the base) is solved using the base course's own resilient modulus in place of "subgrade" MR; SN2 (protects the subbase) uses the subbase's MR; SN3 (protects the subgrade) uses the actual subgrade MR. Required thicknesses follow as D1 ≥ SN1/a1, then D2 from (SN2 − a1D1)/(a2m2), then D3 from (SN3 − a1D1 − a2m2D2)/(a3m3).</li>
+        <li>Typical layer coefficients (a1 ≈ 0.44/in for dense asphalt concrete, a2 ≈ 0.10–0.14/in for granular base, a3 ≈ 0.08–0.11/in for granular subbase) and drainage coefficients (m ≈ 0.4–1.4 depending on drainage quality and exposure) are starting points — use project-specific lab/test values where available.</li>
+        <li>Minimum thickness guidance follows the traffic-level bands commonly published from AASHTO 1993 Guide Table 3.1; treat it as a floor, not a substitute for the SN checks above.</li>
+      </ul>
+      <div class="footnote">This tool implements the classic 1993 AASHTO empirical method for preliminary/educational sizing. It does not cover mechanistic-empirical (MEPDG) analysis, seasonal MR adjustment, frost/swell effects, or overlay design. Have the final pavement design verified by a licensed engineer familiar with local subgrade and climate conditions before construction.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const ids = ['w18','reliability','s0','p0','pt','mrSub','mrSb','mrBase','a1','a2','a3','m2','m3','d1','d2','d3'];
+const els = {};
+ids.forEach(id=>{ els[id] = document.getElementById(id); });
+
+const ZR_TABLE = {
+  '50':0.000, '60':-0.253, '70':-0.524, '75':-0.674, '80':-0.841,
+  '85':-1.037, '90':-1.282, '95':-1.645, '99':-2.327, '99.9':-3.090
+};
+
+function fmt(n, d=0){ return Number(n).toLocaleString(undefined,{maximumFractionDigits:d, minimumFractionDigits:d}); }
+
+function readState(){
+  return {
+    w18: +els.w18.value || 1,
+    ZR: ZR_TABLE[els.reliability.value],
+    R: els.reliability.value,
+    s0: +els.s0.value || 0.45,
+    p0: +els.p0.value || 4.2,
+    pt: +els.pt.value || 2.5,
+    mrSub: +els.mrSub.value || 3000,
+    mrSb: +els.mrSb.value || 8000,
+    mrBase: +els.mrBase.value || 20000,
+    a1: +els.a1.value || 0.44,
+    a2: +els.a2.value || 0.14,
+    a3: +els.a3.value || 0.11,
+    m2: +els.m2.value || 1,
+    m3: +els.m3.value || 1,
+    d1: +els.d1.value || 0,
+    d2: +els.d2.value || 0,
+    d3: +els.d3.value || 0,
+  };
+}
+
+// Solve the implicit AASHTO 1993 flexible pavement equation for SN via bisection.
+function solveSN(targetLogW18, ZR, S0, deltaPSI, MR){
+  function rhs(SN){
+    return ZR*S0 + 9.36*Math.log10(SN+1) - 0.2
+      + Math.log10(deltaPSI/2.7) / (0.4 + 1094/Math.pow(SN+1, 5.19))
+      + 2.32*Math.log10(MR) - 8.07;
+  }
+  let lo = 0.05, hi = 20;
+  for(let i=0;i<80;i++){
+    const mid = (lo+hi)/2;
+    if(rhs(mid) < targetLogW18) lo = mid; else hi = mid;
+  }
+  return (lo+hi)/2;
+}
+
+function minThickness(w18){
+  if(w18 < 50000) return {ac:1.0, base:4};
+  if(w18 <= 150000) return {ac:2.0, base:4};
+  if(w18 <= 500000) return {ac:2.5, base:4};
+  if(w18 <= 2000000) return {ac:3.0, base:6};
+  if(w18 <= 7000000) return {ac:3.5, base:6};
+  return {ac:4.0, base:6};
+}
+
+function compute(s){
+  const deltaPSI = s.p0 - s.pt;
+  const logW18 = Math.log10(s.w18);
+
+  const SN1 = solveSN(logW18, s.ZR, s.s0, deltaPSI, s.mrBase);
+  const SN2 = solveSN(logW18, s.ZR, s.s0, deltaPSI, s.mrSb);
+  const SN3 = solveSN(logW18, s.ZR, s.s0, deltaPSI, s.mrSub);
+
+  const SN1_prov = s.a1*s.d1;
+  const SN2_prov = s.a1*s.d1 + s.a2*s.m2*s.d2;
+  const SN3_prov = s.a1*s.d1 + s.a2*s.m2*s.d2 + s.a3*s.m3*s.d3;
+
+  const mins = minThickness(s.w18);
+
+  return {deltaPSI, SN1, SN2, SN3, SN1_prov, SN2_prov, SN3_prov, mins};
+}
+
+function svg(tag, attrs, children){
+  const ns = "http://www.w3.org/2000/svg";
+  const el = document.createElementNS(ns, tag);
+  for(const k in attrs) el.setAttribute(k, attrs[k]);
+  (children||[]).forEach(c=>el.appendChild(c));
+  return el;
+}
+function text(x,y,str,opts={}){
+  const t = svg('text', Object.assign({x,y,fill:'var(--draw-dim)','font-size':opts.size||12,'font-family':"'JetBrains Mono',monospace",'text-anchor':opts.anchor||'middle'}, opts.attrs||{}));
+  t.textContent = str;
+  return t;
+}
+function line(x1,y1,x2,y2,opts={}){
+  return svg('line', Object.assign({x1,y1,x2,y2,stroke:opts.stroke||'var(--draw-line)','stroke-width':opts.w||1.5},opts.attrs||{}));
+}
+function dimLine(x1,y1,x2,y2,label,offset){
+  const g = svg('g',{});
+  const dc = 'var(--draw-dim)';
+  g.appendChild(line(x1,y1,x2,y2,{stroke:dc,w:1}));
+  const tick=5;
+  g.appendChild(line(x1-tick,y1,x1+tick,y1,{stroke:dc,w:1}));
+  g.appendChild(line(x2-tick,y2,x2+tick,y2,{stroke:dc,w:1}));
+  g.appendChild(text(x1+(offset||16), (y1+y2)/2, label, {size:11, anchor:'middle', attrs:{transform:`rotate(-90 ${x1+(offset||16)} ${(y1+y2)/2})`}}));
+  return g;
+}
+
+function drawSection(s){
+  const container = document.getElementById('svgSection');
+  container.innerHTML='';
+  const W = 260;
+  const scale = 14; // px per inch
+  const d1px = Math.max(s.d1*scale, 6);
+  const d2px = Math.max(s.d2*scale, 6);
+  const d3px = Math.max(s.d3*scale, 6);
+  const subgradeH = 70;
+  const pad = 60;
+  const totalH = d1px+d2px+d3px+subgradeH;
+  const vw = W+pad*2, vh = totalH+pad*1.6;
+  const root = svg('svg',{viewBox:`0 0 ${vw} ${vh}`, width:'100%'});
+  const ox = pad, oy = pad*0.6;
+
+  // ---- sketch-style fill patterns (hatch / aggregate textures) ----
+  const defs = svg('defs',{});
+  // asphalt: dense diagonal hatch on dark base
+  const pAsphalt = svg('pattern',{id:'pAsphalt', patternUnits:'userSpaceOnUse', width:6, height:6, patternTransform:'rotate(45)'});
+  pAsphalt.appendChild(svg('rect',{width:6,height:6,fill:'#23262c'}));
+  pAsphalt.appendChild(line(0,0,0,6,{stroke:'#3a3f47',w:1.4}));
+  defs.appendChild(pAsphalt);
+
+  // base course: coarse aggregate — scattered angular dots on tan base
+  const pBase = svg('pattern',{id:'pBase', patternUnits:'userSpaceOnUse', width:22, height:16});
+  pBase.appendChild(svg('rect',{width:22,height:16,fill:'#8a7a63'}));
+  [[3,4,2.6],[13,3,2.1],[8,10,2.4],[18,11,1.9],[2,13,1.6]].forEach(([px,py,r])=>{
+    pBase.appendChild(svg('circle',{cx:px,cy:py,r, fill:'#c9bda3', opacity:0.85}));
+  });
+  defs.appendChild(pBase);
+
+  // subbase: finer aggregate, lighter tan
+  const pSubbase = svg('pattern',{id:'pSubbase', patternUnits:'userSpaceOnUse', width:18, height:14});
+  pSubbase.appendChild(svg('rect',{width:18,height:14,fill:'#b8a889'}));
+  [[3,3,1.6],[11,2,1.3],[7,8,1.5],[15,9,1.2],[2,11,1.1]].forEach(([px,py,r])=>{
+    pSubbase.appendChild(svg('circle',{cx:px,cy:py,r, fill:'#e2d4b4', opacity:0.85}));
+  });
+  defs.appendChild(pSubbase);
+
+  // subgrade: soil hatch (diagonal dash + dot, classic geotechnical soil symbol)
+  const pSubgrade = svg('pattern',{id:'pSubgrade', patternUnits:'userSpaceOnUse', width:16, height:16, patternTransform:'rotate(45)'});
+  pSubgrade.appendChild(svg('rect',{width:16,height:16,fill:'#6b5644'}));
+  pSubgrade.appendChild(line(0,4,16,4,{stroke:'#4a3c2f',w:1.2}));
+  pSubgrade.appendChild(svg('circle',{cx:8,cy:11,r:1.1, fill:'#4a3c2f'}));
+  defs.appendChild(pSubgrade);
+  root.appendChild(defs);
+
+  let y = oy;
+  root.appendChild(svg('rect',{x:ox,y,width:W,height:d1px, fill:'url(#pAsphalt)', stroke:'var(--draw-line)','stroke-width':1.5}));
+  root.appendChild(dimLine(ox-18, y, ox-18, y+d1px, `D1=${fmt(s.d1,1)}in`, -30));
+  y += d1px;
+
+  root.appendChild(svg('rect',{x:ox,y,width:W,height:d2px, fill:'url(#pBase)', stroke:'var(--draw-line)','stroke-width':1.5}));
+  root.appendChild(dimLine(ox-18, y, ox-18, y+d2px, `D2=${fmt(s.d2,1)}in`, -30));
+  y += d2px;
+
+  root.appendChild(svg('rect',{x:ox,y,width:W,height:d3px, fill:'url(#pSubbase)', stroke:'var(--draw-line)','stroke-width':1.5}));
+  root.appendChild(dimLine(ox-18, y, ox-18, y+d3px, `D3=${fmt(s.d3,1)}in`, -30));
+  y += d3px;
+
+  root.appendChild(svg('rect',{x:ox,y,width:W,height:subgradeH, fill:'url(#pSubgrade)', stroke:'var(--draw-line)','stroke-width':1.5}));
+  // jagged bottom edge to read as "undefined extent of soil" rather than a hard boundary
+  const zig = [];
+  const teeth = 10;
+  for(let i=0;i<=teeth;i++){
+    const zx = ox + (W/teeth)*i;
+    const zy = y+subgradeH + (i%2===0? 0 : 7);
+    zig.push(`${zx},${zy}`);
+  }
+  root.appendChild(svg('polyline',{points:zig.join(' '), fill:'none', stroke:'var(--draw-line)','stroke-width':1.5}));
+
+  root.appendChild(text(ox+W/2, oy+d1px/2+4, 'Surface (AC)', {size:11, attrs:{fill:'#eef1f5'}}));
+  root.appendChild(text(ox+W/2, oy+d1px+d2px/2+4, 'Base', {size:11, attrs:{fill:'#2a2116'}}));
+  root.appendChild(text(ox+W/2, oy+d1px+d2px+d3px/2+4, 'Subbase', {size:11, attrs:{fill:'#3a2f24'}}));
+  root.appendChild(text(ox+W/2, oy+d1px+d2px+d3px+subgradeH/2+4, 'Subgrade', {size:11, attrs:{fill:'#f2ece2'}}));
+
+  container.appendChild(root);
+  document.getElementById('sectionDims').textContent = `Total = ${fmt(s.d1+s.d2+s.d3,1)} in`;
+}
+
+function drawSNChart(s, c){
+  const container = document.getElementById('svgSN');
+  container.innerHTML='';
+  const maxSN = Math.max(c.SN1, c.SN2, c.SN3, c.SN1_prov, c.SN2_prov, c.SN3_prov, 1) * 1.15;
+  const chartW = 480, chartH = 240, pad = 50;
+  const vw = chartW+pad*2, vh = chartH+pad*1.6;
+  const root = svg('svg',{viewBox:`0 0 ${vw} ${vh}`, width:'100%'});
+  const ox = pad, oy = pad*0.7;
+  const scaleY = SN => chartH - (SN/maxSN)*chartH;
+
+  // axis
+  root.appendChild(line(ox, oy, ox, oy+chartH, {stroke:'var(--draw-line)', w:1.5}));
+  root.appendChild(line(ox, oy+chartH, ox+chartW, oy+chartH, {stroke:'var(--draw-line)', w:1.5}));
+
+  const groups = [
+    {label:'SN1\n(base)', req:c.SN1, prov:c.SN1_prov},
+    {label:'SN2\n(subbase)', req:c.SN2, prov:c.SN2_prov},
+    {label:'SN3\n(subgrade)', req:c.SN3, prov:c.SN3_prov},
+  ];
+  const gw = chartW/groups.length;
+  groups.forEach((g,i)=>{
+    const cx = ox + gw*i + gw/2;
+    const barW = 34;
+    // required (outline)
+    const yReq = oy+scaleY(g.req);
+    root.appendChild(svg('rect',{x:cx-barW-4, y:yReq, width:barW, height:oy+chartH-yReq, fill:'none', stroke:'var(--accent)','stroke-width':2}));
+    root.appendChild(text(cx-barW/2-4, yReq-8, `${fmt(g.req,2)}`, {size:10.5, attrs:{fill:'var(--accent)'}}));
+    // provided (filled)
+    const pass = g.prov >= g.req;
+    const yProv = oy+scaleY(g.prov);
+    root.appendChild(svg('rect',{x:cx+4, y:yProv, width:barW, height:oy+chartH-yProv, fill: pass?'var(--pass)':'var(--fail)', attrs:{opacity:0.55}, stroke: pass?'var(--pass)':'var(--fail)', 'stroke-width':1.5}));
+    root.appendChild(text(cx+barW/2+4, yProv-8, `${fmt(g.prov,2)}`, {size:10.5, attrs:{fill: pass?'var(--pass)':'var(--fail)'}}));
+    // label
+    root.appendChild(text(cx, oy+chartH+22, g.label.split('\n')[0], {size:11}));
+    root.appendChild(text(cx, oy+chartH+36, g.label.split('\n')[1], {size:9.5, attrs:{fill:'var(--sub)'}}));
+  });
+
+  // legend
+  root.appendChild(svg('rect',{x:ox, y:oy+chartH+54, width:10, height:10, fill:'none', stroke:'var(--accent)','stroke-width':2}));
+  root.appendChild(text(ox+42, oy+chartH+62, 'Required', {size:10, anchor:'start', attrs:{fill:'var(--sub)'}}));
+  root.appendChild(svg('rect',{x:ox+120, y:oy+chartH+54, width:10, height:10, fill:'var(--pass)', attrs:{opacity:0.55}}));
+  root.appendChild(text(ox+162, oy+chartH+62, 'Provided', {size:10, anchor:'start', attrs:{fill:'var(--sub)'}}));
+
+  container.appendChild(root);
+  document.getElementById('snDims').textContent = `SN3 total = ${fmt(c.SN3_prov,2)}`;
+}
+
+function statusRow(name, req, prov, unit=''){
+  const pass = prov >= req;
+  return `<tr>
+    <td>${name}</td>
+    <td>${fmt(req,2)} ${unit}</td>
+    <td>${fmt(prov,2)} ${unit}</td>
+    <td>${fmt(prov/req,2)}</td>
+    <td><span class="badge ${pass?'pass':'fail'}">${pass?'PASS':'FAIL'}</span></td>
+  </tr>`;
+}
+
+function render(){
+  const s = readState();
+  const c = compute(s);
+
+  document.getElementById('zrShow').innerHTML = `ZR = <b>${s.ZR.toFixed(3)}</b> at R=${s.R}%`;
+
+  drawSection(s);
+  drawSNChart(s, c);
+
+  let rows = '';
+  rows += statusRow('SN1 — surface protects base', c.SN1, c.SN1_prov);
+  rows += statusRow('SN2 — protects subbase', c.SN2, c.SN2_prov);
+  rows += statusRow('SN3 — protects subgrade (overall)', c.SN3, c.SN3_prov);
+  document.getElementById('resultsBody').innerHTML = rows;
+
+  let minRows = '';
+  minRows += statusRow('Surface (asphalt) thickness', c.mins.ac, s.d1, 'in');
+  minRows += statusRow('Base thickness', c.mins.base, s.d2, 'in');
+  document.getElementById('minBody').innerHTML = minRows;
+
+  document.getElementById('minThkNote').innerHTML =
+    `For <b>${fmt(s.w18)}</b> ESALs, AASHTO 1993 practice suggests a minimum surface thickness of <b>${fmt(c.mins.ac,1)} in</b> and minimum base thickness of <b>${fmt(c.mins.base,1)} in</b>.`;
+}
+
+Object.values(els).forEach(el=>{
+  el.addEventListener('input', render);
+  el.addEventListener('change', render);
+});
+
+render();
+</script>
+</body>
+</html>

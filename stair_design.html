@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stair & Stair Beam Design Calculator — USD / BNBC</title>
+<style>
+  :root{
+    --blue-deep:#0a0f1a; --blue-mid:#111827; --blue-line:#26344a;
+    --paper:#e9edf4; --ink:#0a0f1a; --accent:#25c18e; --accent2:#6fb4e6; --grid:rgba(255,255,255,0.045);
+    --ok:#25c18e; --warn:#e2574c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Courier New', Consolas, monospace;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/24px 24px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/24px 24px,
+      var(--blue-deep);
+    color:var(--paper); min-height:100vh; padding:32px 16px 64px;
+  }
+  .sheet{max-width:1060px; margin:0 auto;}
+  .title-block{
+    border:2px solid var(--blue-line); background:var(--blue-mid); padding:18px 24px;
+    display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px; margin-bottom:16px;
+  }
+  .title-block h1{margin:0; font-size:1.35rem; letter-spacing:1.5px; text-transform:uppercase; font-weight:700;}
+  .title-block .sub{font-size:0.72rem; color:var(--accent2); letter-spacing:2px; text-transform:uppercase; margin-top:4px;}
+  .stamp{font-size:0.68rem; text-align:right; line-height:1.5; color:#a8c2de; letter-spacing:1px;}
+  .disclaimer{
+    border:1px solid var(--warn); background:rgba(226,87,76,0.08); color:#f3b3ab;
+    font-size:0.72rem; line-height:1.6; padding:12px 16px; margin-bottom:20px;
+  }
+  .grid-layout{display:grid; grid-template-columns:1fr 1.25fr; gap:20px;}
+  @media (max-width:860px){.grid-layout{grid-template-columns:1fr;}}
+  .panel{border:1px solid var(--blue-line); background:rgba(18,64,110,0.5); padding:20px;}
+  .panel h2{
+    margin:0 0 14px; font-size:0.82rem; letter-spacing:2px; text-transform:uppercase;
+    color:var(--accent); border-bottom:1px dashed var(--blue-line); padding-bottom:8px;
+  }
+  .field{margin-bottom:13px;}
+  .field label{display:block; font-size:0.7rem; letter-spacing:0.5px; text-transform:uppercase; color:#a8c2de; margin-bottom:5px;}
+  .field .unit{color:var(--accent);}
+  .field input, .field select{
+    width:100%; padding:8px 10px; background:var(--paper); color:var(--ink);
+    border:1px solid var(--blue-line); font-family:inherit; font-size:0.92rem;
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--accent); outline-offset:-1px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+  button.calc{
+    width:100%; padding:13px; background:var(--accent); color:var(--blue-deep); border:none;
+    font-family:inherit; font-weight:700; letter-spacing:2px; text-transform:uppercase; font-size:0.85rem;
+    cursor:pointer; margin-top:6px;
+  }
+  button.calc:hover{background:#f2b658;}
+  .section-title{
+    font-size:0.75rem; letter-spacing:2px; text-transform:uppercase; color:var(--accent);
+    margin:18px 0 8px; padding-top:14px; border-top:1px dashed var(--blue-line);
+  }
+  .section-title:first-child{margin-top:0; padding-top:0; border-top:none;}
+  .results{display:none;}
+  .results.show{display:block;}
+  .result-row{display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:7px 0; border-bottom:1px solid rgba(61,110,165,0.4);}
+  .result-row:last-child{border-bottom:none;}
+  .result-row .label{font-size:0.7rem; letter-spacing:0.4px; text-transform:uppercase; color:#a8c2de;}
+  .result-row .value{font-size:0.94rem; font-weight:700; color:var(--paper); text-align:right;}
+  .result-row .value .u{font-size:0.66rem; color:var(--accent); font-weight:400; margin-left:3px;}
+  .status-banner{margin-top:10px; padding:11px 14px; font-size:0.75rem; letter-spacing:0.5px; border:1px solid;}
+  .status-banner.ok{border-color:var(--ok); color:var(--ok); background:rgba(95,191,143,0.08);}
+  .status-banner.warn{border-color:var(--warn); color:var(--warn); background:rgba(217,99,76,0.08);}
+  .placeholder{color:#7fa1c7; font-size:0.8rem; text-align:center; padding:30px 10px;}
+  .formula-note{margin-top:16px; font-size:0.65rem; color:#7fa1c7; line-height:1.7; border-top:1px dashed var(--blue-line); padding-top:12px;}
+  .code-ref{color:var(--accent); font-weight:700;}
+  .live-calc{
+    font-size:0.7rem; color:var(--accent); letter-spacing:0.3px; margin:-6px 0 12px; padding:6px 10px;
+    border:1px dashed var(--blue-line); background:rgba(232,163,61,0.06); line-height:1.6;
+  }
+  .live-calc b{color:var(--paper);}
+  .stair-diagram{margin:6px 0 18px; padding:14px; border:1px dashed var(--blue-line); text-align:center;}
+  .stair-diagram svg{max-width:100%; height:auto;}
+  .stair-diagram .caption{margin-top:8px; font-size:0.68rem; letter-spacing:0.5px; color:#a8c2de; line-height:1.5;}
+  .stair-diagram .caption b{color:var(--accent); font-weight:700;}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="title-block">
+    <div>
+      <h1>Stair &amp; Stair Beam Design</h1>
+      <div class="sub">USD Method &middot; US Customary Units &middot; BNBC / ACI 318 Basis</div>
+    </div>
+    <div class="stamp">
+      DRAWING NO. SD-001<br>
+      UNITS: ft / in / kip / psi / psf<br>
+      REF: BNBC 2020 Part 6 — Stair Design (USD)
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    ⚠ This tool follows the standard classroom worked-example method for a two-flight dog-legged stair with a
+    mid stair-beam: waist-slab + steps dead load, one-way slab moment coefficients (wL²/14 &amp; wL²/9),
+    reinforcement design, and stair-beam flexural design (wL²/14 &amp; wL²/16). It covers flexure only — shear
+    / stirrup design for the stair beam is NOT included and must be checked separately. It assumes a simply
+    idealized two-span-with-landings condition per the lecture method, not a full continuous-beam analysis.
+    Final design must be verified and sealed by a licensed structural engineer.
+  </div>
+
+  <div class="grid-layout">
+
+    <!-- INPUT PANEL -->
+    <div class="panel">
+      <h2>Inputs</h2>
+
+      <div class="section-title">Stair Geometry</div>
+      <div class="row2">
+        <div class="field">
+          <label>Rise <span class="unit">(in)</span></label>
+          <input type="number" id="rise" value="6" min="1" step="0.25">
+        </div>
+        <div class="field">
+          <label>Going / Tread <span class="unit">(in)</span></label>
+          <input type="number" id="going" value="10" min="1" step="0.25">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>No. of Steps in Flight</label>
+          <input type="number" id="nSteps" value="9" min="1" step="1">
+        </div>
+        <div class="field">
+          <label>Waist Slab Thickness, t <span class="unit">(in)</span></label>
+          <input type="number" id="waistT" value="6" min="2" step="0.5">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Flight Width <span class="unit">(ft)</span></label>
+          <input type="number" id="flightW" value="3.5" min="1" step="0.25">
+        </div>
+        <div class="field">
+          <label>Effective Cover to Main Bar <span class="unit">(in)</span></label>
+          <input type="number" id="slabCover" value="1" min="0.5" step="0.25">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Landing 1 Length <span class="unit">(ft)</span></label>
+          <input type="number" id="land1" value="3.5" min="0" step="0.25">
+        </div>
+        <div class="field">
+          <label>Landing 2 Length <span class="unit">(ft)</span></label>
+          <input type="number" id="land2" value="3.5" min="0" step="0.25">
+        </div>
+      </div>
+      <div class="live-calc" id="geomLive">—</div>
+
+      <div class="section-title">Step 01 — Loads</div>
+      <div class="row2">
+        <div class="field">
+          <label>Include Railing?</label>
+          <select id="railInc">
+            <option value="1" selected>Yes</option>
+            <option value="0">No</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Railing Height <span class="unit">(ft)</span></label>
+          <input type="number" id="railH" value="3" min="0" step="0.25">
+        </div>
+      </div>
+      <div class="field">
+        <label>Railing Thickness <span class="unit">(in)</span></label>
+        <input type="number" id="railT" value="3" min="0" step="0.5">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Floor Finish <span class="unit">(psf)</span></label>
+          <input type="number" id="ff" value="25" min="0" step="1">
+        </div>
+        <div class="field">
+          <label>Live Load <span class="unit">(psf)</span></label>
+          <input type="number" id="ll" value="100" min="0" step="5">
+        </div>
+      </div>
+      <div class="live-calc" id="loadLive">—</div>
+
+      <div class="section-title">Materials &amp; Slab Reinforcement</div>
+      <div class="row2">
+        <div class="field">
+          <label>f'<sub>c</sub> <span class="unit">(psi)</span></label>
+          <input type="number" id="fc" value="3000" min="2000" step="250">
+        </div>
+        <div class="field">
+          <label>f<sub>y</sub> <span class="unit">(psi)</span></label>
+          <input type="number" id="fy" value="40000" min="40000" step="1000">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Main Bar (load-transfer dir.)</label>
+          <select id="mainBarSlab">
+            <option value="3">#3</option><option value="4">#4</option><option value="5">#5</option>
+            <option value="6" selected>#6</option><option value="7">#7</option><option value="8">#8</option>
+            <option value="9">#9</option><option value="10">#10</option><option value="11">#11</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Distribution Bar (other dir.)</label>
+          <select id="distBar">
+            <option value="3" selected>#3</option><option value="4">#4</option><option value="5">#5</option>
+            <option value="6">#6</option><option value="7">#7</option><option value="8">#8</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Extra-Top (Negative Moment) Zone Width <span class="unit">(in)</span></label>
+        <input type="number" id="zoneW" value="25" min="1" step="1">
+      </div>
+
+      <div class="section-title">Step 05 — Stair Beam</div>
+      <div class="row2">
+        <div class="field">
+          <label>Beam Width, b<sub>w</sub> <span class="unit">(in)</span></label>
+          <input type="number" id="beamW" value="10" min="4" step="1">
+        </div>
+        <div class="field">
+          <label>Beam Depth, h <span class="unit">(in)</span></label>
+          <input type="number" id="beamH" value="12" min="6" step="1">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Beam Cover to Bar Centroid <span class="unit">(in)</span></label>
+          <input type="number" id="beamCover" value="2.5" min="1" step="0.25">
+        </div>
+        <div class="field">
+          <label>Beam Span, L <span class="unit">(ft)</span></label>
+          <input type="number" id="beamSpan" value="7.5" min="1" step="0.25">
+        </div>
+      </div>
+      <div class="field">
+        <label>Tributary Area on Beam <span class="unit">(ft&sup2;, auto — override if needed)</span></label>
+        <input type="number" id="beamTribArea" value="52.5" min="0" step="0.5">
+      </div>
+      <div class="field">
+        <label>Beam Main Bar Size</label>
+        <select id="beamBar">
+          <option value="3">#3</option><option value="4">#4</option><option value="5">#5</option>
+          <option value="6" selected>#6</option><option value="7">#7</option><option value="8">#8</option>
+          <option value="9">#9</option><option value="10">#10</option><option value="11">#11</option>
+        </select>
+      </div>
+
+      <button class="calc" id="calcBtn">Design Stair &amp; Beam &rarr;</button>
+    </div>
+
+    <!-- OUTPUT PANEL -->
+    <div class="panel">
+      <h2>Design Results</h2>
+
+      <div class="stair-diagram">
+        <div id="stairDiagramContainer"></div>
+        <div class="caption" id="stairDiagramCaption"></div>
+      </div>
+
+      <div id="placeholder" class="placeholder">
+        Enter geometry, loads, materials, and beam size, then click<br>
+        Design Stair &amp; Beam to see the full 6-step USD calculation.
+      </div>
+
+      <div class="results" id="results">
+
+        <div class="section-title">Step 01 — Factored Load</div>
+        <div class="result-row"><span class="label">Waist Slab Self Weight</span><span class="value" id="rWaist">-</span></div>
+        <div class="result-row"><span class="label">Rises &amp; Steps Self Weight</span><span class="value" id="rSteps">-</span></div>
+        <div class="result-row"><span class="label">Railing</span><span class="value" id="rRail">-</span></div>
+        <div class="result-row"><span class="label">Floor Finish</span><span class="value" id="rFF">-</span></div>
+        <div class="result-row"><span class="label">Live Load</span><span class="value" id="rLL">-</span></div>
+        <div class="result-row"><span class="label">Total Factored Load, w = 1.2DL+1.6LL</span><span class="value" id="rWTotal">-</span></div>
+
+        <div class="section-title">Step 02 — Moment Calculation</div>
+        <div class="result-row"><span class="label">Span Length, L</span><span class="value" id="rSpanL">-</span></div>
+        <div class="result-row"><span class="label">Positive Moment, M(+ve) = wL&sup2;/14</span><span class="value" id="rMpos">-</span></div>
+        <div class="result-row"><span class="label">Negative Moment, M(-ve) = wL&sup2;/9</span><span class="value" id="rMneg">-</span></div>
+
+        <div class="section-title">Step 03 — d Check</div>
+        <div class="result-row"><span class="label">&rho;<sub>0.005</sub></span><span class="value" id="rRho">-</span></div>
+        <div class="result-row"><span class="label">d<sub>required</sub></span><span class="value" id="rDreq">-</span></div>
+        <div class="result-row"><span class="label">d<sub>provided</sub> = t &minus; cover</span><span class="value" id="rDprov">-</span></div>
+        <div id="dCheckBanner" class="status-banner ok">-</div>
+
+        <div class="section-title">Step 04 — Slab Reinforcement</div>
+        <div class="result-row"><span class="label">A<sub>s,min</sub> = 0.002bt</span><span class="value" id="rAsMin">-</span></div>
+        <div class="result-row"><span class="label">A<sub>s</sub>(+ve) required</span><span class="value" id="rAsPos">-</span></div>
+        <div class="result-row"><span class="label">Main Bar Spacing @ (+ve)</span><span class="value" id="rSpacePos">-</span></div>
+        <div class="result-row"><span class="label">A<sub>s</sub>(-ve) required</span><span class="value" id="rAsNeg">-</span></div>
+        <div class="result-row"><span class="label">Extra Top Bars Needed in Zone</span><span class="value" id="rExtraTop">-</span></div>
+        <div class="result-row"><span class="label">Distribution Steel Spacing</span><span class="value" id="rSpaceDist">-</span></div>
+
+        <div class="section-title">Step 05 — Stair Beam Design</div>
+        <div class="result-row"><span class="label">Beam Self Weight</span><span class="value" id="rBeamSelf">-</span></div>
+        <div class="result-row"><span class="label">Load from Stair on Beam</span><span class="value" id="rBeamStairLoad">-</span></div>
+        <div class="result-row"><span class="label">Total Load on Beam, w</span><span class="value" id="rBeamW">-</span></div>
+        <div class="result-row"><span class="label">Positive Moment, M(+ve) = wL&sup2;/14</span><span class="value" id="rBeamMpos">-</span></div>
+        <div class="result-row"><span class="label">Negative Moment, M(-ve) = wL&sup2;/16</span><span class="value" id="rBeamMneg">-</span></div>
+        <div class="result-row"><span class="label">d<sub>required</sub> / d<sub>provided</sub></span><span class="value" id="rBeamD">-</span></div>
+        <div id="beamDCheckBanner" class="status-banner ok">-</div>
+        <div class="result-row"><span class="label">A<sub>s,min</sub> (beam)</span><span class="value" id="rBeamAsMin">-</span></div>
+        <div class="result-row"><span class="label">A<sub>s</sub>(+ve) / A<sub>s</sub>(-ve) required</span><span class="value" id="rBeamAs">-</span></div>
+        <div class="result-row"><span class="label">Beam Reinforcement (governs = A<sub>s,min</sub> or A<sub>s</sub>)</span><span class="value" id="rBeamBars">-</span></div>
+
+        <div class="section-title">Step 06 — Detailing</div>
+        <div class="result-row"><span class="label">Slant Length of Flight, L<sub>o</sub></span><span class="value" id="rLoSlant">-</span></div>
+        <div class="result-row"><span class="label">Extra Top Bar Extension, L<sub>o</sub>/3</span><span class="value" id="rLoThird">-</span></div>
+
+        <div id="statusBanner" class="status-banner ok">PASS</div>
+      </div>
+
+      <div class="formula-note">
+        <span class="code-ref">Step 01 (loads):</span> waist self wt (ksf) = (t/12&times;150)/(1000cos&theta;); steps self wt (ksf) = (rise/24)&times;(150/1000) [angle-independent];
+        railing (ksf) = (t<sub>rail</sub>/12 &times; h<sub>rail</sub> &times; slant &times; 150)/(1000 &times; width &times; horiz. length); w = 1.2(&Sigma;DL)+1.6(LL)<br>
+        <span class="code-ref">Step 02:</span> L = landing1+landing2+flight horizontal length; M(+ve)=wL&sup2;/14; M(-ve)=wL&sup2;/9<br>
+        <span class="code-ref">Step 03:</span> &rho;<sub>0.005</sub>=0.85&beta;<sub>1</sub>(f'<sub>c</sub>/f<sub>y</sub>)(&epsilon;<sub>u</sub>/(&epsilon;<sub>u</sub>+0.005)); d<sub>req</sub>=&radic;[M<sub>u,max</sub>/(&phi;&rho;f<sub>y</sub>b(1&minus;0.59&rho;f<sub>y</sub>/f'<sub>c</sub>))]<br>
+        <span class="code-ref">Step 04:</span> A<sub>s,min</sub>=0.0020bt (f<sub>y</sub>&le;50 ksi) or 0.0018bt (f<sub>y</sub>=60 ksi); A<sub>s</sub> solved from M<sub>u</sub>=&phi;A<sub>s</sub>f<sub>y</sub>(d&minus;A<sub>s</sub>f<sub>y</sub>/1.7f'<sub>c</sub>b); spacing s=12A<sub>b</sub>/A<sub>s</sub><br>
+        <span class="code-ref">Step 05 (beam):</span> tributary area &times; slab factored load / span = load on beam from stair; A<sub>s,min</sub>=max(3&radic;f'<sub>c</sub>(psi)/f<sub>y</sub>(psi)&middot;bd, 200/f<sub>y</sub>(psi)&middot;bd)<br>
+        <span class="code-ref">Step 06:</span> extra top bars extend L<sub>o</sub>/3 from the support, L<sub>o</sub> = slant length of the adjacent flight<br>
+        This tool replicates the classroom worked-example method; verify tributary assumptions, continuity conditions, and shear/stirrup design separately for final design.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const barDB = {
+    3:{db:0.375, Ab:0.11}, 4:{db:0.500, Ab:0.20}, 5:{db:0.625, Ab:0.31},
+    6:{db:0.750, Ab:0.44}, 7:{db:0.875, Ab:0.60}, 8:{db:1.000, Ab:0.79},
+    9:{db:1.128, Ab:1.00}, 10:{db:1.270, Ab:1.27}, 11:{db:1.410, Ab:1.56}
+  };
+  const UNIT_WT = 150; // pcf, normal-weight concrete
+
+  function fmtNum(x){ return (Math.round(x*100)/100).toString(); }
+
+  function beta1(fcPsi){
+    if (fcPsi <= 4000) return 0.85;
+    if (fcPsi >= 8000) return 0.65;
+    return 0.85 - 0.05*(fcPsi-4000)/1000;
+  }
+
+  // Solve Mu = phi*As*fy*(d - As*fy/(1.7*fc*b)) for As (kip-in, ksi, in)
+  function solveAs(MuKipIn, phi, fyKsi, fcKsi, b, d){
+    const A = phi*fyKsi*fyKsi/(1.7*fcKsi*b);
+    const B = -phi*fyKsi*d;
+    const C = MuKipIn;
+    const disc = B*B - 4*A*C;
+    if (disc < 0 || MuKipIn <= 0) return 0;
+    return (-B - Math.sqrt(disc))/(2*A);
+  }
+
+  function roundDownHalf(x){ return Math.floor(x*2)/2; }
+
+  /* ============== GEOMETRY / LOAD LIVE PREVIEW ============== */
+  function geometryCalc(){
+    const rise = parseFloat(document.getElementById('rise').value) || 0;
+    const going = parseFloat(document.getElementById('going').value) || 0;
+    const nSteps = parseFloat(document.getElementById('nSteps').value) || 0;
+    const flightW = parseFloat(document.getElementById('flightW').value) || 0;
+    const land1 = parseFloat(document.getElementById('land1').value) || 0;
+    const land2 = parseFloat(document.getElementById('land2').value) || 0;
+
+    const horizFt = (nSteps * going) / 12;
+    const vertFt = (nSteps * rise) / 12;
+    const thetaRad = Math.atan2(vertFt, horizFt);
+    const thetaDeg = thetaRad * 180/Math.PI;
+    const slantFt = Math.sqrt(horizFt*horizFt + vertFt*vertFt);
+    const spanL = land1 + land2 + horizFt;
+
+    return {rise, going, nSteps, flightW, land1, land2, horizFt, vertFt, thetaRad, thetaDeg, slantFt, spanL};
+  }
+
+  function updateGeomLive(){
+    const g = geometryCalc();
+    document.getElementById('geomLive').innerHTML =
+      'Flight run = <b>' + fmtNum(g.horizFt) + ' ft</b> &middot; Flight rise = <b>' + fmtNum(g.vertFt) + ' ft</b> &middot; ' +
+      '&theta; = <b>' + fmtNum(g.thetaDeg) + '&deg;</b> &middot; Slant length L&#8320; = <b>' + fmtNum(g.slantFt) + ' ft</b><br>' +
+      'Total Span, L = Landing1+Landing2+Flight run = <b>' + fmtNum(g.spanL) + ' ft</b>';
+  }
+
+  function loadCalc(){
+    const g = geometryCalc();
+    const waistT = parseFloat(document.getElementById('waistT').value) || 0;
+    const railInc = document.getElementById('railInc').value === '1';
+    const railT = parseFloat(document.getElementById('railT').value) || 0;
+    const railH = parseFloat(document.getElementById('railH').value) || 0;
+    const ff = parseFloat(document.getElementById('ff').value) || 0;
+    const ll = parseFloat(document.getElementById('ll').value) || 0;
+    const cosT = Math.cos(g.thetaRad);
+
+    const waistLoad = cosT > 0 ? ((waistT/12)*UNIT_WT)/(1000*cosT) : 0; // ksf
+    const stepsLoad = (g.rise/24)*(UNIT_WT/1000); // ksf, angle-independent
+    let railLoad = 0;
+    if (railInc && g.flightW > 0 && g.horizFt > 0) {
+      railLoad = ((railT/12) * railH * g.slantFt * UNIT_WT) / (1000 * g.flightW * g.horizFt); // ksf
+    }
+    const ffLoad = ff/1000; // ksf
+    const llLoad = ll/1000; // ksf
+
+    const dlSum = waistLoad + stepsLoad + railLoad + ffLoad;
+    const wTotal = 1.2*dlSum + 1.6*llLoad; // ksf, factored
+
+    return {g, waistLoad, stepsLoad, railLoad, ffLoad, llLoad, dlSum, wTotal};
+  }
+
+  function updateLoadLive(){
+    const L = loadCalc();
+    document.getElementById('loadLive').innerHTML =
+      'Waist=<b>' + L.waistLoad.toFixed(3) + '</b> + Steps=<b>' + L.stepsLoad.toFixed(3) + '</b> + Rail=<b>' + L.railLoad.toFixed(3) +
+      '</b> + Finish=<b>' + L.ffLoad.toFixed(3) + '</b> ksf (DL) &middot; LL=<b>' + L.llLoad.toFixed(3) + '</b> ksf<br>' +
+      'w = 1.2&Sigma;DL + 1.6LL = <b>' + L.wTotal.toFixed(3) + ' ksf</b>';
+  }
+
+  ['rise','going','nSteps','flightW','land1','land2'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', ()=>{ updateGeomLive(); updateLoadLive(); updateBeamTribDefault(); });
+  });
+  ['waistT','railInc','railT','railH','ff','ll'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', updateLoadLive);
+    document.getElementById(id).addEventListener('change', updateLoadLive);
+  });
+
+  function updateBeamTribDefault(){
+    const g = geometryCalc();
+    const auto = 2 * g.flightW * g.horizFt;
+    const field = document.getElementById('beamTribArea');
+    if (!field.dataset.userEdited) field.value = fmtNum(auto);
+    document.getElementById('beamSpan').placeholder = fmtNum(g.horizFt);
+  }
+  document.getElementById('beamTribArea').addEventListener('input', function(){ this.dataset.userEdited = '1'; });
+
+  /* ============== STAIR ELEVATION DIAGRAM ============== */
+  function drawStairDiagram(spacePos, extraBars, mainBarSize, distBarSize, loThird, beamBarCount, beamBarSize){
+    const W = 620, H = 260;
+    const x0 = 60, y0 = 210, x1 = 500, y1 = 60;
+    let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="'Courier New',monospace">`;
+
+    // beams at both ends (schematic blocks)
+    svg += `<rect x="${x0-40}" y="${y0-8}" width="40" height="40" fill="#12406e" stroke="#eef3f8" stroke-width="1.4"/>`;
+    svg += `<circle cx="${x0-28}" cy="${y0+4}" r="2.6" fill="#e8a33d"/><circle cx="${x0-12}" cy="${y0+4}" r="2.6" fill="#e8a33d"/>`;
+    svg += `<circle cx="${x0-28}" cy="${y0+22}" r="2.6" fill="#e8a33d"/><circle cx="${x0-12}" cy="${y0+22}" r="2.6" fill="#e8a33d"/>`;
+    svg += `<text x="${x0-20}" y="${y0+46}" font-size="8" fill="#a8c2de" text-anchor="middle">${beamBarCount}#${beamBarSize}</text>`;
+
+    svg += `<rect x="${x1}" y="${y1-30}" width="40" height="40" fill="#12406e" stroke="#eef3f8" stroke-width="1.4"/>`;
+    svg += `<circle cx="${x1+12}" cy="${y1-18}" r="2.6" fill="#e8a33d"/><circle cx="${x1+28}" cy="${y1-18}" r="2.6" fill="#e8a33d"/>`;
+    svg += `<circle cx="${x1+12}" cy="${y1}" r="2.6" fill="#e8a33d"/><circle cx="${x1+28}" cy="${y1}" r="2.6" fill="#e8a33d"/>`;
+    svg += `<text x="${x1+20}" y="${y1-38}" font-size="8" fill="#a8c2de" text-anchor="middle">${beamBarCount}#${beamBarSize}</text>`;
+
+    // inclined waist slab (band)
+    const dx = x1-x0, dy = y1-y0;
+    const len = Math.sqrt(dx*dx+dy*dy);
+    const nx = -dy/len, ny = dx/len; // normal
+    const bandHalf = 9;
+    const p1 = [x0+nx*bandHalf, y0+ny*bandHalf];
+    const p2 = [x1+nx*bandHalf, y1+ny*bandHalf];
+    const p3 = [x1-nx*bandHalf, y1-ny*bandHalf];
+    const p4 = [x0-nx*bandHalf, y0-ny*bandHalf];
+    svg += `<polygon points="${p1.join(',')} ${p2.join(',')} ${p3.join(',')} ${p4.join(',')}" fill="#3d6ea5" fill-opacity="0.45" stroke="#eef3f8" stroke-width="1.6"/>`;
+
+    // main bar dots along the slab
+    const nDots = 14;
+    for (let i=1;i<nDots;i++){
+      const t = i/nDots;
+      const px = x0 + dx*t, py = y0 + dy*t;
+      svg += `<circle cx="${px}" cy="${py}" r="2.6" fill="#e8a33d"/>`;
+    }
+
+    // extra top bars near top joint (schematic small arcs)
+    for (let i=0;i<extraBars;i++){
+      const t = 0.86 - i*0.045;
+      const px = x0 + dx*t + nx*7, py = y0 + dy*t + ny*7;
+      svg += `<circle cx="${px}" cy="${py}" r="2.2" fill="#d9634c"/>`;
+    }
+    svg += `<text x="${x1-90}" y="${y1+16}" font-size="8.5" fill="#d9634c" text-anchor="middle">${extraBars}#${mainBarSize} extra top</text>`;
+    svg += `<text x="${x1-90}" y="${y1+27}" font-size="8" fill="#a8c2de" text-anchor="middle">L&#8320;/3 = ${fmtNum(loThird)} ft</text>`;
+
+    // main bar / distribution spacing callout
+    svg += `<text x="${(x0+x1)/2}" y="${(y0+y1)/2 - 16}" font-size="8.5" fill="#eef3f8" text-anchor="middle">#${mainBarSize} @ ${fmtNum(spacePos)}" c/c alt. ckd</text>`;
+    svg += `<text x="${(x0+x1)/2}" y="${(y0+y1)/2 - 4}" font-size="8" fill="#a8c2de" text-anchor="middle">(dist. #${distBarSize} perpendicular)</text>`;
+
+    svg += '</svg>';
+    return svg;
+  }
+
+  /* ============== MAIN CALCULATION ============== */
+  document.getElementById('calcBtn').addEventListener('click', () => {
+    const g = geometryCalc();
+    const L = loadCalc();
+
+    const waistT = parseFloat(document.getElementById('waistT').value);
+    const slabCover = parseFloat(document.getElementById('slabCover').value);
+    const fc = parseFloat(document.getElementById('fc').value);
+    const fy = parseFloat(document.getElementById('fy').value);
+    const mainBarSize = parseInt(document.getElementById('mainBarSlab').value);
+    const distBarSize = parseInt(document.getElementById('distBar').value);
+    const zoneW = parseFloat(document.getElementById('zoneW').value);
+
+    const beamW = parseFloat(document.getElementById('beamW').value);
+    const beamH = parseFloat(document.getElementById('beamH').value);
+    const beamCover = parseFloat(document.getElementById('beamCover').value);
+    const beamSpan = parseFloat(document.getElementById('beamSpan').value) || g.horizFt;
+    const beamTribArea = parseFloat(document.getElementById('beamTribArea').value);
+    const beamBarSize = parseInt(document.getElementById('beamBar').value);
+
+    const vals = [waistT,slabCover,fc,fy,zoneW,beamW,beamH,beamCover,beamSpan,beamTribArea];
+    if (vals.some(v=>isNaN(v)||v<0) || waistT<=0 || fc<=0 || fy<=0 || beamW<=0 || beamH<=0 || beamSpan<=0) {
+      alert('Please enter valid values for all fields.');
+      return;
+    }
+
+    const fcKsi = fc/1000, fyKsi = fy/1000;
+    const b1 = beta1(fc);
+    const rho = 0.85*b1*(fc/fy)*(0.003/0.008);
+    const phi = 0.9;
+
+    // --- Step 02: Moments (slab) ---
+    const spanL = g.spanL;
+    const Mpos = (L.wTotal * spanL*spanL)/14; // kip-ft/ft
+    const Mneg = (L.wTotal * spanL*spanL)/9;  // kip-ft/ft
+    const MuMax = Math.max(Mpos, Mneg);
+    const MuMaxKipIn = MuMax*12;
+
+    // --- Step 03: d check ---
+    const b12 = 12; // per-ft width
+    const dReq = Math.sqrt(MuMaxKipIn/(phi*rho*fyKsi*b12*(1-0.59*rho*(fyKsi/fcKsi))));
+    const dProv = waistT - slabCover;
+    const dOk = dProv >= dReq;
+
+    // --- Step 04: Reinforcement ---
+    const asMinRatio = fy <= 50000 ? 0.0020 : 0.0018;
+    const AsMin = asMinRatio * b12 * waistT;
+
+    const AsPosCalc = solveAs(Mpos*12, phi, fyKsi, fcKsi, b12, dProv);
+    const AsNegCalc = solveAs(Mneg*12, phi, fyKsi, fcKsi, b12, dProv);
+    const AsPos = Math.max(AsPosCalc, AsMin);
+    const AsNeg = Math.max(AsNegCalc, AsMin);
+
+    const mainBar = barDB[mainBarSize];
+    const distBarObj = barDB[distBarSize];
+    const spacePosRaw = 12*mainBar.Ab/AsPos;
+    const maxSpacing = Math.min(3*waistT, 18);
+    const spacePos = Math.min(roundDownHalf(spacePosRaw), maxSpacing);
+
+    const spaceDistRaw = 12*distBarObj.Ab/AsMin;
+    const spaceDist = Math.min(roundDownHalf(spaceDistRaw), maxSpacing);
+
+    // extra top bar calc (alternate bent-up bars within the zone)
+    const AsZoneReq = (AsNeg/12)*zoneW;
+    const numInZone = zoneW/spacePos;
+    const bentBars = Math.max(1, Math.ceil(numInZone/2));
+    const providedZoneArea = bentBars*mainBar.Ab;
+    const extraBars = Math.max(0, Math.ceil((AsZoneReq - providedZoneArea)/mainBar.Ab));
+
+    // --- Step 05: Stair beam ---
+    const beamSelfWt = (beamW/12)*(beamH/12)*(UNIT_WT/1000); // kip/ft, unfactored
+    const beamStairLoad = (beamTribArea * L.wTotal)/beamSpan; // kip/ft, factored
+    const beamWtotal = beamStairLoad + beamSelfWt*1.2; // kip/ft
+
+    const beamMpos = (beamWtotal*beamSpan*beamSpan)/14; // kip-ft
+    const beamMneg = (beamWtotal*beamSpan*beamSpan)/16; // kip-ft
+    const beamMuMax = Math.max(beamMpos, beamMneg);
+    const beamDprov = beamH - beamCover;
+    const beamDreq = Math.sqrt((beamMuMax*12)/(phi*rho*fyKsi*beamW*(1-0.59*rho*(fyKsi/fcKsi))));
+    const beamDok = beamDprov >= beamDreq;
+
+    const beamAsMin1 = (3*Math.sqrt(fc)/fy)*beamW*beamDprov;
+    const beamAsMin2 = (200/fy)*beamW*beamDprov;
+    const beamAsMin = Math.max(beamAsMin1, beamAsMin2);
+
+    const beamAsPosCalc = solveAs(beamMpos*12, phi, fyKsi, fcKsi, beamW, beamDprov);
+    const beamAsNegCalc = solveAs(beamMneg*12, phi, fyKsi, fcKsi, beamW, beamDprov);
+    const beamAsGoverning = Math.max(beamAsPosCalc, beamAsNegCalc, beamAsMin);
+    const beamBarObj = barDB[beamBarSize];
+    const beamBarCount = Math.max(2, Math.ceil(beamAsGoverning/beamBarObj.Ab));
+    const beamAsProvided = beamBarCount*beamBarObj.Ab;
+
+    // --- Step 06: Detailing ---
+    const loThird = g.slantFt/3;
+
+    // ---------------- Render ----------------
+    document.getElementById('rWaist').innerHTML = L.waistLoad.toFixed(3) + '<span class="u">ksf</span>';
+    document.getElementById('rSteps').innerHTML = L.stepsLoad.toFixed(3) + '<span class="u">ksf</span>';
+    document.getElementById('rRail').innerHTML = L.railLoad.toFixed(3) + '<span class="u">ksf</span>';
+    document.getElementById('rFF').innerHTML = L.ffLoad.toFixed(3) + '<span class="u">ksf</span>';
+    document.getElementById('rLL').innerHTML = L.llLoad.toFixed(3) + '<span class="u">ksf</span>';
+    document.getElementById('rWTotal').innerHTML = L.wTotal.toFixed(3) + '<span class="u">ksf</span>';
+
+    document.getElementById('rSpanL').innerHTML = spanL.toFixed(2) + '<span class="u">ft</span>';
+    document.getElementById('rMpos').innerHTML = Mpos.toFixed(2) + '<span class="u">kip-ft/ft</span>';
+    document.getElementById('rMneg').innerHTML = Mneg.toFixed(2) + '<span class="u">kip-ft/ft</span>';
+
+    document.getElementById('rRho').innerHTML = rho.toFixed(4);
+    document.getElementById('rDreq').innerHTML = dReq.toFixed(2) + '<span class="u">in</span>';
+    document.getElementById('rDprov').innerHTML = dProv.toFixed(2) + '<span class="u">in</span>';
+    const dBanner = document.getElementById('dCheckBanner');
+    if (dOk) { dBanner.className='status-banner ok'; dBanner.textContent = 'd provided > d required — OK'; }
+    else { dBanner.className='status-banner warn'; dBanner.textContent = 'd provided < d required — increase waist slab thickness'; }
+
+    document.getElementById('rAsMin').innerHTML = AsMin.toFixed(3) + '<span class="u">in&sup2;/ft</span>';
+    document.getElementById('rAsPos').innerHTML = AsPos.toFixed(3) + '<span class="u">in&sup2;/ft</span>' + (AsPosCalc>AsMin?' (controlled)':' (As,min governs)');
+    document.getElementById('rSpacePos').innerHTML = '#' + mainBarSize + ' @ ' + spacePos.toFixed(1) + '<span class="u">in c/c alt. ckd</span>';
+    document.getElementById('rAsNeg').innerHTML = AsNeg.toFixed(3) + '<span class="u">in&sup2;/ft</span>' + (AsNegCalc>AsMin?' (controlled)':' (As,min governs)');
+    document.getElementById('rExtraTop').innerHTML = extraBars + '<span class="u">&#215; #' + mainBarSize + ' extra top (in ' + zoneW + '" zone)</span>';
+    document.getElementById('rSpaceDist').innerHTML = '#' + distBarSize + ' @ ' + spaceDist.toFixed(1) + '<span class="u">in c/c</span>';
+
+    document.getElementById('rBeamSelf').innerHTML = beamSelfWt.toFixed(3) + '<span class="u">kip/ft (unfactored)</span>';
+    document.getElementById('rBeamStairLoad').innerHTML = beamStairLoad.toFixed(2) + '<span class="u">kip/ft (factored)</span>';
+    document.getElementById('rBeamW').innerHTML = beamWtotal.toFixed(2) + '<span class="u">kip/ft</span>';
+    document.getElementById('rBeamMpos').innerHTML = beamMpos.toFixed(2) + '<span class="u">kip-ft</span>';
+    document.getElementById('rBeamMneg').innerHTML = beamMneg.toFixed(2) + '<span class="u">kip-ft</span>';
+    document.getElementById('rBeamD').innerHTML = beamDreq.toFixed(2) + ' / ' + beamDprov.toFixed(2) + '<span class="u">in</span>';
+    const beamDBanner = document.getElementById('beamDCheckBanner');
+    if (beamDok) { beamDBanner.className='status-banner ok'; beamDBanner.textContent = 'd provided > d required — OK'; }
+    else { beamDBanner.className='status-banner warn'; beamDBanner.textContent = 'd provided < d required — increase beam depth'; }
+    document.getElementById('rBeamAsMin').innerHTML = beamAsMin.toFixed(3) + '<span class="u">in&sup2;</span>';
+    document.getElementById('rBeamAs').innerHTML = beamAsPosCalc.toFixed(3) + ' / ' + beamAsNegCalc.toFixed(3) + '<span class="u">in&sup2;</span>';
+    document.getElementById('rBeamBars').innerHTML = beamBarCount + '#' + beamBarSize + ' <span class="u">(' + beamAsProvided.toFixed(3) + ' in&sup2;)</span>';
+
+    document.getElementById('rLoSlant').innerHTML = g.slantFt.toFixed(2) + '<span class="u">ft</span>';
+    document.getElementById('rLoThird').innerHTML = loThird.toFixed(2) + '<span class="u">ft &asymp; ' + Math.ceil(loThird) + " ft</span>";
+
+    // overall status
+    const banner = document.getElementById('statusBanner');
+    let fails = [];
+    if (!dOk) fails.push('slab depth insufficient for maximum moment');
+    if (!beamDok) fails.push('beam depth insufficient for maximum moment');
+    if (fails.length===0){ banner.className='status-banner ok'; banner.textContent='PASS — stair slab and stair beam satisfy the Step 01–06 checks'; }
+    else { banner.className='status-banner warn'; banner.textContent='REVIEW NEEDED — ' + fails.join('; '); }
+
+    // diagram
+    const container = document.getElementById('stairDiagramContainer');
+    const caption = document.getElementById('stairDiagramCaption');
+    container.innerHTML = drawStairDiagram(spacePos, extraBars, mainBarSize, distBarSize, loThird, beamBarCount, beamBarSize);
+    caption.innerHTML = `Waist slab <b>${waistT}"</b> &middot; #${mainBarSize} @ ${spacePos.toFixed(1)}" main (alt. bent) &middot; ${extraBars}#${mainBarSize} extra top over L&#8320;/3 = ${loThird.toFixed(1)} ft &middot; stair beam ${beamBarCount}#${beamBarSize}`;
+
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('results').classList.add('show');
+  });
+
+  // initial live previews
+  updateGeomLive();
+  updateLoadLive();
+  updateBeamTribDefault();
+</script>
+
+</body>
+</html>

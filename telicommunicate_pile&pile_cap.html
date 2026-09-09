@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pile Group &amp; Pile Cap Design — SPT-Based (SI Units)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+:root{
+  --blue-deep:#0b2a4a; --blue-mid:#12406e; --blue-line:#3d6ea5;
+  --paper:#eef3f8; --accent:#e8a33d; --accent-soft:rgba(232,163,61,0.14);
+  --grid-line:rgba(255,255,255,0.055); --text-dim:#a8c2de;
+  --pass:#4caf6f; --fail:#e2584a;
+  --font-display:'Space Grotesk',sans-serif; --font-mono:'JetBrains Mono','Courier New',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;}
+body{margin:0;font-family:var(--font-mono);color:var(--paper);
+  background:linear-gradient(var(--grid-line) 1px,transparent 1px) 0 0/28px 28px,
+             linear-gradient(90deg,var(--grid-line) 1px,transparent 1px) 0 0/28px 28px,
+             var(--blue-deep); min-height:100vh;}
+.wrap{max-width:1320px;margin:0 auto;padding:48px 24px 96px;}
+header{margin-bottom:36px;}
+.eyebrow{font-size:0.7rem;font-weight:600;letter-spacing:0.35em;color:var(--accent);margin-bottom:12px;}
+h1{font-family:var(--font-display);font-weight:700;font-size:clamp(1.8rem,4vw,2.6rem);margin:0 0 10px;letter-spacing:-0.01em;}
+header p{color:var(--text-dim);font-size:0.92rem;line-height:1.7;max-width:840px;margin:0;}
+.grid{display:grid;grid-template-columns:420px 1fr;gap:28px;align-items:start;}
+@media (max-width:1020px){.grid{grid-template-columns:1fr;}}
+.panel{background:rgba(18,64,110,0.45);border:1px solid var(--blue-line);padding:24px 22px;position:sticky;top:20px;max-height:calc(100vh - 40px);overflow-y:auto;}
+@media (max-width:1020px){.panel{position:static;max-height:none;}}
+.panel h2{font-family:var(--font-display);font-weight:600;font-size:1.05rem;color:var(--paper);margin:0 0 4px;}
+.section-tag{font-size:0.62rem;font-weight:600;letter-spacing:0.2em;color:var(--accent);margin:22px 0 10px;text-transform:uppercase;}
+.section-tag:first-of-type{margin-top:0;}
+.field{margin-bottom:12px;}
+.field label{display:flex;justify-content:space-between;gap:8px;font-size:0.74rem;color:var(--text-dim);margin-bottom:5px;}
+.field label span.unit{color:var(--accent);font-weight:600;}
+.field input,.field select{width:100%;background:rgba(11,42,74,0.7);border:1px solid var(--blue-line);color:var(--paper);padding:9px 10px;font-family:var(--font-mono);font-size:0.85rem;border-radius:2px;}
+.field input:focus,.field select:focus{outline:none;border-color:var(--accent);}
+.field small{display:block;color:var(--text-dim);opacity:0.75;font-size:0.66rem;margin-top:4px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.soil-table-wrap{overflow-x:auto;margin:10px 0;border:1px solid var(--blue-line);}
+table.soiltable{width:100%;border-collapse:collapse;font-size:0.7rem;min-width:280px;}
+table.soiltable th{background:rgba(11,42,74,0.7);color:var(--accent);padding:6px 4px;text-align:center;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.04em;border-bottom:1px solid var(--blue-line);position:sticky;top:0;}
+table.soiltable td{padding:3px 3px;text-align:center;border-bottom:1px dashed rgba(61,110,165,0.25);}
+table.soiltable input{width:56px;background:rgba(11,42,74,0.7);border:1px solid var(--blue-line);color:var(--paper);padding:4px 3px;font-size:0.7rem;font-family:var(--font-mono);border-radius:2px;text-align:center;}
+table.soiltable select{width:56px;background:rgba(11,42,74,0.7);border:1px solid var(--blue-line);color:var(--paper);padding:4px 2px;font-size:0.7rem;font-family:var(--font-mono);border-radius:2px;}
+.rm-btn{background:rgba(226,88,74,0.15);border:1px solid var(--fail);color:var(--fail);font-size:0.62rem;padding:4px 7px;cursor:pointer;border-radius:2px;}
+.rm-btn:hover{background:rgba(226,88,74,0.3);}
+.add-row-btn{background:rgba(61,110,165,0.25);border:1px solid var(--blue-line);color:var(--paper);font-size:0.72rem;padding:9px;cursor:pointer;border-radius:2px;width:100%;font-family:var(--font-mono);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;transition:all 0.15s ease;margin-bottom:8px;}
+.add-row-btn:hover{border-color:var(--accent);color:var(--accent);}
+button#calcBtn{width:100%;margin-top:18px;background:var(--accent);color:var(--blue-deep);border:none;padding:13px;font-family:var(--font-mono);font-weight:700;font-size:0.85rem;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:background 0.2s ease;}
+button#calcBtn:hover{background:#f3b558;}
+.results{min-height:200px;}
+.placeholder{border:1px dashed var(--blue-line);padding:48px 24px;text-align:center;color:var(--text-dim);font-size:0.85rem;}
+.card{background:rgba(18,64,110,0.4);border:1px solid var(--blue-line);padding:20px 22px;margin-bottom:16px;position:relative;}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px;flex-wrap:wrap;}
+.card-head h3{font-family:var(--font-display);font-size:1rem;font-weight:600;margin:0;color:var(--paper);}
+.card-head .tag{font-size:0.62rem;letter-spacing:0.15em;color:var(--accent);text-transform:uppercase;margin-top:3px;display:block;}
+.badge{font-size:0.68rem;font-weight:700;letter-spacing:0.08em;padding:5px 10px;border-radius:2px;text-transform:uppercase;white-space:nowrap;}
+.badge.pass{background:rgba(76,175,111,0.16);color:var(--pass);border:1px solid var(--pass);}
+.badge.fail{background:rgba(226,88,74,0.16);color:var(--fail);border:1px solid var(--fail);}
+.badge.info{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent);}
+.formula{font-size:0.78rem;color:var(--text-dim);background:rgba(11,42,74,0.5);padding:10px 12px;border-left:2px solid var(--blue-line);margin:8px 0;overflow-x:auto;white-space:pre;}
+.calc-row{display:flex;justify-content:space-between;font-size:0.8rem;padding:5px 0;border-bottom:1px dashed rgba(61,110,165,0.3);color:var(--paper);}
+.calc-row:last-child{border-bottom:none;}
+.calc-row .k{color:var(--text-dim);}
+.calc-row .v{font-weight:600;}
+.summary{background:rgba(232,163,61,0.08);border:1px solid var(--accent);padding:22px;margin-bottom:16px;}
+.summary h3{font-family:var(--font-display);color:var(--accent);margin:0 0 12px;font-size:1.05rem;}
+.note{font-size:0.72rem;color:var(--text-dim);line-height:1.6;margin-top:6px;}
+.footnote{margin-top:32px;font-size:0.72rem;color:var(--text-dim);line-height:1.7;border-top:1px dashed var(--blue-line);padding-top:18px;}
+table.rtab{width:100%;border-collapse:collapse;font-size:0.72rem;margin:8px 0;}
+table.rtab th{text-align:right;color:var(--accent);font-weight:600;padding:6px 7px;border-bottom:1px solid var(--blue-line);letter-spacing:0.03em;text-transform:uppercase;font-size:0.6rem;}
+table.rtab th:first-child,table.rtab td:first-child{text-align:left;}
+table.rtab td{text-align:right;padding:5px 7px;border-bottom:1px dashed rgba(61,110,165,0.25);}
+table.rtab tr:last-child td{border-bottom:none;}
+.detail-select{width:100%;margin-bottom:16px;}
+.locked{opacity:0.62;}
+.pile-len-highlight{background:linear-gradient(135deg, rgba(232,163,61,0.22), rgba(232,163,61,0.06));border:2px solid var(--accent);border-radius:4px;padding:16px 20px;margin:4px 0 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.pile-len-highlight .plh-num{font-family:var(--font-display);font-size:2.4rem;font-weight:700;color:var(--accent);line-height:1;white-space:nowrap;}
+.pile-len-highlight .plh-meta{display:flex;flex-direction:column;gap:2px;}
+.pile-len-highlight .plh-lbl{font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.14em;}
+.pile-len-highlight .plh-sub{font-size:0.74rem;color:var(--paper);}
+td.hl-len{color:var(--accent);font-weight:700;font-size:0.88rem;}
+.pile-sketch-wrap{background:rgba(11,42,74,0.4);border:1px solid var(--blue-line);padding:14px;text-align:center;overflow-x:auto;}
+.pile-sketch-wrap svg{max-width:100%;height:auto;}
+.rebar-summary{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;margin:10px 0;font-size:0.76rem;}
+.rebar-summary .k{color:var(--text-dim);}
+.rebar-summary .v{color:var(--paper);font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">DWG-09 · GEOTECHNICAL &amp; STRUCTURAL CALCULATION SHEET — SI UNITS</div>
+    <h1>Pile Group &amp; Pile Cap Design</h1>
+    <p>SPT-based pile capacity (skin friction α/β-method + end bearing, per AASHTO 2007) and pile cap design for tower foundations with 2, 3, 4, 5, or 6 piles per group. Units: kN, m, mm, MPa. Structural checks cover punching (two-way) shear, one-way shear, and flexural design; more specialized checks (column-face shear-friction, hook length, pedestal design) are out of scope for this tool — see footnote.</p>
+  </header>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Design Inputs</h2>
+
+      <div class="section-tag">Soil Profile (SPT)</div>
+      <div class="soil-table-wrap">
+        <table class="soiltable" id="soilTable">
+          <thead><tr><th>Δz (m)</th><th>SPT N</th><th>Soil</th><th></th></tr></thead>
+          <tbody id="soilTableBody"></tbody>
+        </table>
+      </div>
+      <button type="button" class="add-row-btn" onclick="addSoilRow()">+ Add Layer</button>
+
+      <div class="section-tag">Pile &amp; Capacity Factors</div>
+      <div class="two-col">
+        <div class="field"><label>Pile diameter, D <span class="unit">m</span></label><input type="number" id="pileDia" value="0.5" step="0.05"></div>
+        <div class="field"><label>Soil unit wt (skin fric.), γs <span class="unit">kN/m³</span></label><input type="number" id="gammaSoil" value="14" step="0.5"></div>
+      </div>
+      <div class="two-col">
+        <div class="field"><label>F.S. — end bearing</label><input type="number" id="fsEnd" value="3" step="0.5"></div>
+        <div class="field"><label>F.S. — skin friction</label><input type="number" id="fsSkin" value="3" step="0.5"></div>
+      </div>
+      <div class="field"><label>Neglect capacity in top <span class="unit">m</span></label><input type="number" id="ignoreDepth" value="1.5" step="0.5"></div>
+      <small style="display:block;color:var(--text-dim);opacity:0.75;font-size:0.66rem;margin:-6px 0 8px;">Discounts skin friction &amp; end bearing within this depth (disturbed zone / scour / seasonal moisture allowance) — matches the source workbook's top‑layer override.</small>
+
+      <div class="section-tag">Loads (Unfactored, per Tower Leg)</div>
+      <div class="field">
+        <label>Tower / pile schedule</label>
+        <select id="towerType" onchange="applyTowerPreset()">
+          <option value="STL_32_210">STL_32_210</option>
+          <option value="STL_32_260">STL_32_260</option>
+          <option value="STL_35_210" selected>STL_35_210</option>
+          <option value="STL_35_260">STL_35_260</option>
+          <option value="STL_40_210">STL_40_210</option>
+          <option value="STL_40_260">STL_40_260</option>
+          <option value="STL_42_210">STL_42_210</option>
+          <option value="STL_42_260">STL_42_260</option>
+          <option value="TLTK_32_225">TLTK_32_225</option>
+          <option value="STL_35_185">STL_35_185</option>
+          <option value="USER">User defined</option>
+        </select>
+        <small>Selecting a schedule fills C/U/H below from the standard tower load table. Choose "User defined" to type your own.</small>
+      </div>
+      <div class="three-col">
+        <div class="field"><label>C <span class="unit">kN</span></label><input type="number" id="loadC" value="485" step="5"></div>
+        <div class="field"><label>U <span class="unit">kN</span></label><input type="number" id="loadU" value="410" step="5"></div>
+        <div class="field"><label>H <span class="unit">kN</span></label><input type="number" id="loadH" value="45" step="5"></div>
+      </div>
+      <div class="field"><label>Load factor</label><input type="number" id="loadFactor" value="1.6" step="0.05"></div>
+      <small style="display:block;color:var(--text-dim);opacity:0.75;font-size:0.66rem;margin:-6px 0 8px;">Factored C/U/H used throughout the design are computed as Load factor × (unfactored C, U, H) — see the Loads (Factored) readout below.</small>
+      <div class="three-col">
+        <div class="field"><label>C·LF <span class="unit">kN</span></label><input type="text" id="loadCf" value="" readonly></div>
+        <div class="field"><label>U·LF <span class="unit">kN</span></label><input type="text" id="loadUf" value="" readonly></div>
+        <div class="field"><label>H·LF <span class="unit">kN</span></label><input type="text" id="loadHf" value="" readonly></div>
+      </div>
+
+      <div class="section-tag">Pile Cap Geometry</div>
+      <div class="two-col">
+        <div class="field"><label>Pile‑to‑pile spacing <span class="unit">×D</span></label><input type="number" id="spacingMult" value="2.5" step="0.25"></div>
+        <div class="field"><label>Pile‑to‑edge distance <span class="unit">×D</span></label><input type="number" id="edgeMult" value="1.25" step="0.25"></div>
+      </div>
+      <div class="two-col">
+        <div class="field"><label>Pedestal side <span class="unit">m</span></label><input type="number" id="pedSide" value="0.7" step="0.05"></div>
+        <div class="field"><label>Cap top to pedestal top <span class="unit">m</span></label><input type="number" id="pedHeight" value="1.2" step="0.1"></div>
+      </div>
+      <div class="field"><label>Trial pile cap thickness <span class="unit">m</span></label><input type="number" id="capThick" value="0.6" step="0.05"></div>
+      <div class="field"><label>Concrete unit wt (self‑weight), γc <span class="unit">kN/m³</span></label><input type="number" id="gammaConc" value="13" step="0.5"></div>
+      <small style="display:block;color:var(--text-dim);opacity:0.75;font-size:0.66rem;margin:-6px 0 8px;">Default 13 kN/m³ reflects a submerged‑condition assumption (as noted in the source workbook); use ~24 kN/m³ if not submerged.</small>
+
+      <div class="section-tag">Materials &amp; Reinforcement</div>
+      <div class="two-col">
+        <div class="field"><label>f'c <span class="unit">MPa</span></label><input type="number" id="fc" value="21" step="1"></div>
+        <div class="field"><label>fy <span class="unit">MPa</span></label><input type="number" id="fy" value="500" step="25"></div>
+      </div>
+      <div class="two-col">
+        <div class="field"><label>Effective‑depth allowance <span class="unit">mm</span></label><input type="number" id="dAllow" value="150" step="5"></div>
+        <div class="field"><label>Trial bar diameter <span class="unit">mm</span></label><input type="number" id="barDia" value="16" step="2"></div>
+      </div>
+
+      <div class="section-tag">Pile Longitudinal Reinforcement</div>
+      <div class="two-col">
+        <div class="field"><label>Main bar diameter <span class="unit">mm</span></label><input type="number" id="pileBarDia" value="20" step="2"></div>
+        <div class="field"><label>Min. longit. steel ratio <span class="unit">%</span></label><input type="number" id="pileSteelRatio" value="0.5" step="0.1"></div>
+      </div>
+      <div class="two-col">
+        <div class="field"><label>Main bars — override count <span class="unit">optional</span></label><input type="number" id="pileNBarsOverride" value="" step="1" placeholder="auto"></div>
+        <div class="field"><label>Clear cover to spiral <span class="unit">mm</span></label><input type="number" id="pileCover" value="75" step="5"></div>
+      </div>
+      <div class="two-col">
+        <div class="field"><label>Spiral bar diameter <span class="unit">mm</span></label><input type="number" id="spiralDia" value="10" step="2"></div>
+        <div class="field"><label>Spiral pitch <span class="unit">mm</span></label><input type="number" id="spiralPitch" value="150" step="10"></div>
+      </div>
+      <div class="field"><label>Rebar lap splice length <span class="unit">mm</span></label><input type="number" id="lapLength" value="800" step="50"></div>
+      <small style="display:block;color:var(--text-dim);opacity:0.75;font-size:0.66rem;margin:-6px 0 8px;">Main bar count is auto-derived from the min. steel ratio × gross pile area unless overridden (rounded up to an even number, min. 6 bars). Splicing: piles ≤12 m need no joint; &gt;12–24 m get 1 joint (two bar lengths); &gt;24 m get 3 joints, each at the lap length above. Pile reinforcement design is preliminary — confirm against axial/moment demand and applicable code (e.g. ACI 336.3R) separately.</small>
+
+      <button id="calcBtn" onclick="runDesign()">Calculate Pile &amp; Cap Design</button>
+    </div>
+
+    <div class="results" id="results">
+      <div class="placeholder">Enter the soil profile and design parameters, then click <strong style="color:var(--accent);">Calculate Pile &amp; Cap Design</strong>.</div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    Preliminary design tool for educational / early‑stage use. <strong>Pile capacity</strong>: cumulative layer‑by‑layer skin friction (α‑method for clay: Su=6N, α per the standard reduction beyond Su/101&gt;1.5; β‑method for sand: β=1.5−0.245√z, scaled by N/15 when N≤15) plus end bearing (9·Su for clay; depth/diameter‑dependent Meyerhof‑type correlation for sand), per AASHTO 2007 — matching the assumptions noted in the source workbook. Required pile length is solved by linear interpolation of the soil‑capacity‑vs‑depth curve against total group demand (compression = tower C + cap/pedestal self‑weight; uplift = tower U − self‑weight), then rounded up to the next 0.5 m with a 1 m safety margin, exactly as in the source. <strong>Cap geometry</strong> for each pile count follows the source workbook's formulas, with pile‑to‑pile and pile‑to‑edge distances entered as multiples of pile diameter. <strong>Punching and one‑way shear</strong> use an equivalent smeared pile‑reaction pressure (total factored pile load ÷ cap plan area) rather than checking each individual pile position — a standard simplification for compact pile groups (this file's default 2.5D spacing) but a coarser approximation for widely‑spaced piles, where individual‑pile punching per ACI 318 §13.2.7 should be checked separately. <strong>Flexural design</strong> uses the source's exact cantilever‑moment formula (Mu = LF·(P·spacing/4 + H·pedestal height)) and its ACI 10.5.3‑style minimum‑reinforcement cascade (including the 4/3·As provision). Not covered by this tool: column‑face shear‑friction checks (CRSI guideline), hook length past the edge pile, and pedestal design (slenderness, main bars, ties) — verify these separately. Always confirm against a project‑specific geotechnical report and have the final design checked/sealed by a licensed structural engineer.
+  </div>
+</div>
+
+<script>
+let soilCounter = 0;
+const defaultSoil = [
+  [1.5,3,'C'],[1.5,4,'C'],[1.5,2,'C'],[1.5,9,'C'],[1.5,12,'C'],
+  [1.5,16,'S'],[1.5,20,'S'],[1.5,22,'S'],[1.5,22,'S'],[1.5,27,'S'],
+  [1.5,50,'S'],[1.5,50,'S']
+];
+
+// Standard tower / pile schedule loads (unfactored), per tower leg.
+// Factored values are derived live as Load factor × unfactored, not hardcoded,
+// so they always stay consistent with whatever "Load factor" is entered.
+const towerPresets = {
+  'STL_32_210':  [400,345,45],
+  'STL_32_260':  [645,550,70],
+  'STL_35_210':  [485,410,45],
+  'STL_35_260':  [775,665,70],
+  'STL_40_210':  [575,475,65],
+  'STL_40_260':  [885,745,95],
+  'STL_42_210':  [590,490,55],
+  'STL_42_260':  [970,800,90],
+  'TLTK_32_225': [590,510,65],
+  'STL_35_185':  [380,317,37],
+  'USER': null
+};
+
+function applyTowerPreset(){
+  const key = document.getElementById('towerType').value;
+  const preset = towerPresets[key];
+  const c = document.getElementById('loadC');
+  const u = document.getElementById('loadU');
+  const h = document.getElementById('loadH');
+  if(preset){
+    c.value = preset[0]; u.value = preset[1]; h.value = preset[2];
+    c.readOnly = true; u.readOnly = true; h.readOnly = true;
+    c.classList.add('locked'); u.classList.add('locked'); h.classList.add('locked');
+  } else {
+    c.readOnly = false; u.readOnly = false; h.readOnly = false;
+    c.classList.remove('locked'); u.classList.remove('locked'); h.classList.remove('locked');
+  }
+  updateFactoredLoads();
+}
+
+function updateFactoredLoads(){
+  const LF = num('loadFactor') || 0;
+  const c = num('loadC') || 0, u = num('loadU') || 0, h = num('loadH') || 0;
+  document.getElementById('loadCf').value = fmt(LF*c,1);
+  document.getElementById('loadUf').value = fmt(LF*u,1);
+  document.getElementById('loadHf').value = fmt(LF*h,1);
+}
+
+function addSoilRow(dz,N,type){
+  soilCounter++;
+  const tbody = document.getElementById('soilTableBody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="number" class="s-dz" value="${dz!==undefined?dz:1.5}" step="0.1"></td>
+    <td><input type="number" class="s-n" value="${N!==undefined?N:10}" step="1"></td>
+    <td><select class="s-type"><option value="C" ${type==='C'?'selected':''}>C</option><option value="S" ${type==='S'?'selected':''}>S</option></select></td>
+    <td><button type="button" class="rm-btn" onclick="this.closest('tr').remove()">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+function loadDefaultSoil(){
+  document.getElementById('soilTableBody').innerHTML='';
+  defaultSoil.forEach(r=>addSoilRow(r[0],r[1],r[2]));
+}
+
+function readSoil(){
+  const rows = document.querySelectorAll('#soilTableBody tr');
+  const layers = [];
+  rows.forEach(tr=>{
+    const dz = parseFloat(tr.querySelector('.s-dz').value);
+    const N = parseFloat(tr.querySelector('.s-n').value);
+    const type = tr.querySelector('.s-type').value;
+    if(isFinite(dz) && dz>0 && isFinite(N)){ layers.push({dz,N,type}); }
+  });
+  return layers;
+}
+
+function num(id){ const v=document.getElementById(id).value; return v===''?null:parseFloat(v); }
+function fmt(n,d=2){ return isFinite(n) ? n.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}) : '—'; }
+function badge(pass,txt){ return `<span class="badge ${pass?'pass':'fail'}">${txt||(pass?'PASS':'FAIL')}</span>`; }
+function card(letter,title,pass,body,showBadge=true){
+  return `<div class="card"><div class="card-head"><div><span class="tag">${letter}</span><h3>${title}</h3></div>${showBadge?badge(pass):''}</div>${body}</div>`;
+}
+
+let lastResults = null; // stores per-n design objects for the detail dropdown
+
+function buildSoilCapacityTable(layers, pileDia, gammaSoil, fsEnd, fsSkin, ignoreDepth){
+  const perimeter = Math.PI*pileDia;
+  const area = 0.25*Math.PI*pileDia*pileDia;
+  let cumDepth=0, cumSkinKN=0;
+  const rows=[];
+  layers.forEach(L=>{
+    cumDepth += L.dz;
+    const Su = L.type==='C' ? 6*L.N : 0;
+    const alpha = L.type==='C' ? (Su/101<=1.5 ? 0.55 : 0.55-0.1*(Su/101-1.5)) : 0;
+    const beta = L.N>15 ? (1.5-0.245*Math.sqrt(cumDepth)) : (L.N/15)*(1.5-0.245*Math.sqrt(cumDepth));
+    let skinRes = L.type==='C' ? Math.min(380, alpha*Su) : Math.min(200, beta*gammaSoil*cumDepth);
+    let endBearing = L.type==='C' ? 9*Su : ( (cumDepth/pileDia<10) ? Math.min(5.75*cumDepth*L.N,290*cumDepth) : Math.min(57.5*L.N,2900) );
+    if(cumDepth <= ignoreDepth + 1e-6){ skinRes = 0; endBearing = 0; }
+    cumSkinKN += skinRes*L.dz*perimeter;
+    const ultEndBearingKN = endBearing*area;
+    const O = cumSkinKN/fsSkin + ultEndBearingKN/fsEnd; // allowable compression, single pile
+    const E = cumSkinKN/fsSkin; // allowable uplift (skin only), single pile
+    rows.push({cumDepth, Su, alpha, beta, skinRes, endBearing, cumSkinKN, ultEndBearingKN, O, E});
+  });
+  return rows;
+}
+
+function interpolateDepth(target, rows, key){
+  if(target<=0) return 0;
+  for(let i=0;i<rows.length;i++){
+    if(rows[i][key]>=target){
+      if(i===0) return rows[0].cumDepth; // even the shallowest layer already suffices
+      const d0=rows[i-1].cumDepth, d1=rows[i].cumDepth, c0=rows[i-1][key], c1=rows[i][key];
+      if(c1===c0) return d1;
+      return d0 + (target-c0)*(d1-d0)/(c1-c0);
+    }
+  }
+  return null; // demand exceeds capacity available in the profile
+}
+
+function capGeometry(n, spacing, edge, D){
+  let L,W,areaFactor=1;
+  if(n===2){ L=(spacing+2*edge)*D; W=(edge*2)*D; }
+  else if(n===3){ L=(spacing+2*edge)*D; W=(edge*2+0.866*spacing)*D; areaFactor=0.7; }
+  else if(n===4){ L=(spacing+2*edge)*D; W=(spacing+2*edge)*D; }
+  else if(n===5){ L=(2*edge+2*0.866*spacing)*D; W=(spacing+2*edge)*D; }
+  else if(n===6){ L=(spacing*2+edge*2)*D; W=(spacing+edge*2)*D; }
+  const Area = L*W*areaFactor;
+  return {L,W,Area};
+}
+
+function computePileRebar(){
+  const D = num('pileDia'); // m
+  const barDia = num('pileBarDia');
+  const ratioPct = num('pileSteelRatio');
+  const overrideEl = document.getElementById('pileNBarsOverride');
+  const overrideVal = overrideEl.value;
+  const Ag = Math.PI/4*Math.pow(D*1000,2); // mm2
+  const As_min = (ratioPct/100)*Ag;
+  const barArea = Math.PI/4*barDia*barDia;
+  let nBars;
+  if(overrideVal!=='' && isFinite(parseFloat(overrideVal)) && parseFloat(overrideVal)>0){
+    nBars = Math.round(parseFloat(overrideVal));
+  } else {
+    nBars = Math.ceil(As_min/barArea);
+    if(nBars<6) nBars=6;
+    if(nBars%2!==0) nBars+=1;
+  }
+  const As_provided = nBars*barArea;
+  const ratio_provided = As_provided/Ag*100;
+  return {D, barDia, ratioPct, Ag, As_min, barArea, nBars, As_provided, ratio_provided};
+}
+
+function jointsForLength(Lm){
+  const lap = num('lapLength');
+  let n;
+  if(Lm===null || !isFinite(Lm)){ n=0; }
+  else if(Lm>24){ n=3; }
+  else if(Lm>12){ n=1; }
+  else { n=0; }
+  return {n, lap};
+}
+
+function buildPileSVG(Lm, Dm, rebar, jointInfo){
+  const W=300, topY=44, drawH=500, botY=topY+drawH;
+  const pileHalfW=46;
+  const cx=W/2 - 40; // shift left to leave room for cross-section inset
+  const xL=cx-pileHalfW, xR=cx+pileHalfW;
+  const toeDrop=34;
+  const pxPerM = Lm>0 ? drawH/Lm : 0;
+
+  // main bar lines (inset from face by cover-ish visual gap)
+  const barInset=10;
+  const barL=xL+barInset, barR=xR-barInset;
+
+  // spiral zigzag path
+  let spiralPts=[];
+  const nZig=26;
+  for(let i=0;i<=nZig;i++){
+    const y=topY+ (drawH-toeDrop)*(i/nZig);
+    const x = (i%2===0)? barL : barR;
+    spiralPts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+  }
+  const spiralPath = 'M '+spiralPts.join(' L ');
+
+  // joint positions (fractions of length, away from very top/bottom)
+  let jointFracs=[];
+  if(jointInfo.n===1) jointFracs=[0.5];
+  else if(jointInfo.n===3) jointFracs=[0.25,0.5,0.75];
+
+  const lapM = jointInfo.lap/1000;
+  let lapPx = pxPerM>0 ? lapM*pxPerM : 10;
+  if(lapPx<10) lapPx=10;
+
+  let jointsSVG='';
+  jointFracs.forEach((f,idx)=>{
+    const yc = topY + (drawH-toeDrop)*f;
+    const y0 = yc - lapPx/2, y1 = yc + lapPx/2;
+    jointsSVG += `
+      <rect x="${barL-3}" y="${y0.toFixed(1)}" width="6" height="${lapPx.toFixed(1)}" fill="var(--accent)" opacity="0.35" stroke="var(--accent)" stroke-width="0.75"/>
+      <rect x="${barR-3}" y="${y0.toFixed(1)}" width="6" height="${lapPx.toFixed(1)}" fill="var(--accent)" opacity="0.35" stroke="var(--accent)" stroke-width="0.75"/>
+      <line x1="${xR+8}" y1="${y0.toFixed(1)}" x2="${xR+20}" y2="${y0.toFixed(1)}" stroke="var(--text-dim)" stroke-width="1"/>
+      <line x1="${xR+8}" y1="${y1.toFixed(1)}" x2="${xR+20}" y2="${y1.toFixed(1)}" stroke="var(--text-dim)" stroke-width="1"/>
+      <line x1="${xR+16}" y1="${y0.toFixed(1)}" x2="${xR+16}" y2="${y1.toFixed(1)}" stroke="var(--text-dim)" stroke-width="1" marker-start="url(#arrS)" marker-end="url(#arrE)"/>
+      <text x="${xR+24}" y="${yc.toFixed(1)}" font-size="9" fill="var(--paper)" dominant-baseline="middle">J${idx+1}: lap ${jointInfo.lap} mm</text>`;
+  });
+
+  // cross-section inset (top right)
+  const scx=W-38, scy=topY+34, scr=26;
+  let barDots='';
+  for(let i=0;i<rebar.nBars;i++){
+    const ang = (2*Math.PI*i/rebar.nBars) - Math.PI/2;
+    const bx = scx + (scr-6)*Math.cos(ang);
+    const by = scy + (scr-6)*Math.sin(ang);
+    barDots += `<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="2.6" fill="var(--paper)"/>`;
+  }
+
+  const toeMidX = cx;
+  const svg = `
+<svg viewBox="0 0 ${W} ${botY+40}" xmlns="http://www.w3.org/2000/svg" font-family="JetBrains Mono, monospace">
+  <defs>
+    <marker id="arrS" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--text-dim)"/></marker>
+    <marker id="arrE" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M6,0 L0,3 L6,6 Z" fill="var(--text-dim)"/></marker>
+  </defs>
+  <line x1="${xL-14}" y1="${topY}" x2="${xL-14}" y2="${botY-toeDrop}" stroke="var(--text-dim)" stroke-width="1" marker-start="url(#arrS)" marker-end="url(#arrE)"/>
+  <text x="${xL-18}" y="${(topY+botY-toeDrop)/2}" font-size="10" fill="var(--accent)" font-weight="700" text-anchor="middle" transform="rotate(-90 ${xL-18} ${(topY+botY-toeDrop)/2})">L = ${fmt(Lm,1)} m</text>
+
+  <line x1="${xL-8}" y1="${topY}" x2="${xR+8}" y2="${topY}" stroke="var(--blue-line)" stroke-width="1.5"/>
+  <text x="${cx}" y="${topY-8}" font-size="9" fill="var(--text-dim)" text-anchor="middle">pile cut‑off level</text>
+
+  <path d="M ${xL},${topY} L ${xL},${botY-toeDrop} L ${toeMidX},${botY} L ${xR},${botY-toeDrop} L ${xR},${topY}" fill="rgba(232,163,61,0.05)" stroke="var(--paper)" stroke-width="1.5"/>
+
+  <path d="${spiralPath}" fill="none" stroke="var(--blue-line)" stroke-width="1.2"/>
+  <line x1="${barL}" y1="${topY}" x2="${barL}" y2="${botY-toeDrop-4}" stroke="var(--paper)" stroke-width="2"/>
+  <line x1="${barR}" y1="${topY}" x2="${barR}" y2="${botY-toeDrop-4}" stroke="var(--paper)" stroke-width="2"/>
+
+  ${jointsSVG}
+
+  <line x1="${barR+4}" y1="${topY+16}" x2="${barR+40}" y2="${topY+16}" stroke="var(--text-dim)" stroke-width="0.75"/>
+  <text x="${barR+42}" y="${topY+19}" font-size="8.5" fill="var(--text-dim)">${rebar.nBars}–Ø${rebar.barDia}mm main</text>
+  <line x1="${(barL+barR)/2}" y1="${botY-toeDrop-60}" x2="${(barL+barR)/2}" y2="${botY-toeDrop-60}" stroke="none"/>
+  <text x="${cx}" y="${botY-toeDrop+16}" font-size="8.5" fill="var(--text-dim)" text-anchor="middle">toe</text>
+
+  <circle cx="${scx}" cy="${scy}" r="${scr}" fill="none" stroke="var(--blue-line)" stroke-width="1"/>
+  <circle cx="${scx}" cy="${scy}" r="${scr-6}" fill="none" stroke="var(--text-dim)" stroke-width="0.75" stroke-dasharray="2,2"/>
+  ${barDots}
+  <text x="${scx}" y="${scy+scr+13}" font-size="8" fill="var(--text-dim)" text-anchor="middle">Section A‑A</text>
+  <text x="${scx}" y="${scy+scr+24}" font-size="8" fill="var(--text-dim)" text-anchor="middle">spiral Ø${document.getElementById('spiralDia').value}@${document.getElementById('spiralPitch').value}</text>
+</svg>`;
+  return svg;
+}
+
+function runDesign(){
+  const layers = readSoil();
+  const resultsDiv = document.getElementById('results');
+  if(layers.length===0){
+    resultsDiv.innerHTML = `<div class="placeholder">No soil layers defined. Click <strong style="color:var(--accent);">+ Add Layer</strong> to build the profile.</div>`;
+    return;
+  }
+  const pileDia = num('pileDia'), gammaSoil = num('gammaSoil');
+  const fsEnd = num('fsEnd'), fsSkin = num('fsSkin'), ignoreDepth = num('ignoreDepth');
+  const loadC = num('loadC'), loadU = num('loadU'), loadH = num('loadH'), LF = num('loadFactor');
+  updateFactoredLoads();
+  const spacingMult = num('spacingMult'), edgeMult = num('edgeMult');
+  const pedSide = num('pedSide'), pedHeight = num('pedHeight'), capThick = num('capThick');
+  const gammaConc = num('gammaConc');
+  const fc = num('fc'), fy = num('fy'), dAllow = num('dAllow'), barDia = num('barDia');
+
+  const soilRows = buildSoilCapacityTable(layers, pileDia, gammaSoil, fsEnd, fsSkin, ignoreDepth);
+
+  const spacing_m = spacingMult*pileDia;
+  const edge_m = edgeMult*pileDia;
+  const d_mm = capThick*1000 - dAllow;
+  const d_m = d_mm/1000;
+  const barArea = Math.PI/4*barDia*barDia; // mm2
+
+  const designs = {};
+  [2,3,4,5,6].forEach(n=>{
+    const geo = capGeometry(n, spacingMult, edgeMult, pileDia);
+    const Wp = geo.Area*capThick*gammaConc;
+    const Wpd = pedSide*pedSide*pedHeight*gammaConc;
+    const totalWeight = Wp+Wpd;
+
+    const compressionDemand = loadC + totalWeight; // group total, matches source B14 style
+    const upliftDemandRaw = loadU - totalWeight;
+    const upliftDemand = Math.max(upliftDemandRaw,0);
+
+    const depthComp = interpolateDepth(compressionDemand, soilRows.map(r=>({cumDepth:r.cumDepth, cap:n*r.O})), 'cap');
+    const depthUplift = upliftDemand>0 ? interpolateDepth(upliftDemand, soilRows.map(r=>({cumDepth:r.cumDepth, cap:n*r.E})), 'cap') : 0;
+
+    const insufficient = depthComp===null || depthUplift===null;
+    const governDepth = insufficient ? null : Math.max(depthComp, depthUplift||0);
+    const pileLength = insufficient ? null : Math.ceil((governDepth+1)/0.5)*0.5;
+
+    // shear checks (smeared equivalent pressure)
+    const capArea_m2 = geo.Area;
+    const avgPressure = LF*loadC/capArea_m2; // kN/m2
+    const pedSide_mm = pedSide*1000;
+    const bo_mm = 4*(pedSide_mm + d_mm);
+    const critArea_m2 = Math.pow(pedSide + d_m, 2);
+    const VuPunch = LF*loadC - avgPressure*critArea_m2;
+    const VcPunch = 0.85*0.33*Math.sqrt(fc)*bo_mm*d_mm/1000; // kN
+    const punchOK = VuPunch<=VcPunch;
+
+    const width_m = Math.min(geo.L, geo.W);
+    const longDim_m = Math.max(geo.L, geo.W);
+    const cantilever_m = (longDim_m - pedSide)/2;
+    const VuOneway = Math.max(avgPressure*width_m*(cantilever_m - d_m),0);
+    const VcOneway = 0.85*0.33*Math.sqrt(fc)*(width_m*1000)*d_mm/1000; // kN
+    const onewayOK = VuOneway<=VcOneway;
+
+    // flexure (exact source formula)
+    const M1 = (loadC+totalWeight)*spacing_m/4;
+    const M2 = loadH*pedHeight;
+    const Mu = LF*(M1+M2);
+    const B_mm = width_m*1000;
+    const term = 0.85*fc*B_mm*d_mm/fy;
+    const disc = term*term - (1.7*fc*Mu*1e6*B_mm)/(0.9*fy*fy);
+    const AsM = disc>=0 ? (term - Math.sqrt(disc)) : NaN;
+    const fourThirdsAs = AsM*4/3;
+    const As_ref006 = 0.25*(Math.sqrt(fc)/fy)*B_mm*d_mm;
+    const As_ref007 = 1.4*B_mm*d_mm/fy;
+    const As_shrink = 0.0018*B_mm*(capThick*1000);
+    const As_standardMin = Math.max(As_ref006, As_ref007);
+    let As_final;
+    if(isNaN(AsM)){ As_final = As_standardMin; }
+    else if(AsM > As_standardMin){ As_final = AsM; }
+    else if(As_standardMin < fourThirdsAs){ As_final = As_standardMin; }
+    else { As_final = Math.max(fourThirdsAs, As_shrink); }
+    const nBars = Math.ceil(As_final/barArea);
+    const spacingShort = barArea/As_final*B_mm;
+
+    const As_long = 0.0018*(longDim_m*1000)*(capThick*1000);
+    const spacingLong = barArea/As_long*(longDim_m*1000);
+
+    const overallOK = !insufficient && punchOK && onewayOK;
+    const jointInfo = jointsForLength(pileLength);
+
+    designs[n] = {n, geo, Wp, Wpd, totalWeight, compressionDemand, upliftDemand, upliftDemandRaw,
+      depthComp, depthUplift, insufficient, pileLength,
+      avgPressure, bo_mm, critArea_m2, VuPunch, VcPunch, punchOK,
+      width_m, longDim_m, cantilever_m, VuOneway, VcOneway, onewayOK,
+      M1, M2, Mu, B_mm, AsM, fourThirdsAs, As_ref006, As_ref007, As_shrink, As_standardMin, As_final, nBars, spacingShort, As_long, spacingLong,
+      overallOK, d_mm, d_m, jointInfo};
+  });
+
+  const pileRebar = computePileRebar();
+  lastResults = {designs, soilRows, fc, fy, barDia, capThick, dAllow, pileRebar};
+  renderResults();
+}
+
+function renderResults(){
+  if(!lastResults) return;
+  const {designs, soilRows} = lastResults;
+  let html='';
+
+  const allOK = [2,3,4,5,6].every(n=>designs[n].overallOK);
+  html += `<div class="summary"><h3>Pile Group Design Summary — ${allOK?'ALL CONFIGURATIONS PASS':'REVIEW REQUIRED'}</h3>
+  <table class="rtab"><tr><th>Piles</th><th>Length (m)</th><th>Cap L×W (m)</th><th>Weight (kN)</th><th>Punch Vu/φVc</th><th>1‑way Vu/φVc</th><th>As (mm²)</th><th>Spacing (mm)</th><th>Status</th></tr>
+  ${[2,3,4,5,6].map(n=>{
+    const d=designs[n];
+    return `<tr><td>${n}</td><td class="hl-len">${d.insufficient?'N/A':fmt(d.pileLength,1)}</td><td>${fmt(d.geo.L,2)}×${fmt(d.geo.W,2)}</td><td>${fmt(d.totalWeight,1)}</td>
+      <td>${fmt(d.VuPunch,1)}/${fmt(d.VcPunch,1)}</td><td>${fmt(d.VuOneway,1)}/${fmt(d.VcOneway,1)}</td>
+      <td>${fmt(d.As_final,0)}</td><td>${fmt(d.spacingShort,0)}</td><td>${badge(d.overallOK && !d.insufficient)}</td></tr>`;
+  }).join('')}
+  </table></div>`;
+
+  // soil capacity table
+  html += card('SOIL', 'Single‑Pile Capacity vs Depth (SPT‑Based)', true, `
+    <table class="rtab"><tr><th>Depth (m)</th><th>Su (kPa)</th><th>Skin (kN, cum.)</th><th>End Bearing (kN)</th><th>Allow. Comp. (kN)</th><th>Allow. Uplift (kN)</th></tr>
+    ${soilRows.map(r=>`<tr><td>${fmt(r.cumDepth,1)}</td><td>${fmt(r.Su,1)}</td><td>${fmt(r.cumSkinKN,1)}</td><td>${fmt(r.ultEndBearingKN,1)}</td><td>${fmt(r.O,1)}</td><td>${fmt(r.E,1)}</td></tr>`).join('')}
+    </table>
+  `, false);
+
+  // detail selector
+  html += `<div class="card"><div class="card-head"><div><span class="tag">DETAIL</span><h3>Per‑Configuration Breakdown</h3></div></div>
+    <select id="detailSelect" class="detail-select" onchange="renderDetail()">
+      <option value="2">2 Piles</option><option value="3">3 Piles</option><option value="4">4 Piles</option><option value="5">5 Piles</option><option value="6">6 Piles</option>
+    </select>
+    <div id="detailBody"></div>
+  </div>`;
+
+  document.getElementById('results').innerHTML = html;
+  renderDetail();
+  document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function renderDetail(){
+  if(!lastResults) return;
+  const n = parseInt(document.getElementById('detailSelect').value);
+  const d = lastResults.designs[n];
+  const rebar = lastResults.pileRebar;
+  let html='';
+
+  if(d.insufficient){
+    html += `<div class="pile-len-highlight" style="border-color:var(--fail);background:linear-gradient(135deg, rgba(226,88,74,0.2), rgba(226,88,74,0.06));">
+      <div class="plh-num" style="color:var(--fail);">N/A</div>
+      <div class="plh-meta"><span class="plh-lbl">Pile Length</span><span class="plh-sub" style="color:var(--fail);">insufficient soil profile — extend borehole or increase pile dia/count</span></div>
+    </div>`;
+  } else {
+    const j = d.jointInfo;
+    html += `<div class="pile-len-highlight">
+      <div class="plh-num">${fmt(d.pileLength,1)} m</div>
+      <div class="plh-meta">
+        <span class="plh-lbl">Governing Pile Length (${n}‑pile group)</span>
+        <span class="plh-sub">${j.n===0 ? 'single bar length — no splice required' : j.n+' rebar joint'+(j.n>1?'s':'')+' required, lap = '+j.lap+' mm each'}</span>
+      </div>
+    </div>`;
+  }
+
+  html += `<div class="formula">Cap: L=${fmt(d.geo.L,2)} m, W=${fmt(d.geo.W,2)} m, Area=${fmt(d.geo.Area,2)} m²
+Weight: cap=${fmt(d.Wp,1)} kN + pedestal=${fmt(d.Wpd,1)} kN = ${fmt(d.totalWeight,1)} kN
+Compression demand (group) = C + weight = ${fmt(d.compressionDemand,1)} kN
+Uplift demand (group) = U − weight = ${fmt(d.upliftDemandRaw,1)} kN ${d.upliftDemandRaw<=0?'(no net uplift — self-weight governs)':''}
+Required depth: compression → ${d.depthComp===null?'exceeds profile':fmt(d.depthComp,2)+' m'}; uplift → ${d.depthUplift===null?'exceeds profile':fmt(d.depthUplift,2)+' m'}
+Pile length = CEILING(max(depths)+1, 0.5) = ${d.insufficient?'<strong style="color:var(--fail);">insufficient soil profile — extend borehole or increase pile dia/count</strong>':fmt(d.pileLength,1)+' m'}</div>`;
+
+  if(!d.insufficient){
+    const j = d.jointInfo;
+    html += `<div class="card-head" style="margin-top:18px;"><div><span class="tag">SKETCH</span><h3 style="font-size:0.92rem;">Pile Longitudinal Section — ${n}‑Pile Group</h3></div></div>
+    <div class="rebar-summary">
+      <div><span class="k">Main bars:</span> <span class="v">${rebar.nBars} – Ø${rebar.barDia} mm</span></div>
+      <div><span class="k">Steel provided:</span> <span class="v">${fmt(rebar.ratio_provided,2)}% (min ${fmt(rebar.ratioPct,2)}%)</span></div>
+      <div><span class="k">Spiral:</span> <span class="v">Ø${document.getElementById('spiralDia').value} mm @ ${document.getElementById('spiralPitch').value} mm pitch</span></div>
+      <div><span class="k">Splice joints:</span> <span class="v">${j.n===0?'none':j.n+' × lap '+j.lap+' mm'}</span></div>
+    </div>
+    <div class="pile-sketch-wrap">${buildPileSVG(d.pileLength, rebar.D, rebar, j)}</div>
+    <div class="note">Schematic only, not to true scale. Two bar lines shown represent the full cage (${rebar.nBars} bars distributed around the perimeter — see Section A‑A inset). Splice count/position follows: ≤12 m → none, &gt;12–24 m → 1 joint, &gt;24 m → 3 joints, each lapped ${j.lap} mm.</div>`;
+  }
+
+  html += `<div class="formula">TWO-WAY (PUNCHING) SHEAR — equivalent smeared pile pressure
+Avg. pressure = LF·C / Area = ${fmt(d.avgPressure,2)} kN/m²
+bo = 4(pedestal + d) = ${fmt(d.bo_mm,0)} mm     Critical area = (pedestal+d)² = ${fmt(d.critArea_m2,3)} m²
+Vu = LF·C − avg.pressure·critArea = ${fmt(d.VuPunch,1)} kN
+φVc = 0.85×0.33√f'c×bo×d /1000 = ${fmt(d.VcPunch,1)} kN</div>
+  <div class="calc-row"><span class="k">Punching shear check</span><span class="v">${badge(d.punchOK)}</span></div>`;
+
+  html += `<div class="formula">ONE-WAY SHEAR — at d from pedestal face, governing (longer) direction
+Cantilever = (${fmt(d.longDim_m,2)} − ${fmt(lastResultsPedSide(),2)})/2 = ${fmt(d.cantilever_m,3)} m     width = ${fmt(d.width_m,2)} m
+Vu = avg.pressure·width·(cantilever−d) = ${fmt(d.VuOneway,1)} kN
+φVc = 0.85×0.33√f'c×width(mm)×d /1000 = ${fmt(d.VcOneway,1)} kN</div>
+  <div class="calc-row"><span class="k">One‑way shear check</span><span class="v">${badge(d.onewayOK)}</span></div>`;
+
+  html += `<div class="formula">FLEXURE — exact cantilever-moment formula
+M1 (from P) = (C+weight)·spacing/4 = ${fmt(d.M1,2)} kN·m
+M2 (from H) = H·pedestal height = ${fmt(d.M2,2)} kN·m
+Mu = LF·(M1+M2) = ${fmt(d.Mu,2)} kN·m
+As(M) [quadratic] = ${isNaN(d.AsM)?'section inadequate':fmt(d.AsM,1)} mm²
+4/3·As = ${fmt(d.fourThirdsAs,1)} mm²   ACI min(ref006/007) = ${fmt(d.As_standardMin,1)} mm²   shrinkage = ${fmt(d.As_shrink,1)} mm²
+As (final, governing) = ${fmt(d.As_final,1)} mm²</div>
+  <div class="calc-row"><span class="k">Bars (short direction)</span><span class="v">${d.nBars} – ${fmt(lastResultsBarDia(),0)}mm @ ${fmt(d.spacingShort,0)} mm c/c</span></div>
+  <div class="calc-row"><span class="k">Temp. steel (long direction)</span><span class="v">@ ${fmt(d.spacingLong,0)} mm c/c</span></div>`;
+
+  document.getElementById('detailBody').innerHTML = html;
+}
+function lastResultsPedSide(){ return num('pedSide'); }
+function lastResultsBarDia(){ return num('barDia'); }
+
+['loadC','loadU','loadH','loadFactor'].forEach(id=>{
+  document.addEventListener('DOMContentLoaded', ()=>{
+    document.getElementById(id).addEventListener('input', updateFactoredLoads);
+  });
+});
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  loadDefaultSoil();
+  applyTowerPreset();
+});
+</script>
+</body>
+</html>

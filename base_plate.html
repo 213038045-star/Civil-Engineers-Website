@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Structural Design Tools — Base Plates &amp; HSS End-Plate Connections</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0f16;
+    --bg-grid:#111826;
+    --panel:#121a25;
+    --panel-header:#0e1520;
+    --border:#232e3d;
+    --border-soft:#1c2734;
+    --text:#eef2f6;
+    --text-muted:#7f93a6;
+    --text-dim:#546374;
+    --orange:#ff5a2f;
+    --teal:#3fdba3;
+    --teal-dim:#2a8a6c;
+    --bad:#ff6b5e;
+    --amber:#ffc65c;
+    --mono:'JetBrains Mono',monospace;
+    --head:'Oswald',sans-serif;
+    --sans:'Inter',Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px, transparent 1px) 0 0/100% 32px,
+      linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px) 0 0/32px 100%,
+      var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    padding:36px 20px 70px;
+  }
+  .wrap{max-width:1080px;margin:0 auto;}
+
+  header{margin-bottom:22px;}
+  header .eyebrow{
+    font-family:var(--mono);
+    font-size:.72rem;
+    letter-spacing:.14em;
+    color:var(--orange);
+    text-transform:uppercase;
+    margin-bottom:6px;
+  }
+  header h1{
+    font-family:var(--head);
+    font-weight:700;
+    font-size:2.4rem;
+    letter-spacing:.01em;
+    text-transform:uppercase;
+    margin:0;
+    line-height:1.05;
+  }
+  header .sub{
+    font-size:.86rem;
+    color:var(--text-muted);
+    margin-top:8px;
+    max-width:680px;
+  }
+
+  .mode-tabbar{
+    display:flex;
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+    margin-bottom:22px;
+  }
+  .mode-btn{
+    flex:1;
+    background:var(--panel-header);
+    color:var(--text-muted);
+    border:none;
+    padding:14px 12px;
+    font-family:var(--mono);
+    font-size:.76rem;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+  }
+  .mode-btn:hover{color:var(--text);}
+  .mode-btn.active{
+    background:var(--orange);
+    color:#1a0800;
+    font-weight:700;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:340px 1fr;
+    gap:22px;
+  }
+  @media(max-width:860px){.grid{grid-template-columns:1fr;}}
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+  }
+  .panel h2{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin:0;
+    padding:11px 16px;
+    background:var(--panel-header);
+    border-bottom:1px solid var(--border);
+  }
+  .panel h2 .label{
+    font-family:var(--mono);
+    font-size:.72rem;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+  }
+  .panel h2 .tag{
+    font-family:var(--mono);
+    font-size:.7rem;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--teal);
+  }
+  .panel-body{padding:18px 16px 22px;}
+
+  .field{margin-bottom:13px;}
+  .field label{
+    display:flex;
+    justify-content:space-between;
+    font-family:var(--mono);
+    font-size:.72rem;
+    letter-spacing:.03em;
+    color:var(--text-muted);
+    margin-bottom:5px;
+    text-transform:uppercase;
+  }
+  .field label .sym{color:var(--teal);font-weight:600;}
+  .field .row{display:flex;gap:8px;}
+  .field input, .field select{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--border);
+    background:#0d141d;
+    color:var(--text);
+    font-family:var(--mono);
+    font-size:.88rem;
+  }
+  .field select{cursor:pointer;}
+  .field input:focus, .field select:focus{
+    outline:none;
+    border-color:var(--orange);
+  }
+  .field input[readonly]{
+    color:var(--text-muted);
+    background:#0a0f16;
+  }
+
+  .section-label{
+    font-family:var(--mono);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:var(--orange);
+    font-weight:700;
+    margin:20px 0 10px;
+    border-top:1px dashed var(--border-soft);
+    padding-top:14px;
+  }
+  .section-label:first-child{margin-top:0;border-top:none;padding-top:0;}
+
+  .tabbar{
+    display:flex;
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+    margin-bottom:4px;
+  }
+  .tab-btn{
+    flex:1;
+    background:var(--panel-header);
+    color:var(--text-muted);
+    border:none;
+    padding:10px 8px;
+    font-family:var(--mono);
+    font-size:.68rem;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+  }
+  .tab-btn:hover{color:var(--text);}
+  .tab-btn.active{
+    background:var(--teal);
+    color:#06120d;
+    font-weight:700;
+  }
+  .note-inline{
+    font-size:.72rem;
+    line-height:1.5;
+    color:var(--text-muted);
+    background:#0d141d;
+    border:1px solid var(--border-soft);
+    border-left:2px solid var(--orange);
+    padding:9px 10px;
+  }
+  .note-inline.warn{
+    border-left-color:var(--amber);
+    color:#d9c495;
+  }
+
+  button.calc-btn{
+    width:100%;
+    margin-top:8px;
+    background:var(--teal);
+    color:#06120d;
+    border:none;
+    padding:13px;
+    font-family:var(--mono);
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    font-size:.8rem;
+    cursor:pointer;
+    transition:background .15s ease, transform .1s ease;
+  }
+  button.calc-btn:hover{background:#5cf0bb;}
+  button.calc-btn:active{transform:translateY(1px);}
+
+  .result-summary{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+    margin-bottom:18px;
+  }
+  .result-summary.two-col{grid-template-columns:repeat(2,1fr);}
+  .result-summary.three-col{grid-template-columns:repeat(3,1fr);}
+  .result-summary .cell{
+    background:var(--panel);
+    padding:16px 12px;
+    text-align:center;
+  }
+  .result-summary .cell .k{
+    font-family:var(--mono);
+    font-size:.66rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--text-muted);
+  }
+  .result-summary .cell .v{
+    font-family:var(--head);
+    font-size:1.7rem;
+    color:var(--text);
+    font-weight:600;
+    margin-top:4px;
+  }
+  .result-summary .cell .v.pending{
+    font-size:.92rem;
+    color:var(--amber);
+    font-family:var(--mono);
+    font-weight:600;
+    text-transform:uppercase;
+    line-height:1.4;
+  }
+  .result-summary .cell .v.ok{color:var(--teal);}
+  .result-summary .cell .v.bad{color:var(--bad);}
+  .result-summary .cell .u{font-family:var(--mono);font-size:.68rem;color:var(--teal-dim);}
+
+  .steps{padding:6px 16px 16px;}
+  .step{
+    display:grid;
+    grid-template-columns:26px 1fr;
+    gap:12px;
+    margin-bottom:16px;
+    padding:14px 0;
+    border-bottom:1px dashed var(--border-soft);
+  }
+  .step:first-child{padding-top:12px;}
+  .step:last-child{border-bottom:none;margin-bottom:0;}
+  .step .num{
+    font-family:var(--mono);
+    font-weight:700;
+    color:#06120d;
+    background:var(--teal);
+    width:24px;height:24px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:.72rem;
+    border-radius:2px;
+  }
+  .step .num.warn{background:var(--amber);}
+  .step .title{
+    font-family:var(--sans);
+    font-weight:600;
+    font-size:.88rem;
+    color:var(--text);
+    margin-bottom:6px;
+  }
+  .step .formula{
+    font-family:var(--mono);
+    font-size:.82rem;
+    line-height:1.55;
+    background:#0a1017;
+    border:1px solid var(--border-soft);
+    color:#c7d4de;
+    padding:10px 12px;
+    margin:6px 0;
+    overflow-x:auto;
+    white-space:pre-wrap;
+  }
+  .step .note{font-size:.78rem;color:var(--text-muted);}
+  .flag{
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:.68rem;
+    font-weight:700;
+    padding:2px 8px;
+    margin-left:4px;
+    border-radius:2px;
+    letter-spacing:.03em;
+  }
+  .flag.ok{background:rgba(63,219,163,.14);color:var(--teal);}
+  .flag.bad{background:rgba(255,107,94,.14);color:var(--bad);}
+  .flag.warn{background:rgba(255,198,92,.14);color:var(--amber);}
+
+  .diagram{
+    padding:14px;
+    display:flex;
+    justify-content:center;
+  }
+  .diagram svg{width:100%;max-width:280px;height:auto;display:block;}
+  .diagram-legend{
+    display:flex;
+    justify-content:center;
+    gap:18px;
+    padding:0 16px 16px;
+    flex-wrap:wrap;
+  }
+  .diagram-legend .item{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-family:var(--mono);
+    font-size:.68rem;
+    color:var(--text-muted);
+  }
+  .diagram-legend .swatch{
+    width:12px;height:12px;
+    border-radius:2px;
+    display:inline-block;
+  }
+
+  footer{
+    margin-top:26px;
+    font-family:var(--mono);
+    font-size:.68rem;
+    letter-spacing:.02em;
+    color:var(--text-dim);
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Structural Design Tools</div>
+    <h1>Base Plates &amp; HSS Bolted End-Plate Connections</h1>
+    <div class="sub">Pick a design mode below. Mode 1 is the AISC ASD concentric-axial-load column base plate procedure. Mode 2 is the round HSS bolted circular end-plate connection under bending moment (Steel Tube Institute / Packer, 2023 — based on Wheeler et al. 1998).</div>
+  </header>
+
+  <div class="mode-tabbar">
+    <button type="button" class="mode-btn active" id="modeBtnBase" onclick="switchMode('baseplate')">Mode 1 · Column Base Plate (ASD)</button>
+    <button type="button" class="mode-btn" id="modeBtnEnd" onclick="switchMode('endplate')">Mode 2 · HSS End-Plate Moment Connection (LRFD)</button>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODE 1: BASE PLATE DESIGN                                     -->
+  <!-- ============================================================ -->
+  <div class="grid" id="baseplateSection">
+
+    <!-- INPUT PANEL -->
+    <div class="panel">
+      <h2><span class="label">Sheet 01</span><span class="tag">Inputs</span></h2>
+      <div class="panel-body">
+
+        <div class="tabbar">
+          <button type="button" class="tab-btn active" id="tabBtnW" onclick="switchTab('W')">Tab 01 · W-Shape</button>
+          <button type="button" class="tab-btn" id="tabBtnRound" onclick="switchTab('round')">Tab 02 · Round (HSS / Pipe)</button>
+        </div>
+
+        <div class="section-label">Column Section</div>
+
+        <div id="fieldsW">
+          <div class="field">
+            <label>W-shape <span class="sym">select</span></label>
+            <select id="wShape" onchange="applyShape()"></select>
+          </div>
+          <div class="field">
+            <div class="row">
+              <div style="flex:1">
+                <label>Flange width <span class="sym">b_f</span></label>
+                <input type="number" step="0.01" id="bf" value="15.6">
+              </div>
+              <div style="flex:1">
+                <label>Depth <span class="sym">d</span></label>
+                <input type="number" step="0.01" id="d" value="15">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="fieldsRound" style="display:none;">
+          <div class="field">
+            <label>Round HSS / Pipe <span class="sym">select</span></label>
+            <select id="roundShape" onchange="applyRoundShape()"></select>
+          </div>
+          <div class="field">
+            <label>Outside diameter <span class="sym">D</span></label>
+            <input type="number" step="0.01" id="diaD" value="12.75">
+          </div>
+          <div class="field note-inline">Uses the AISC Design Guide 1 equivalent-width approach for round shafts (0.8D), the same method commonly referenced for pole/monopole base plates under concentric axial load per TIA-222. Combined axial + moment monopole design with anchor bolt patterns per TIA-222-G is a separate, more involved calculation — see Mode 2 above for a related bolted-connection calculation on round HSS.</div>
+          </div>
+
+        <div class="section-label">Loads</div>
+        <div class="field">
+          <label>Live load <span class="sym">P_LL</span></label>
+          <input type="number" step="1" id="pLL" value="750">
+        </div>
+        <div class="field">
+          <label>Dead load <span class="sym">P_DL</span></label>
+          <input type="number" step="1" id="pDL" value="300">
+        </div>
+
+        <div class="section-label">Materials</div>
+        <div class="field">
+          <label>Base plate yield strength <span class="sym">F_y</span></label>
+          <input type="number" step="1" id="fy" value="36">
+        </div>
+        <div class="field">
+          <label>Concrete strength <span class="sym">f'c</span></label>
+          <input type="number" step="0.1" id="fc" value="4">
+        </div>
+
+        <div class="section-label">Concrete Support</div>
+        <div class="field">
+          <div class="row">
+            <div style="flex:1">
+              <label>Support width <span class="sym">W_sup</span></label>
+              <input type="number" step="0.1" id="supW" value="35">
+            </div>
+            <div style="flex:1">
+              <label>Support length <span class="sym">L_sup</span></label>
+              <input type="number" step="0.1" id="supL" value="70">
+            </div>
+          </div>
+        </div>
+
+        <div class="section-label">Factors &amp; Rounding</div>
+        <div class="field">
+          <label>Safety factor (bearing) <span class="sym">&Omega;</span></label>
+          <input type="number" step="0.01" id="omega" value="2.50">
+        </div>
+        <div class="field">
+          <label>Safety factor (plate bending) <span class="sym">&Omega;_b</span></label>
+          <input type="number" step="0.01" id="omegaB" value="1.67">
+        </div>
+        <div class="field">
+          <label>Round B, N up to nearest <span class="sym">in</span></label>
+          <input type="number" step="0.01" id="roundB" value="0.25">
+        </div>
+        <div class="field">
+          <label>Round thickness up to nearest <span class="sym">in</span></label>
+          <input type="number" step="0.01" id="roundT" value="0.125">
+        </div>
+
+        <button class="calc-btn" onclick="runCalc()">Calculate Base Plate</button>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div>
+      <div class="panel" style="margin-bottom:18px;">
+        <h2><span class="label">Sheet 02</span><span class="tag">Result</span></h2>
+        <div class="result-summary" id="summary">
+          <div class="cell"><div class="k">Plate B × N</div><div class="v" id="sumBN">—</div><div class="u">in × in</div></div>
+          <div class="cell"><div class="k">Thickness t</div><div class="v" id="sumT">—</div><div class="u">in</div></div>
+          <div class="cell"><div class="k">√(A2/A1)</div><div class="v" id="sumRatio">—</div><div class="u">final</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2><span class="label">Sheet 03</span><span class="tag">Solution</span></h2>
+        <div class="steps" id="steps">
+          <div class="step">
+            <div class="num">i</div>
+            <div>
+              <div class="title">Choose a W-shape (or enter dimensions manually), adjust the loads and materials, then press "Calculate Base Plate".</div>
+              <div class="note">Defaults reproduce the worked example: W14x159, LL=750k, DL=300k, f'c=4 ksi, 35"×70" concrete support, A36 plate, ASD.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:18px;">
+        <h2><span class="label">Sheet 04</span><span class="tag">Layout</span></h2>
+        <div class="diagram" id="diagramHolder">
+          <svg viewBox="0 0 300 300" id="plateSvg"></svg>
+        </div>
+        <div class="diagram-legend">
+          <span class="item"><span class="swatch" style="background:#3fdba3"></span>A1 — base plate (B × N)</span>
+          <span class="item"><span class="swatch" style="background:#ff5a2f;border:1px dashed #ff5a2f;background:transparent"></span>A2 — concentric bearing area</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODE 2: HSS BOLTED END-PLATE MOMENT CONNECTION                -->
+  <!-- ============================================================ -->
+  <div class="grid" id="endplateSection" style="display:none;">
+
+    <!-- INPUT PANEL -->
+    <div class="panel">
+      <h2><span class="label">Sheet 01</span><span class="tag">Inputs</span></h2>
+      <div class="panel-body">
+
+        <div class="note-inline warn" style="margin-bottom:16px;">
+          <strong>Partial implementation.</strong> The source article (STI / Packer, 2023) renders Eqs. (1) and (2) — the actual bolt-failure and plate-plastification moment capacities — as embedded graphics. The parent design model (Wheeler et al. 1998, for two-row rectangular-HSS end plates) is available in the open literature, but its equations assume a two-bolt-row geometry rotating about a far row, whereas the round-HSS conversion here rotates about a single extreme-compression point on the tube — the two are not related by a simple substitution. Rather than reconstruct a load-bearing formula I can't verify, those two equations are <strong>still not</strong> computed below. Everything else — geometry, effective bolts, the plate-thickness limit of applicability (Eq. 3), and the AISC J3 bolt spacing/edge-distance checks — is computed and verified against the article's worked example (543 / 659 kip-in., HSS 6.625×0.375, 6 bolts, 7/8" A325).
+        </div>
+
+        <div class="section-label">HSS Member</div>
+        <div class="field">
+          <label>Round HSS / Pipe <span class="sym">select</span></label>
+          <select id="epShape" onchange="applyEpShape()"></select>
+        </div>
+        <div class="field">
+          <div class="row">
+            <div style="flex:1">
+              <label>Outside diameter <span class="sym">D</span></label>
+              <input type="number" step="0.001" id="epD" value="6.625">
+            </div>
+            <div style="flex:1">
+              <label>Design wall thk <span class="sym">t</span></label>
+              <input type="number" step="0.001" id="epT" value="0.349">
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="row">
+            <div style="flex:1">
+              <label>Plastic mod. <span class="sym">Z</span></label>
+              <input type="number" step="0.01" id="epZ" value="13.8">
+            </div>
+            <div style="flex:1">
+              <label>HSS yield <span class="sym">F_y</span></label>
+              <input type="number" step="1" id="epFyHss" value="50">
+            </div>
+          </div>
+        </div>
+
+        <div class="section-label">Bolts</div>
+        <div class="field">
+          <label>Bolt grade <span class="sym">select</span></label>
+          <select id="boltGrade" onchange="applyBoltGrade()">
+            <option value="A325N">ASTM F3125 Gr. A325-N (F_ub=120 ksi, F_nt=90 ksi)</option>
+            <option value="A490N">ASTM F3125 Gr. A490-N (F_ub=150 ksi, F_nt=113 ksi)</option>
+            <option value="__custom">Custom</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="row">
+            <div style="flex:1">
+              <label>Bolt diameter <span class="sym">d_b</span></label>
+              <input type="number" step="0.001" id="epDb" value="0.875">
+            </div>
+            <div style="flex:1">
+              <label>Number of bolts <span class="sym">n_b</span></label>
+              <input type="number" step="1" id="epNb" value="6">
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="row">
+            <div style="flex:1">
+              <label>Bolt F_nt <span class="sym">ksi</span></label>
+              <input type="number" step="0.1" id="epFnt" value="90">
+            </div>
+            <div style="flex:1">
+              <label>Bolt F_yb <span class="sym">ksi</span></label>
+              <input type="number" step="0.1" id="epFyb" value="92">
+            </div>
+          </div>
+        </div>
+        <div class="field note-inline">F_yb here follows ASTM F3125 Table 5 (92 ksi for A325). Where not directly known, F_yb ≈ 0.77·F_ub is a reasonable estimate (per ASTM F3125 minimum yield/tensile ratio).</div>
+
+        <div class="section-label">End Plate</div>
+        <div class="field">
+          <div class="row">
+            <div style="flex:1">
+              <label>Plate OD <span class="sym">in</span></label>
+              <input type="number" step="0.01" id="epPlateOD" value="12.625">
+            </div>
+            <div style="flex:1">
+              <label>Bolt PCD <span class="sym">in</span></label>
+              <input type="number" step="0.01" id="epPCD" value="9.625">
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="row">
+            <div style="flex:1">
+              <label>Plate thickness <span class="sym">t_p</span></label>
+              <input type="number" step="0.001" id="epTp" value="0.625">
+            </div>
+            <div style="flex:1">
+              <label>Plate F_up <span class="sym">ksi</span></label>
+              <input type="number" step="0.1" id="epFup" value="65">
+            </div>
+          </div>
+        </div>
+        <div class="field note-inline">a = (plate OD − bolt PCD)/2, b = (bolt PCD − D)/2. Defaults reproduce the article's example: a = b = 1.50 in. for a 12.625" OD plate, 9.625" bolt circle, on a 6.625" OD tube.</div>
+
+        <div class="section-label">Demand (Applied Load)</div>
+        <div class="field">
+          <label>Dead load moment <span class="sym">M_DL</span></label>
+          <input type="number" step="1" id="epMdl" value="120" oninput="updateEpMu()">
+        </div>
+        <div class="field">
+          <label>Live load moment <span class="sym">M_LL</span></label>
+          <input type="number" step="1" id="epMll" value="220" oninput="updateEpMu()">
+        </div>
+        <div class="field">
+          <label>Required flexural strength <span class="sym">M_u</span> (computed)</label>
+          <input type="number" step="1" id="epMu" value="470" oninput="runEpCalc()">
+        </div>
+        <div class="field note-inline">M_u = 1.2·M_DL + 1.6·M_LL (ASCE 7 basic LRFD combination), kip-in. Compared below against the HSS member's design flexural strength as a reference check — see the caveat in Sheet 02/03 about what this check does and does not cover. Edit M_DL/M_LL above; M_u updates automatically. If you already have a governing factored M_u from another load combination, you can type directly into the M_u field to override.</div>
+
+        <button class="calc-btn" onclick="runEpCalc()">Calculate End-Plate Connection</button>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div>
+      <div class="panel" style="margin-bottom:18px;">
+        <h2><span class="label">Sheet 02</span><span class="tag">Result</span></h2>
+        <div class="result-summary three-col" id="epSummary">
+          <div class="cell"><div class="k">Plate thickness limit</div><div class="v" id="epSumTc">—</div><div class="u">t_c, in</div></div>
+          <div class="cell"><div class="k">M_available (connection)</div><div class="v pending" id="epSumM">Not computed — see note</div></div>
+          <div class="cell"><div class="k">M_u / φM_n (member ref.)</div><div class="v" id="epSumDCR">—</div><div class="u">DCR, member only</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2><span class="label">Sheet 03</span><span class="tag">Solution</span></h2>
+        <div class="steps" id="epSteps">
+          <div class="step">
+            <div class="num">i</div>
+            <div>
+              <div class="title">Choose a round HSS (or enter D, t, Z manually), set bolt/plate geometry and the required moment M_u, then press "Calculate End-Plate Connection".</div>
+              <div class="note">Defaults reproduce the STI worked example: HSS 6.625×0.375, 6× 7/8" A325-N bolts, 5/8" A572 Gr.50 plate (F_up=65 ksi).</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:18px;">
+        <h2><span class="label">Sheet 04</span><span class="tag">Layout</span></h2>
+        <div class="diagram" id="epDiagramHolder">
+          <svg viewBox="0 0 300 300" id="epSvg"></svg>
+        </div>
+        <div class="diagram-legend">
+          <span class="item"><span class="swatch" style="background:#3fdba3"></span>End plate (OD)</span>
+          <span class="item"><span class="swatch" style="background:#7f93a6"></span>HSS wall (D)</span>
+          <span class="item"><span class="swatch" style="background:#ff5a2f;border:none"></span>Bolt circle (PCD)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>For preliminary design use — verify final results against the AISC Steel Construction Manual and the cited Steel Tube Institute / Wheeler et al. source material.</footer>
+</div>
+
+<script>
+/* ============================================================
+   MODE SWITCH
+   ============================================================ */
+function switchMode(mode){
+  document.getElementById('modeBtnBase').classList.toggle('active', mode==='baseplate');
+  document.getElementById('modeBtnEnd').classList.toggle('active', mode==='endplate');
+  document.getElementById('baseplateSection').style.display = mode==='baseplate' ? 'grid' : 'none';
+  document.getElementById('endplateSection').style.display = mode==='endplate' ? 'grid' : 'none';
+}
+
+/* ============================================================
+   MODE 1: BASE PLATE DESIGN (unchanged from original tool)
+   ============================================================ */
+const shapes = {
+  "W14x730":{bf:17.9,d:22.4}, "W14x455":{bf:17.0,d:19.0}, "W14x311":{bf:16.2,d:17.1},
+  "W14x233":{bf:15.9,d:16.0}, "W14x193":{bf:15.7,d:15.5}, "W14x159":{bf:15.6,d:15.0},
+  "W14x145":{bf:15.5,d:14.8}, "W14x132":{bf:14.7,d:14.7}, "W14x120":{bf:14.7,d:14.5},
+  "W14x109":{bf:14.6,d:14.3}, "W14x99":{bf:14.6,d:14.2}, "W14x90":{bf:14.5,d:14.0},
+  "W14x82":{bf:10.1,d:14.3}, "W14x74":{bf:10.1,d:14.2}, "W14x61":{bf:10.0,d:13.9},
+  "W14x53":{bf:8.06,d:13.9}, "W14x43":{bf:8.00,d:13.7},
+  "W12x336":{bf:13.4,d:16.8}, "W12x230":{bf:12.9,d:15.1}, "W12x170":{bf:12.6,d:14.0},
+  "W12x152":{bf:12.5,d:13.7}, "W12x120":{bf:12.3,d:13.1}, "W12x106":{bf:12.2,d:12.9},
+  "W12x96":{bf:12.2,d:12.7}, "W12x87":{bf:12.1,d:12.5}, "W12x79":{bf:12.1,d:12.4},
+  "W12x72":{bf:12.0,d:12.3}, "W12x65":{bf:12.0,d:12.1}, "W12x58":{bf:10.0,d:12.2},
+  "W12x53":{bf:10.0,d:12.1}, "W12x50":{bf:8.08,d:12.2}, "W12x40":{bf:8.01,d:11.9},
+  "W12x26":{bf:6.49,d:12.2},
+  "W10x112":{bf:10.4,d:11.4}, "W10x100":{bf:10.3,d:11.1}, "W10x88":{bf:10.3,d:10.8},
+  "W10x77":{bf:10.2,d:10.6}, "W10x68":{bf:10.1,d:10.4}, "W10x60":{bf:10.1,d:10.2},
+  "W10x54":{bf:10.0,d:10.1}, "W10x49":{bf:10.0,d:10.0}, "W10x45":{bf:8.02,d:10.1},
+  "W10x33":{bf:7.96,d:9.73}, "W10x22":{bf:5.75,d:10.2},
+  "W8x67":{bf:8.28,d:9.00}, "W8x58":{bf:8.22,d:8.75}, "W8x48":{bf:8.11,d:8.50},
+  "W8x40":{bf:8.07,d:8.25}, "W8x35":{bf:8.02,d:8.12}, "W8x31":{bf:8.00,d:8.00},
+  "W8x24":{bf:6.50,d:7.93}, "W8x18":{bf:5.25,d:8.14},
+  "W6x25":{bf:6.08,d:6.38}, "W6x20":{bf:6.02,d:6.20}, "W6x15":{bf:5.99,d:5.99},
+  "W6x9":{bf:3.94,d:5.90}
+};
+
+function populateShapeDropdown(){
+  const sel = document.getElementById('wShape');
+  let html = '<option value="__custom">Custom (enter manually)</option>';
+  Object.keys(shapes).forEach(name=>{
+    html += `<option value="${name}">${name}</option>`;
+  });
+  sel.innerHTML = html;
+  sel.value = "W14x159";
+}
+
+function applyShape(){
+  const sel = document.getElementById('wShape');
+  const name = sel.value;
+  if(name === "__custom") return;
+  const s = shapes[name];
+  document.getElementById('bf').value = s.bf;
+  document.getElementById('d').value = s.d;
+}
+
+// --- Round HSS / Pipe database: outside diameter D (in) ---
+const roundShapes = {
+  "HSS4.500x0.237":{D:4.500}, "HSS5.563x0.258":{D:5.563}, "HSS6.625x0.280":{D:6.625},
+  "HSS8.625x0.322":{D:8.625}, "HSS10.750x0.365":{D:10.750}, "HSS12.750x0.375":{D:12.750},
+  "HSS14.000x0.375":{D:14.000}, "HSS16.000x0.375":{D:16.000}, "HSS18.000x0.375":{D:18.000},
+  "HSS20.000x0.375":{D:20.000}, "HSS24.000x0.500":{D:24.000},
+  "Pipe 4 STD (4.500 OD)":{D:4.500}, "Pipe 6 STD (6.625 OD)":{D:6.625},
+  "Pipe 8 STD (8.625 OD)":{D:8.625}, "Pipe 10 STD (10.750 OD)":{D:10.750},
+  "Pipe 12 STD (12.750 OD)":{D:12.750}, "Monopole shaft (18\" OD)":{D:18.0},
+  "Monopole shaft (24\" OD)":{D:24.0}, "Monopole shaft (30\" OD)":{D:30.0},
+  "Monopole shaft (36\" OD)":{D:36.0}
+};
+
+function populateRoundDropdown(){
+  const sel = document.getElementById('roundShape');
+  let html = '<option value="__custom">Custom (enter manually)</option>';
+  Object.keys(roundShapes).forEach(name=>{
+    html += `<option value="${escapeAttr(name)}">${name}</option>`;
+  });
+  sel.innerHTML = html;
+  sel.value = "HSS12.750x0.375";
+}
+
+function applyRoundShape(){
+  const sel = document.getElementById('roundShape');
+  const name = sel.value;
+  if(name === "__custom") return;
+  document.getElementById('diaD').value = roundShapes[name].D;
+}
+
+let currentTab = 'W';
+function switchTab(tab){
+  currentTab = tab;
+  document.getElementById('tabBtnW').classList.toggle('active', tab==='W');
+  document.getElementById('tabBtnRound').classList.toggle('active', tab==='round');
+  document.getElementById('fieldsW').style.display = tab==='W' ? 'block' : 'none';
+  document.getElementById('fieldsRound').style.display = tab==='round' ? 'block' : 'none';
+  runCalc();
+}
+
+function ceilToStep(val, step){
+  return Math.ceil(val/step) * step;
+}
+
+// Some shape names (e.g. Monopole shaft (18" OD)) contain a literal double-quote
+// character for inches. Left unescaped, that quote breaks out of an HTML
+// value="..." attribute early, corrupting the option and causing lookups
+// like roundShapes[sel.value] to come back undefined. Escape it for attributes;
+// the browser decodes &quot; back to " automatically when JS reads .value,
+// so lookups against the original object keys still work correctly.
+function escapeAttr(str){
+  return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+}
+
+function runCalc(){
+  const isRound = currentTab === 'round';
+  const bf   = parseFloat(document.getElementById('bf').value);
+  const d    = parseFloat(document.getElementById('d').value);
+  const dia  = parseFloat(document.getElementById('diaD').value);
+  const pLL  = parseFloat(document.getElementById('pLL').value);
+  const pDL  = parseFloat(document.getElementById('pDL').value);
+  const fy   = parseFloat(document.getElementById('fy').value);
+  const fc   = parseFloat(document.getElementById('fc').value);
+  const supW = parseFloat(document.getElementById('supW').value);
+  const supL = parseFloat(document.getElementById('supL').value);
+  const omega  = parseFloat(document.getElementById('omega').value);
+  const omegaB = parseFloat(document.getElementById('omegaB').value);
+  const roundB = parseFloat(document.getElementById('roundB').value);
+  const roundT = parseFloat(document.getElementById('roundT').value);
+  const shapeSel = document.getElementById('wShape').value;
+  const roundSel = document.getElementById('roundShape').value;
+  const colName = isRound
+    ? (roundSel === "__custom" ? "Custom round section" : roundSel)
+    : (shapeSel === "__custom" ? "Custom section" : shapeSel);
+
+  const P = pLL + pDL;
+  const A2max = Math.pow(Math.min(supW, supL), 2);
+
+  let ratio = 2.0;
+  let side = 0, A1 = 0, fpMax = 0, reqArea = 0, actualRatio = 0;
+  const trials = [];
+  for(let i=0;i<25;i++){
+    fpMax = Math.min(0.85*fc*ratio, 1.7*fc);
+    reqArea = omega * P / fpMax;
+    let rawSide = Math.sqrt(reqArea);
+    side = ceilToStep(rawSide, roundB);
+    A1 = side*side;
+    actualRatio = Math.min(Math.sqrt(A2max/A1), 2.0);
+    trials.push({assumed:ratio, fpMax, reqArea, rawSide, side, actualRatio});
+    if(Math.abs(actualRatio - ratio) < 0.005 || actualRatio >= ratio){
+      ratio = actualRatio;
+      break;
+    }
+    ratio = actualRatio;
+  }
+
+  const B = side, N = side;
+  let m, n, l;
+  if(isRound){
+    l = (N - 0.8*dia)/2;
+    m = l; n = l;
+  } else {
+    m = (N - 0.95*d)/2;
+    n = (B - 0.8*bf)/2;
+    l = Math.max(m, n);
+  }
+  const tRaw = l * Math.sqrt( (2*omegaB*P) / (fy*B*N) );
+  const t = ceilToStep(tRaw, roundT);
+
+  document.getElementById('sumBN').textContent = B.toFixed(2) + ' × ' + N.toFixed(2);
+  document.getElementById('sumT').textContent = t.toFixed(3);
+  document.getElementById('sumRatio').textContent = ratio.toFixed(3);
+
+  let html = '';
+  let stepNum = 1;
+
+  html += stepBlock(stepNum++, 'Total axial service load',
+    `P = P_LL + P_DL = ${pLL} + ${pDL} = ${P.toFixed(1)} kip`,
+    isRound
+      ? `Column: ${colName}, outside diameter D = ${dia}"`
+      : `Column: ${colName}, b_f = ${bf}", d = ${d}"`);
+
+  html += `<div class="step"><div class="num">${stepNum++}</div><div>
+      <div class="title">Trial iterations for √(A2/A1)</div>`;
+  trials.forEach((tr,idx)=>{
+    const okFlag = tr.actualRatio >= tr.assumed - 0.005
+      ? '<span class="flag ok">OK</span>' : '<span class="flag bad">not OK → retry</span>';
+    html += `<div class="formula">Trial ${idx+1}: assume √(A2/A1) = ${tr.assumed.toFixed(3)}
+ → f_p(max) = min(0.85·f'c·r, 1.7·f'c) = ${tr.fpMax.toFixed(3)} ksi
+ → B×N required = Ω·P / f_p(max) = ${tr.reqArea.toFixed(2)} in²
+ → B = N = √(B×N) = ${tr.rawSide.toFixed(2)}" → round up to ${tr.side.toFixed(2)}"
+ → check √(A2/A1) = √(${A2max.toFixed(0)} / ${(tr.side*tr.side).toFixed(1)}) = ${tr.actualRatio.toFixed(3)} ${okFlag}</div>`;
+  });
+  html += `<div class="note">A2 taken as the largest square area geometrically similar to and concentric with the plate, limited by the smaller support dimension: A2 = min(${supW}", ${supL}")² = ${A2max.toFixed(0)} in².</div></div></div>`;
+
+  html += stepBlock(stepNum++, 'Selected base plate size',
+    `B = N = ${B.toFixed(2)} in   (Area A1 = ${A1.toFixed(2)} in²)`,
+    `Final √(A2/A1) = ${ratio.toFixed(3)} ${ratio<=2.0 ? '' : '(capped at 2.0)'}`);
+
+  if(isRound){
+    html += stepBlock(stepNum++, 'Cantilever length l (round section)',
+      `l = (N − 0.8D)/2 = (${N.toFixed(2)} − 0.8×${dia}) / 2 = ${l.toFixed(3)} in`,
+      `Round HSS/pipe shafts have no separate flange/depth, so AISC Design Guide 1 replaces 0.95d and 0.8b_f with a single equivalent width 0.8D. Since the section is symmetric, m = n = l.`);
+  } else {
+    html += stepBlock(stepNum++, 'Cantilever dimensions m and n',
+      `m = (N − 0.95d)/2 = (${N.toFixed(2)} − 0.95×${d}) / 2 = ${m.toFixed(3)} in
+n = (B − 0.8b_f)/2 = (${B.toFixed(2)} − 0.8×${bf}) / 2 = ${n.toFixed(3)} in
+l = max(m, n) = ${l.toFixed(3)} in`,
+      `l governs the cantilever bending check of the plate.`);
+  }
+
+  html += stepBlock(stepNum++, 'Required plate thickness',
+    `t = l · √[ (2·Ω_b·P) / (F_y·B·N) ]
+  = ${l.toFixed(3)} · √[ (2×${omegaB}×${P.toFixed(1)}) / (${fy}×${B.toFixed(2)}×${N.toFixed(2)}) ]
+  = ${tRaw.toFixed(3)} in  →  round up to ${t.toFixed(3)} in`,
+    `Uses beam-strip model: 1 in wide × t, plastic section modulus t²/4.`);
+
+  html += stepBlock(stepNum++, 'Final result',
+    `Base plate: ${B.toFixed(2)}" × ${N.toFixed(2)}" × ${t.toFixed(3)}" thick`,
+    `Material: A${fy===36?'36':fy}, f'c = ${fc} ksi concrete.`);
+
+  document.getElementById('steps').innerHTML = html;
+
+  drawDiagram(B, N, bf, d, m, n, t, A2max, isRound, dia);
+}
+
+function stepBlock(num, title, formula, note, warn){
+  return `<div class="step">
+    <div class="num${warn?' warn':''}">${num}</div>
+    <div>
+      <div class="title">${title}</div>
+      <div class="formula">${formula}</div>
+      <div class="note">${note}</div>
+    </div>
+  </div>`;
+}
+
+function drawDiagram(B, N, bf, d, m, n, t, A2max, isRound, dia){
+  const svg = document.getElementById('plateSvg');
+  const view = 300;
+  const a2Side = Math.sqrt(A2max);
+  const outer = Math.max(B, N, a2Side);
+  const maxDim = 190;
+  const scale = maxDim / outer;
+
+  const w = B*scale, h = N*scale;
+  const a2 = a2Side*scale;
+
+  const cx = view/2, cy = view/2 + 4;
+  const x0 = cx - w/2, y0 = cy - h/2;
+  const ax0 = cx - a2/2, ay0 = cy - a2/2;
+
+  const showA2 = a2Side > B + 0.5;
+
+  let shapeSvg;
+  if(isRound){
+    const r = (dia*scale)/2;
+    shapeSvg = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#152030" stroke="#7f93a6" stroke-width="2"/>
+    <text x="${cx}" y="${cy+4}" text-anchor="middle" font-size="9.5" font-family="monospace" fill="#7f93a6">D=${dia.toFixed(2)}"</text>`;
+  } else {
+    const flangeW = bf*scale;
+    const depthH = d*scale;
+    const webT = Math.max(1.5, flangeW*0.06);
+    const flangeT = Math.max(2.5, depthH*0.05);
+    shapeSvg = `<rect x="${cx-flangeW/2}" y="${cy-depthH/2}" width="${flangeW}" height="${flangeT}" fill="#7f93a6"/>
+    <rect x="${cx-flangeW/2}" y="${cy+depthH/2-flangeT}" width="${flangeW}" height="${flangeT}" fill="#7f93a6"/>
+    <rect x="${cx-webT/2}" y="${cy-depthH/2}" width="${webT}" height="${depthH}" fill="#7f93a6"/>`;
+  }
+
+  svg.innerHTML = `
+    ${showA2 ? `
+    <rect x="${ax0}" y="${ay0}" width="${a2}" height="${a2}" fill="none" stroke="#ff5a2f" stroke-width="1.4" stroke-dasharray="5 4"/>
+    <text x="${cx}" y="${ay0-8}" text-anchor="middle" font-size="9.5" font-family="monospace" fill="#ff5a2f">A2 side = ${a2Side.toFixed(2)}" (${A2max.toFixed(0)} in²)</text>
+    ` : ''}
+    <rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="#152030" stroke="#3fdba3" stroke-width="2"/>
+    ${shapeSvg}
+    <line x1="${x0}" y1="${y0-8}" x2="${x0+w}" y2="${y0-8}" stroke="#3fdba3" stroke-width="1"/>
+    <text x="${cx}" y="${y0-13}" text-anchor="middle" font-size="10" font-family="monospace" fill="#3fdba3">B = ${B.toFixed(2)}"</text>
+    <line x1="${x0-8}" y1="${y0}" x2="${x0-8}" y2="${y0+h}" stroke="#3fdba3" stroke-width="1"/>
+    <text x="${x0-13}" y="${cy}" text-anchor="middle" font-size="10" font-family="monospace" fill="#3fdba3" transform="rotate(-90 ${x0-13} ${cy})">N = ${N.toFixed(2)}"</text>
+    <text x="${cx}" y="${Math.max(y0+h, ay0+a2)+20}" text-anchor="middle" font-size="9.5" font-family="monospace" fill="#7f93a6">A1 = ${(B*N).toFixed(0)} in² · t = ${t.toFixed(3)}" · m = ${m.toFixed(2)}" · n = ${n.toFixed(2)}"</text>
+  `;
+}
+
+/* ============================================================
+   MODE 2: HSS ROUND BOLTED END-PLATE MOMENT CONNECTION
+   Source: Packer, J.A. "Round HSS Bolted End-Plate Connections
+   under Bending Moment", Steel Tube Institute, Aug 2023.
+   Only geometry, effective-bolt count, the Eq.(3) plate-thickness
+   limit of applicability, and AISC J3 spacing/edge checks are
+   computed — see the warning banner in the UI regarding Eqs (1)/(2).
+   ============================================================ */
+
+function populateEpDropdown(){
+  const sel = document.getElementById('epShape');
+  let html = '<option value="__custom">Custom (enter manually)</option>';
+  Object.keys(roundShapes).forEach(name=>{
+    html += `<option value="${escapeAttr(name)}">${name}</option>`;
+  });
+  sel.innerHTML = html;
+  sel.value = "__custom"; // default stays as the article's HSS 6.625x0.375 (not in the base-plate list's exact wall thickness)
+}
+
+function applyEpShape(){
+  const sel = document.getElementById('epShape');
+  const name = sel.value;
+  if(name === "__custom") return;
+
+  const oldD = parseFloat(document.getElementById('epD').value);
+  const pcdEl = document.getElementById('epPCD');
+  const plateODEl = document.getElementById('epPlateOD');
+  const oldPcd = parseFloat(pcdEl.value);
+  const oldPlateOD = parseFloat(plateODEl.value);
+
+  const newD = roundShapes[name].D;
+  document.getElementById('epD').value = newD;
+
+  // Preserve the current edge distances a = (plateOD - PCD)/2 and
+  // b = (PCD - D)/2 rather than leaving PCD/Plate OD stuck at the old
+  // tube's values, or silently resetting to some fixed default.
+  if(oldD > 0 && !isNaN(oldPcd) && !isNaN(oldPlateOD)){
+    const b = (oldPcd - oldD) / 2;
+    const a = (oldPlateOD - oldPcd) / 2;
+    const newPcd = newD + 2*b;
+    const newPlateOD = newPcd + 2*a;
+    pcdEl.value = newPcd.toFixed(3);
+    plateODEl.value = newPlateOD.toFixed(3);
+  }
+
+  runEpCalc();
+}
+
+function updateEpMu(){
+  const mdl = parseFloat(document.getElementById('epMdl').value) || 0;
+  const mll = parseFloat(document.getElementById('epMll').value) || 0;
+  const mu = 1.2*mdl + 1.6*mll;
+  document.getElementById('epMu').value = mu.toFixed(1);
+  runEpCalc();
+}
+
+const boltGrades = {
+  "A325N":{Fub:120, Fnt:90, Fyb:92},
+  "A490N":{Fub:150, Fnt:113, Fyb:130}
+};
+function applyBoltGrade(){
+  const sel = document.getElementById('boltGrade').value;
+  if(sel === "__custom") return;
+  const g = boltGrades[sel];
+  document.getElementById('epFnt').value = g.Fnt;
+  document.getElementById('epFyb').value = g.Fyb;
+}
+
+// AISC Table J3.4 minimum edge distance to center of standard hole (in.), sheared-edge values
+const minEdgeDistTable = [
+  {db:0.5, e:0.75}, {db:0.625, e:0.875}, {db:0.75, e:1.0},
+  {db:0.875, e:1.125}, {db:1.0, e:1.25}, {db:1.125, e:1.5},
+  {db:1.25, e:1.625}, {db:1.375, e:1.875}, {db:1.5, e:2.0}
+];
+function lookupMinEdgeDist(db){
+  // linear interpolation between table entries; extrapolate at ends
+  const t = minEdgeDistTable;
+  if(db <= t[0].db) return t[0].e;
+  if(db >= t[t.length-1].db) return t[t.length-1].e;
+  for(let i=0;i<t.length-1;i++){
+    if(db >= t[i].db && db <= t[i+1].db){
+      const frac = (db - t[i].db)/(t[i+1].db - t[i].db);
+      return t[i].e + frac*(t[i+1].e - t[i].e);
+    }
+  }
+  return 1.25;
+}
+
+function runEpCalc(){
+  const D    = parseFloat(document.getElementById('epD').value);
+  const t    = parseFloat(document.getElementById('epT').value);
+  const Z    = parseFloat(document.getElementById('epZ').value);
+  const FyHss= parseFloat(document.getElementById('epFyHss').value);
+  const db   = parseFloat(document.getElementById('epDb').value);
+  const nb   = parseFloat(document.getElementById('epNb').value);
+  const Fnt  = parseFloat(document.getElementById('epFnt').value);
+  const Fyb  = parseFloat(document.getElementById('epFyb').value);
+  const plateOD = parseFloat(document.getElementById('epPlateOD').value);
+  const pcd  = parseFloat(document.getElementById('epPCD').value);
+  const tp   = parseFloat(document.getElementById('epTp').value);
+  const Fup  = parseFloat(document.getElementById('epFup').value);
+  const Mu   = parseFloat(document.getElementById('epMu').value);
+
+  // --- Input validation: reject zero/negative/non-numeric critical dimensions ---
+  // A zero-thickness plate or zero-thickness HSS wall is not physically real, and
+  // the downstream checks below are not written to fail safely against it (e.g. the
+  // Eq.3 comparison "tp <= tc" is trivially true when tp = 0, and the member capacity
+  // uses Z directly without re-deriving it from D and t). So these are hard-blocked
+  // here rather than allowed to silently produce a false "OK".
+  const invalid = [];
+  if(!(D > 0))    invalid.push('Outside diameter D must be greater than 0.');
+  if(!(t > 0))    invalid.push('HSS design wall thickness t must be greater than 0.');
+  if(!(Z > 0))    invalid.push('Plastic modulus Z must be greater than 0.');
+  if(!(FyHss > 0))invalid.push('HSS yield strength F_y must be greater than 0.');
+  if(!(db > 0))   invalid.push('Bolt diameter d_b must be greater than 0.');
+  if(!(nb >= 3))  invalid.push('Number of bolts n_b must be at least 3 (model assumes n_b/3 effective tension bolts).');
+  if(!(Fnt > 0))  invalid.push('Bolt F_nt must be greater than 0.');
+  if(!(plateOD > pcd)) invalid.push('Plate OD must be greater than the bolt PCD (edge distance a would be ≤ 0).');
+  if(!(pcd > D))  invalid.push('Bolt PCD must be greater than the HSS outside diameter D (b would be ≤ 0).');
+  if(!(tp > 0))   invalid.push('End-plate thickness t_p must be greater than 0.');
+  if(!(Fup > 0))  invalid.push('Plate F_up must be greater than 0.');
+  if(!(Mu >= 0))  invalid.push('Required moment M_u must be zero or greater.');
+
+  if(invalid.length){
+    document.getElementById('epSumTc').textContent = '—';
+    const dcrEl0 = document.getElementById('epSumDCR');
+    dcrEl0.textContent = '—';
+    dcrEl0.classList.remove('ok','bad');
+    document.getElementById('epSteps').innerHTML = `<div class="step">
+      <div class="num warn">!</div>
+      <div>
+        <div class="title">Invalid input — calculation blocked</div>
+        <div class="note-inline warn">${invalid.map(m=>'• '+m).join('<br>')}</div>
+        <div class="note">Zero or negative values for these fields are not physically meaningful and the checks below cannot be evaluated safely against them (e.g. a zero-thickness plate trivially "passes" the Eq. 3 comparison). Enter realistic positive values to run the calculation.</div>
+      </div>
+    </div>`;
+    drawEpDiagram(D>0?D:1, plateOD>0?plateOD:2, pcd>0?pcd:1.5, nb>0?nb:4);
+    return;
+  }
+
+  const Abolt = Math.PI * db * db / 4;
+  const Bt = Fnt * Abolt;
+
+  const a = (plateOD - pcd) / 2;
+  const b = (pcd - D) / 2;
+  const aP = a + db/2;
+  const bP = b - db/2;
+  const Le = D + 2*bP;
+  const nbP = nb / 3;
+  const p = Le / nbP; // tributary length per effective tension bolt
+
+  const tc = Math.sqrt( (4 * nbP * Bt * bP) / (Fup * Le) );
+  const thicknessOk = tp <= tc;
+
+  // Bolt spacing / edge distance checks (AISC Spec J3.3 / J3.4)
+  const boltCircumference = Math.PI * pcd;
+  const arcSpacing = boltCircumference / nb;
+  const minSpacingPreferred = 3 * db;
+  const minEdgeDist = lookupMinEdgeDist(db);
+  const spacingOk = arcSpacing >= minSpacingPreferred;
+  const edgeOk = a >= minEdgeDist;
+
+  // Informational: HSS member available flexural strength (AISC Spec Eq F8-1), if compact
+  const E = 29000;
+  const slenderness = D / t;
+  const compactLimit = 0.07 * E / FyHss;
+  const isCompact = slenderness <= compactLimit;
+  const MnMember = 0.9 * FyHss * Z; // available flexural strength, phi=0.9, LRFD
+
+  // Demand vs. member reference capacity (NOT a connection capacity check —
+  // Eqs. 1/2 for connection M_available are still not computed; see banner)
+  const dcrMember = Mu / MnMember;
+  const dcrOk = dcrMember <= 1.0;
+
+  document.getElementById('epSumTc').textContent = tc.toFixed(3);
+  const dcrEl = document.getElementById('epSumDCR');
+  dcrEl.textContent = dcrMember.toFixed(2);
+  dcrEl.classList.remove('ok','bad');
+  dcrEl.classList.add(dcrOk ? 'ok' : 'bad');
+
+  let html = '';
+  let stepNum = 1;
+
+  html += stepBlock(stepNum++, 'Section & bolt properties',
+    `HSS: D = ${D}", t = ${t}", Z = ${Z} in³, F_y = ${FyHss} ksi
+Bolt: d_b = ${db}" dia., n_b = ${nb} bolts, A_bolt = π d_b²/4 = ${Abolt.toFixed(4)} in²
+B_t = F_nt · A_bolt = ${Fnt} × ${Abolt.toFixed(4)} = ${Bt.toFixed(2)} kip`,
+    `B_t is the specified minimum tensile strength of one bolt (AISC Spec. Table J3.2 basis).`);
+
+  html += stepBlock(stepNum++, 'Yield-line geometry (equivalent square HSS / rectangular plate model)',
+    `a = (plate OD − bolt PCD)/2 = (${plateOD} − ${pcd}) / 2 = ${a.toFixed(4)} in
+a' = a + d_b/2 = ${a.toFixed(4)} + ${(db/2).toFixed(4)} = ${aP.toFixed(4)} in
+b = (bolt PCD − D)/2 = (${pcd} − ${D}) / 2 = ${b.toFixed(4)} in
+b' = b − d_b/2 = ${b.toFixed(4)} − ${(db/2).toFixed(4)} = ${bP.toFixed(4)} in
+L_e = D + 2b' = ${D} + 2×${bP.toFixed(4)} = ${Le.toFixed(4)} in`,
+    `L_e is the yield-line equivalent length used to convert the round HSS/circular plate to an equivalent rectangular-plate/square-HSS model (Wheeler et al. 1998 T-stub model).`);
+
+  html += stepBlock(stepNum++, 'Effective number of tension bolts',
+    `n_b' = n_b / 3 = ${nb} / 3 = ${nbP.toFixed(3)}
+p = L_e / n_b' = ${Le.toFixed(4)} / ${nbP.toFixed(3)} = ${p.toFixed(4)} in (tributary length per effective bolt)`,
+    `Testing showed only about 1/3 of bolts (the extreme tension region) are critically loaded at ultimate moment; the rest are at or near pre-tension.`);
+
+  const tcFlag = thicknessOk ? '<span class="flag ok">OK — within limit of applicability</span>' : '<span class="flag bad">EXCEEDS LIMIT — model not validated at this thickness</span>';
+  html += stepBlock(stepNum++, 'Plate thickness limit of applicability — Eq. (3)',
+    `t_c = √[ 4·n_b'·B_t·b' / (F_up·L_e) ]
+   = √[ 4 × ${nbP.toFixed(3)} × ${Bt.toFixed(2)} × ${bP.toFixed(4)} / (${Fup} × ${Le.toFixed(4)}) ]
+   = ${tc.toFixed(4)} in
+
+t_p = ${tp}" ${thicknessOk ? '≤' : '>'} t_c = ${tc.toFixed(3)}"  ${tcFlag}`,
+    `This is the one equation from the source article confirmed by direct back-calculation against its worked example (reproduces the article's 0.90 in. limit exactly for the HSS 6.625×0.375 / 6-bolt / 7/8" A325 case). It marks the boundary between plate-yield-controlled (thin plate) and bolt-fracture-controlled (thick plate) behavior — the model requires the plate to stay on the thin/flexible side of this limit.`,
+    !thicknessOk);
+
+  const spacingFlag = spacingOk ? '<span class="flag ok">OK</span>' : '<span class="flag bad">not OK</span>';
+  const edgeFlag = edgeOk ? '<span class="flag ok">OK</span>' : '<span class="flag bad">not OK</span>';
+  html += stepBlock(stepNum++, 'Bolt spacing & edge distance checks',
+    `Bolt circle circumference = π × PCD = π × ${pcd} = ${boltCircumference.toFixed(2)} in
+Arc spacing per bolt = ${boltCircumference.toFixed(2)} / ${nb} = ${arcSpacing.toFixed(3)} in
+Preferred min. spacing = 3d_b = 3 × ${db} = ${minSpacingPreferred.toFixed(3)} in   ${spacingFlag}   (AISC Spec. J3.3)
+
+Min. edge distance for ${db}" bolt (Table J3.4) ≈ ${minEdgeDist.toFixed(3)} in
+Actual edge distance a = ${a.toFixed(3)} in   ${edgeFlag}   (AISC Spec. Table J3.4)`,
+    `Table J3.4 values used here are the standard sheared-edge minimums; use the rolled/gas-cut edge values instead if applicable to your fabrication.`);
+
+  html += `<div class="step">
+    <div class="num warn">!</div>
+    <div>
+      <div class="title">Available moment capacity — Eqs. (1) and (2)</div>
+      <div class="note-inline warn">Still not computed. I traced these back to their origin — Wheeler, Clarke, Hancock &amp; Murray (1998), the parent T-stub model for two-row rectangular-HSS end plates — and confirmed the STI article's round-HSS version is a genuine re-derivation, not a direct substitution into the RHS equations (the round case rotates about a single extreme-compression point on the tube rather than a second bolt row, which changes the internal moment-arm terms). Reconstructing that re-derivation without the source equations would be a guess, so M_available is intentionally left blank rather than risk an unverified capacity number. δ and ρ below are the standard T-stub prying parameters that would feed into those equations, provided as a head start if you complete the calculation by hand or share a clean image/text of Eqs. (1)–(2) for transcription.</div>
+    </div>
+  </div>`;
+
+  const dHole = db + 0.0625;
+  const delta = 1 - dHole/p;
+  const rho = bP/aP;
+  html += stepBlock(stepNum++, 'T-stub prying parameters (for manual completion of Eqs. 1–2)',
+    `d' (std. hole) ≈ d_b + 1/16 = ${dHole.toFixed(4)} in
+δ = 1 − d'/p = 1 − ${dHole.toFixed(4)}/${p.toFixed(4)} = ${delta.toFixed(4)}
+ρ = b'/a' = ${bP.toFixed(4)}/${aP.toFixed(4)} = ${rho.toFixed(4)}`,
+    `Standard AISC Manual Part 9 T-stub prying parameters, consistent with the variables the source model is built on.`);
+
+  html += stepBlock(stepNum++, 'HSS member available flexural strength (for reference)',
+    `D/t = ${D}/${t} = ${slenderness.toFixed(2)}
+Compact limit = 0.07E/F_y = 0.07×${E}/${FyHss} = ${compactLimit.toFixed(2)}  →  ${isCompact ? 'compact' : 'noncompact/slender — Eq. F8-1 not directly applicable'}
+φM_n = 0.9·F_y·Z = 0.9 × ${FyHss} × ${Z} = ${MnMember.toFixed(0)} kip-in`,
+    `Per AISC Spec. Eq. (F8-1), for comparison once M_available is completed — the article's own example connection developed roughly 85–90% of this value.`);
+
+  const dcrFlag = dcrOk ? '<span class="flag ok">OK vs. member</span>' : '<span class="flag bad">EXCEEDS member capacity</span>';
+  html += stepBlock(stepNum++, 'Demand check against HSS member capacity (reference only — NOT a connection check)',
+    `M_u = ${Mu.toFixed(0)} kip-in
+DCR = M_u / φM_n = ${Mu.toFixed(0)} / ${MnMember.toFixed(0)} = ${dcrMember.toFixed(3)}  ${dcrFlag}`,
+    `IMPORTANT: this only checks the demand against the tube's own bending strength — it says nothing about the connection. The article's own example shows the connection (543 kip-in.) governs at 87% of the member capacity, so passing this check alone is not sufficient. Do not use this as your final connection check; it exists only so you can see how close M_u is to the member's ceiling while Eqs. (1)–(2) remain unavailable.`,
+    !dcrOk);
+
+  document.getElementById('epSteps').innerHTML = html;
+
+  drawEpDiagram(D, plateOD, pcd, nb);
+}
+
+function drawEpDiagram(D, plateOD, pcd, nb){
+  const svg = document.getElementById('epSvg');
+  const view = 300;
+  const maxDim = 220;
+  const scale = maxDim / plateOD;
+  const cx = view/2, cy = view/2;
+
+  const rPlate = (plateOD*scale)/2;
+  const rTube = (D*scale)/2;
+  const rBolt = (pcd*scale)/2;
+  const boltR = Math.max(2.5, scale*0.09);
+
+  let bolts = '';
+  for(let i=0;i<nb;i++){
+    const ang = (2*Math.PI*i/nb) - Math.PI/2;
+    const bx = cx + rBolt*Math.cos(ang);
+    const by = cy + rBolt*Math.sin(ang);
+    bolts += `<circle cx="${bx}" cy="${by}" r="${boltR}" fill="#ff5a2f"/>`;
+  }
+
+  svg.innerHTML = `
+    <circle cx="${cx}" cy="${cy}" r="${rPlate}" fill="#152030" stroke="#3fdba3" stroke-width="2"/>
+    <circle cx="${cx}" cy="${cy}" r="${rTube}" fill="none" stroke="#7f93a6" stroke-width="2"/>
+    <circle cx="${cx}" cy="${cy}" r="${rBolt}" fill="none" stroke="#ff5a2f" stroke-width="1" stroke-dasharray="4 3"/>
+    ${bolts}
+    <text x="${cx}" y="${cy-rPlate-10}" text-anchor="middle" font-size="10" font-family="monospace" fill="#3fdba3">Plate OD = ${plateOD.toFixed(2)}"</text>
+    <text x="${cx}" y="${cy+4}" text-anchor="middle" font-size="9" font-family="monospace" fill="#7f93a6">D = ${D.toFixed(2)}"</text>
+    <text x="${cx}" y="${cy+rPlate+18}" text-anchor="middle" font-size="9.5" font-family="monospace" fill="#ff5a2f">${nb} bolts on PCD = ${pcd.toFixed(2)}"</text>
+  `;
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+window.onload = function(){
+  populateShapeDropdown();
+  populateRoundDropdown();
+  populateEpDropdown();
+  updateEpMu();
+  runCalc();
+  runEpCalc();
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>3D Concrete Frame Solver</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue-deep:#0E3A5F; --blue-mid:#154B78; --canvas-bg:#000000;
+    --grid-line:rgba(232,244,255,0.09);
+    --linework:#EAF3FF; --linework-dim:rgba(234,243,255,0.55);
+    --paper:#0A0E17; --paper-line:#2A3548;
+    --ink:#EAF3FF; --ink-dim:#6F91B0;
+    --card:#141B28; --input-bg:#0E141F; --accent-green:#3ECF8E;
+    --moment:#FF6B4A; --shear:#63D9B8; --axial-c:#F2C94C; --axial-t:#7FB3FF; --dead:#FF6B4A; --live:#B37FFF;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:'IBM Plex Mono', monospace; background:var(--paper); color:var(--ink); }
+  .app{ display:grid; grid-template-columns: 380px 1fr; min-height:100vh; }
+  @media (max-width: 940px){ .app{grid-template-columns: 1fr;} }
+  .panel{ background:var(--paper); background-image: linear-gradient(rgba(234,243,255,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(234,243,255,0.045) 1px, transparent 1px); background-size: 22px 22px; border-right:1px solid var(--paper-line); padding:22px 20px 40px; max-height:100vh; overflow-y:auto; }
+  .brand{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:20px; letter-spacing:-0.01em; margin:0 0 2px; color:var(--ink); }
+  .brand span{ color:var(--moment); }
+  .subhead{ font-size:11px; color:var(--ink-dim); letter-spacing:0.06em; text-transform:uppercase; margin:0 0 16px; }
+  .unit-toggle{ display:flex; gap:6px; margin-bottom:20px; }
+  .unit-btn{ flex:1; padding:9px 6px; font-family:'Space Grotesk', sans-serif; font-size:11.5px; font-weight:600; border:1px solid var(--paper-line); background:var(--card); border-radius:4px; cursor:pointer; color:var(--ink-dim); letter-spacing:0.01em; }
+  .unit-btn.active{ background:var(--accent-green); color:#08130E; border-color:var(--accent-green); }
+  .unit-btn:hover{ border-color:var(--moment); }
+  fieldset{ border:none; padding:0; margin:0 0 18px; }
+  legend{ font-family:'Space Grotesk', sans-serif; font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent-green); padding:0 0 8px; border-bottom:1px solid var(--paper-line); width:100%; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+  .row{ display:flex; gap:10px; margin-bottom:10px; }
+  .row3{ display:flex; gap:8px; margin-bottom:10px; }
+  .field{ flex:1; }
+  label{ display:block; font-size:10.5px; color:var(--ink-dim); margin-bottom:4px; }
+  input, select{ width:100%; font-family:'IBM Plex Mono', monospace; font-size:12.5px; padding:7px 8px; border:1px solid var(--paper-line); border-radius:3px; background:var(--input-bg); color:var(--ink); }
+  input:focus, select:focus{ outline:none; border-color:var(--moment); }
+  .solve-btn{ width:100%; padding:13px; background:var(--accent-green); color:#08130E; border:none; border-radius:3px; font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:14px; letter-spacing:0.02em; cursor:pointer; margin-top:6px; }
+  .solve-btn:hover{ background:#33B87D; }
+  .preset-btn{ width:100%; padding:9px; background:var(--card); border:1px solid var(--paper-line); color:var(--ink); border-radius:3px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; cursor:pointer; margin-bottom:8px; }
+  .preset-btn:hover{ border-color:var(--moment); }
+  .note{ font-size:10.5px; color:var(--ink-dim); line-height:1.5; margin-top:16px; padding-top:14px; border-top:1px solid var(--paper-line); }
+  .sw-info{ font-size:10.5px; color:var(--ink-dim); background:var(--card); border:1px dashed var(--paper-line); border-radius:3px; padding:8px 10px; margin-top:8px; line-height:1.5; }
+  .canvas-wrap{ background:var(--canvas-bg); background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px); background-size: 24px 24px; padding:20px; display:flex; flex-direction:column; }
+  .toolbar{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
+  .tabs{ display:flex; gap:6px; background:rgba(0,0,0,0.22); padding:4px; border-radius:6px; flex-wrap:wrap; }
+  .tab{ padding:7px 13px; font-family:'Space Grotesk', sans-serif; font-size:12px; font-weight:600; color:var(--linework-dim); background:transparent; border:none; border-radius:4px; cursor:pointer; }
+  .tab.active{ background:var(--accent-green); color:#08130E; }
+  .legend-line{ display:flex; gap:14px; font-size:11px; color:var(--linework-dim); flex-wrap:wrap; }
+  .legend-item{ display:flex; align-items:center; gap:5px; }
+  .swatch{ width:10px; height:10px; border-radius:2px; display:inline-block; }
+  .stage{ background:rgba(255,255,255,0.02); border:1px solid rgba(234,243,255,0.15); border-radius:6px; flex:1; min-height:460px; display:flex; align-items:center; justify-content:center; overflow:auto; }
+  svg text{ font-family:'IBM Plex Mono', monospace; }
+  .results{ margin-top:18px; background:rgba(255,255,255,0.03); border:1px solid rgba(234,243,255,0.15); border-radius:6px; padding:16px 18px; }
+  .results h3{ font-family:'Space Grotesk', sans-serif; color:var(--linework); font-size:13px; letter-spacing:0.05em; text-transform:uppercase; margin:0 0 12px; }
+  .results h3 span.units-note{ text-transform:none; letter-spacing:0; color:var(--linework-dim); font-weight:400; font-size:11px; }
+  table{ width:100%; border-collapse:collapse; font-size:10.5px; color:var(--linework-dim); }
+  th{ text-align:left; padding:5px 7px; color:var(--linework); border-bottom:1px solid rgba(234,243,255,0.25); font-weight:600; white-space:nowrap; }
+  td{ padding:5px 7px; border-bottom:1px solid rgba(234,243,255,0.08); white-space:nowrap; }
+  .table-scroll{ overflow-x:auto; }
+  .placeholder{ color:var(--linework-dim); font-size:13px; text-align:center; padding:40px; }
+  .pl-row{ background:var(--card); border:1px solid var(--paper-line); border-radius:4px; padding:10px; margin-bottom:10px; position:relative; }
+  .pl-row .row{ margin-bottom:8px; }
+  .pl-remove{ position:absolute; top:8px; right:8px; background:none; border:none; color:var(--ink-dim); font-size:14px; cursor:pointer; font-weight:700; line-height:1; }
+  .pl-remove:hover{ color:var(--moment); }
+  .add-pl-btn{ width:100%; padding:9px; background:var(--paper); border:1px dashed var(--ink-dim); color:var(--ink); border-radius:3px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; cursor:pointer; }
+  .add-pl-btn:hover{ border-color:var(--moment); color:var(--moment); }
+  .hint{ font-size:9.5px; color:var(--ink-dim); margin-top:2px; }
+  .type-row{ display:flex; gap:6px; align-items:center; margin-bottom:6px; background:var(--card); border:1px solid var(--paper-line); border-radius:3px; padding:6px 8px; }
+  .type-id{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:12px; width:28px; flex-shrink:0; }
+  .type-row input{ padding:5px 6px; font-size:11.5px; }
+  .type-remove{ background:none; border:none; color:var(--ink-dim); cursor:pointer; font-size:14px; font-weight:700; flex-shrink:0; }
+  .type-remove:hover{ color:var(--moment); }
+  .sub-label{ font-size:10px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:0.05em; margin:4px 0 6px; }
+  .assign-list{ max-height:260px; overflow-y:auto; border:1px solid var(--paper-line); border-radius:4px; background:var(--card); padding:8px; }
+  .assign-row{ display:flex; gap:8px; align-items:center; padding:5px 0; border-bottom:1px solid var(--paper-line); font-size:10.5px; }
+  .assign-row:last-child{ border-bottom:none; }
+  .assign-label{ flex:1.3; color:var(--ink); }
+  .assign-label b{ color:var(--moment); }
+  .assign-select{ flex:1; padding:4px 5px; font-size:10.5px; }
+  .selected-editor{ margin-top:10px; padding:10px; background:var(--card); border:1px solid var(--moment); border-radius:4px; }
+  .selected-editor strong{ color:var(--moment); }
+  .rebar-row{ background:var(--card); border:1px solid var(--paper-line); border-radius:4px; padding:8px; margin-bottom:8px; }
+  .rebar-title{ font-family:'Space Grotesk',sans-serif; font-size:11px; font-weight:700; margin-bottom:7px; }
+  .rebar-grid{ display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+  .rebar-grid input,.rebar-grid select{ padding:5px 6px; font-size:11px; }
+  .critical-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; }
+  .critical-card{ background:rgba(255,255,255,0.04); border:1px solid rgba(234,243,255,0.18); border-radius:4px; padding:10px; }
+  .critical-card h4{ margin:0 0 5px; color:var(--linework); font-family:'Space Grotesk',sans-serif; font-size:12px; }
+  .critical-card p{ margin:4px 0; color:var(--linework-dim); font-size:10px; }
+  .critical-card svg{ width:100%; height:245px; display:block; }
+  .display-options{ background:var(--card); border:1px solid var(--paper-line); border-radius:4px; padding:8px 10px; }
+  .display-options label{ display:flex; align-items:center; gap:7px; margin:5px 0; color:var(--ink); cursor:pointer; }
+  .display-options input{ width:auto; }
+  .member-udl{ display:flex; align-items:center; gap:5px; margin-top:4px; color:var(--ink-dim); font-size:9.5px; }
+  .member-udl input[type="checkbox"]{ width:auto; }
+  .member-udl input[type="number"]{ width:58px; padding:3px 4px; font-size:10px; }
+  .input-tabs{ display:grid; grid-template-columns:repeat(3,1fr); gap:4px; margin:0 0 14px; }
+  .input-tab{ padding:7px 4px; font-family:'Space Grotesk',sans-serif; font-size:10.5px; font-weight:600; border:1px solid var(--paper-line); background:var(--card); color:var(--ink-dim); border-radius:3px; cursor:pointer; }
+  .input-tab.active{ background:var(--blue-deep); border-color:var(--blue-deep); color:var(--linework); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="panel">
+    <p class="brand">FRAME<span>3D</span></p>
+    <p class="subhead">3D concrete space frame &middot; stiffness method</p>
+
+    <div class="input-tabs" id="inputTabs">
+      <button class="input-tab" data-input-tab="units" onclick="setInputTab('units')">Units</button>
+      <button class="input-tab active" data-input-tab="geometry" onclick="setInputTab('geometry')">Geometry</button>
+      <button class="input-tab" data-input-tab="sections" onclick="setInputTab('sections')">Sections</button>
+      <button class="input-tab" data-input-tab="members" onclick="setInputTab('members')">Members</button>
+      <button class="input-tab" data-input-tab="loads" onclick="setInputTab('loads')">Loads</button>
+      <button class="input-tab" data-input-tab="all" onclick="setInputTab('all')">All</button>
+    </div>
+
+    <div class="unit-toggle" id="unitToggle" data-input-tab="units">
+      <button class="unit-btn active" data-units="metric" onclick="setUnits('metric')">Metric (SI)</button>
+      <button class="unit-btn" data-units="us" onclick="setUnits('us')">US Customary</button>
+    </div>
+
+    <button class="preset-btn" data-input-tab="geometry" onclick="applyPreset()">Load preset: 4 columns / 4 beams (1 story)</button>
+
+    <fieldset data-input-tab="geometry">
+      <legend>Grid geometry</legend>
+      <div class="row">
+        <div class="field">
+          <label>Frame type</label>
+          <select id="frameType" onchange="onFrameTypeChange()">
+            <option value="full">Columns + beams (multi-story)</option>
+            <option value="beamOnly">Beam grid only (no columns)</option>
+          </select>
+        </div>
+      </div>
+      <div class="row3">
+        <div class="field"><label>Bays X</label><input id="nx" type="number" value="1" min="1" max="4"></div>
+        <div class="field"><label>Bays Y</label><input id="ny" type="number" value="1" min="1" max="4"></div>
+        <div class="field" id="storiesField"><label>Stories</label><input id="ns" type="number" value="1" min="1" max="5"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Bay width X (<span class="unit-length">m</span>)</label><input id="bayX" type="number" value="6" step="0.5"></div>
+        <div class="field"><label>Bay width Y (<span class="unit-length">m</span>)</label><input id="bayY" type="number" value="6" step="0.5"></div>
+      </div>
+      <div class="row" id="storyHRow">
+        <div class="field"><label>Story height (<span class="unit-length">m</span>)</label><input id="storyH" type="number" value="3.5" step="0.5"></div>
+        <div class="field">
+          <label id="supportLabel">Base support</label>
+          <select id="supportType"><option value="fixed">Fixed</option><option value="pinned">Pinned</option></select>
+        </div>
+      </div>
+      <p class="hint" id="beamOnlyHint" style="display:none;">Beam-grid-only mode: a single-level grid of beams, supported directly at every perimeter node (edge of the grid). No columns, no stories.</p>
+    </fieldset>
+
+    <fieldset data-input-tab="geometry">
+      <legend>Geometry display</legend>
+      <div class="display-options">
+        <label><input type="checkbox" id="showBeamNumbers" checked onchange="updateGeometryDisplay()"> Show beam numbers</label>
+        <label><input type="checkbox" id="showBeamSections" checked onchange="updateGeometryDisplay()"> Show beam sections and dimensions</label>
+        <label><input type="checkbox" id="showColumnNumbers" checked onchange="updateGeometryDisplay()"> Show column numbers</label>
+        <label><input type="checkbox" id="showColumnSections" checked onchange="updateGeometryDisplay()"> Show column sections and dimensions</label>
+      </div>
+    </fieldset>
+
+    <fieldset data-input-tab="sections">
+      <legend>Section library &amp; material</legend>
+      <div class="row">
+        <div class="field"><label>Concrete f'c (<span class="unit-stress">MPa</span>)</label>
+          <select id="fc"><option value="20">20</option><option value="25" selected>25</option><option value="30">30</option><option value="35">35</option><option value="40">40</option></select>
+        </div>
+        <div class="field"><label>Unit weight (<span class="unit-uw">kN/m&sup3;</span>)</label><input id="unitWeight" type="number" value="24" step="0.5"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Detailing code</label><select id="designCode"><option value="aci318">ACI 318-19 (preliminary)</option><option value="bnbc">BNBC 2020 / engineer override</option></select></div>
+        <div class="field"><label>Rebar fy (<span class="unit-stress">MPa</span>)</label><input id="fy" type="number" value="420" step="5"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Clear cover (<span class="unit-dim">mm</span>)</label><input id="cover" type="number" value="40" min="0" step="5"></div>
+      </div>
+      <p class="sub-label" id="columnTypesLabel">Column types (<span class="unit-dim">mm</span>)</p>
+      <div id="columnTypesContainer"></div>
+      <button class="add-pl-btn" id="addColumnTypeBtn" onclick="addColumnType()">+ Add column type</button>
+      <p class="sub-label" style="margin-top:12px;">Beam types (<span class="unit-dim">mm</span>)</p>
+      <div id="beamTypesContainer"></div>
+      <button class="add-pl-btn" onclick="addBeamType()">+ Add beam type</button>
+    </fieldset>
+
+    <fieldset data-input-tab="sections">
+      <legend>Reinforcement detailing</legend>
+      <p class="hint" style="margin-bottom:8px;">Set indicative reinforcement for each section type. These values are displayed with the member data but are not a code-compliance design check.</p>
+      <p class="sub-label">Column reinforcement</p>
+      <div id="columnRebarContainer"></div>
+      <p class="sub-label" style="margin-top:12px;">Beam reinforcement</p>
+      <div id="beamRebarContainer"></div>
+    </fieldset>
+
+    <fieldset data-input-tab="members">
+      <legend>Member sections <span id="memberCount" style="font-weight:400;text-transform:none;letter-spacing:0;"></span></legend>
+      <p class="hint" style="margin-bottom:8px;">Pick a member, assign it any type from your library above &mdash; that's how you resize an individual column or beam.</p>
+      <div class="assign-list" id="assignList"></div>
+      <div id="selectedMemberEditor"></div>
+    </fieldset>
+
+    <fieldset data-input-tab="members">
+      <legend>Additional diagonal members <span id="customMemberCount" style="font-weight:400;text-transform:none;letter-spacing:0;">(0)</span></legend>
+      <p class="hint" style="margin-bottom:8px;">Each end can be placed at an existing node or at a distance along an existing beam. The solver splits the beam automatically.</p>
+      <div id="customMembersContainer"></div>
+      <button class="add-pl-btn" onclick="addCustomMember()">+ Add diagonal beam</button>
+    </fieldset>
+
+    <fieldset data-input-tab="loads">
+      <legend>Distributed &amp; lateral loads</legend>
+      <div class="row">
+        <div class="field"><label>Beam UDL &mdash; Dead, superimposed (<span class="unit-fpl">kN/m</span>)</label><input id="beamUDL_D" type="number" value="10"></div>
+        <div class="field"><label>Beam UDL &mdash; Live (<span class="unit-fpl">kN/m</span>)</label><input id="beamUDL_L" type="number" value="12"></div>
+      </div>
+      <div class="row" id="lateralRow">
+        <div class="field"><label>Lateral load / floor, X (<span class="unit-force">kN</span>)</label><input id="latX" type="number" value="15"></div>
+        <div class="field"><label>Lateral load / floor, Y (<span class="unit-force">kN</span>)</label><input id="latY" type="number" value="0"></div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Load combination</label>
+          <select id="combo" onchange="applyComboPreset()">
+            <option value="service">Service: 1.0D + 1.0L</option>
+            <option value="factored">Factored: 1.2D + 1.6L</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Dead factor f<sub>D</sub></label><input id="fD" type="number" value="1.0" step="0.05"></div>
+        <div class="field"><label>Live factor f<sub>L</sub></label><input id="fL" type="number" value="1.0" step="0.05"></div>
+      </div>
+      <p class="hint">Lateral loads applied at full magnitude. Self-weight from each member's own assigned section, classified Dead.</p>
+    </fieldset>
+
+    <fieldset data-input-tab="loads">
+      <legend>Point loads <span id="plCount" style="font-weight:400;text-transform:none;letter-spacing:0;">(0)</span></legend>
+      <div id="pointLoadsContainer"></div>
+      <button class="add-pl-btn" onclick="addPointLoadRow()">+ Add point load</button>
+    </fieldset>
+
+    <button class="solve-btn" onclick="solve()">Solve frame</button>
+
+    <div class="sw-info" id="swInfo" style="display:none;"></div>
+
+    <p class="note">Full 3D idealization: 6 DOF/node, 12&times;12 space-frame elements including torsion. Point loads placed along a member automatically split it at that location. Switch Metric/US Customary above at any time &mdash; entered values convert automatically and the model itself is always solved consistently. Verify final designs in ETABS, SAP2000, or STAAD.Pro.</p>
+  </div>
+
+  <div class="canvas-wrap">
+    <div class="toolbar">
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-mode="geometry">Geometry</button>
+        <button class="tab" data-mode="moment">Moment</button>
+        <button class="tab" data-mode="shear">Shear</button>
+        <button class="tab" data-mode="axial">Axial</button>
+        <button class="tab" data-mode="torsion">Torsion</button>
+        <button class="tab" data-mode="deflected">Deflected</button>
+      </div>
+      <div class="legend-line" id="legendLine"></div>
+    </div>
+    <div class="stage" id="stage"><p class="placeholder">Set geometry, sections and loads, then hit Solve frame.</p></div>
+    <div class="results" id="results" style="display:none;">
+      <h3>Support reactions <span class="units-note" id="reactionUnitsNote"></span></h3>
+      <div class="table-scroll"><table id="reactionTable"></table></div>
+      <h3 style="margin-top:18px;">Member end forces (local axes: N axial, Vy/Vz shear, T torsion, My/Mz moment) <span class="units-note" id="memberUnitsNote"></span></h3>
+      <div class="table-scroll">
+        <table id="memberTable">
+          <thead><tr><th>Mbr</th><th>Type</th><th>Section</th><th>N1</th><th>Vy1</th><th>Vz1</th><th>T1</th><th>My1</th><th>Mz1</th><th>N2</th><th>Vy2</th><th>Vz2</th><th>T2</th><th>My2</th><th>Mz2</th><th>Max|M|res</th></tr></thead>
+          <tbody id="memberBody"></tbody>
+        </table>
+      </div>
+      <h3 style="margin-top:18px;">Preliminary reinforcement detailing</h3>
+      <p class="hint" style="color:var(--linework-dim);">ACI-style preliminary checks from analyzed forces. Confirm seismic, anchorage, laps, joints, and local code requirements before construction.</p>
+      <div class="table-scroll"><table id="detailingTable"></table></div>
+      <h3 style="margin-top:18px;">Most critical sections</h3>
+      <div id="criticalSections" class="critical-grid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- Unit system ----------
+// The solver always operates on one internal ("metric") baseline: meters, millimeters
+// (section b/h), kN, kN/m, kN/m3, MPa, kN*m. The "US Customary" mode is purely a
+// display/input conversion layer around that baseline, so switching units can never
+// change what the model actually calculates.
+let unitSystem = 'metric'; // 'metric' | 'us'
+
+const UNIT_FACTORS = { // baseline("metric") -> unit, multiply-by factor
+  metric: { length:1, dim:1, stress:1, unitWeight:1, force:1, forcePerLength:1, moment:1 },
+  us:     { length:3.280839895, dim:0.0393700787, stress:0.145037738, unitWeight:6.365918, force:0.224808943, forcePerLength:0.0685217659, moment:0.737562149 }
+};
+const UNIT_LABELS = {
+  metric: { length:'m', dim:'mm', stress:'MPa', unitWeight:'kN/m\u00B3', force:'kN', forcePerLength:'kN/m', moment:'kN\u00B7m' },
+  us:     { length:'ft', dim:'in', stress:'ksi', unitWeight:'pcf', force:'kip', forcePerLength:'kip/ft', moment:'kip\u00B7ft' }
+};
+function convVal(val, kind, from, to){
+  if(val===null || val===undefined || isNaN(val)) return val;
+  if(from===to) return val;
+  const si = val / UNIT_FACTORS[from][kind];
+  return si * UNIT_FACTORS[to][kind];
+}
+function toSI(val, kind){ return convVal(val, kind, unitSystem, 'metric'); }
+function fromSI(val, kind){ return convVal(val, kind, 'metric', unitSystem); }
+function ul(kind){ return UNIT_LABELS[unitSystem][kind]; }
+function fmtDim(mmVal){
+  const v = fromSI(mmVal,'dim');
+  return unitSystem==='us' ? (Math.round(v*100)/100) : Math.round(v);
+}
+function roundDisplay(v,kind){
+  const dp = (kind==='dim')?2 : (kind==='length'?3:2);
+  return Math.round(v*Math.pow(10,dp))/Math.pow(10,dp);
+}
+
+function rebuildFcOptions(){
+  const sel = document.getElementById('fc');
+  const opts = unitSystem==='us' ? [3,4,5,6,8,10] : [20,25,30,35,40];
+  const def = unitSystem==='us' ? 4 : 25;
+  sel.innerHTML = opts.map(v=>`<option value="${v}" ${v===def?'selected':''}>${v}</option>`).join('');
+}
+
+function setUnits(newSystem){
+  if(newSystem===unitSystem) return;
+  const old = unitSystem;
+  const simpleFields = [
+    ['bayX','length'], ['bayY','length'], ['storyH','length'],
+    ['unitWeight','unitWeight'],
+    ['beamUDL_D','forcePerLength'], ['beamUDL_L','forcePerLength'],
+    ['latX','force'], ['latY','force'], ['fy','stress'], ['cover','dim']
+  ];
+  simpleFields.forEach(([id,kind])=>{
+    const el = document.getElementById(id);
+    const v = parseFloat(el.value);
+    if(!isNaN(v)) el.value = roundDisplay(convVal(v, kind, old, newSystem), kind);
+  });
+  unitSystem = newSystem;
+  rebuildFcOptions();
+  document.querySelectorAll('.unit-length').forEach(el=>el.textContent=ul('length'));
+  document.querySelectorAll('.unit-dim').forEach(el=>el.textContent=ul('dim'));
+  document.querySelectorAll('.unit-stress').forEach(el=>el.textContent=ul('stress'));
+  document.querySelectorAll('.unit-uw').forEach(el=>el.textContent=ul('unitWeight'));
+  document.querySelectorAll('.unit-fpl').forEach(el=>el.textContent=ul('forcePerLength'));
+  document.querySelectorAll('.unit-force').forEach(el=>el.textContent=ul('force'));
+  document.querySelectorAll('.unit-btn').forEach(b=>b.classList.toggle('active', b.dataset.units===newSystem));
+  renderSectionLibrary();
+  renderMemberAssignments();
+  renderPointLoadRows();
+  if(lastResult){ render(lastResult, currentMode); renderTables(lastResult); }
+}
+
+// ---------- Frame type (columns+beams vs beam-grid-only) ----------
+function isBeamOnly(){ return document.getElementById('frameType').value === 'beamOnly'; }
+
+function onFrameTypeChange(){
+  const beamOnly = isBeamOnly();
+  document.getElementById('storiesField').style.display = beamOnly ? 'none' : '';
+  document.getElementById('storyHRow').style.display = beamOnly ? 'none' : '';
+  document.getElementById('lateralRow').style.display = beamOnly ? 'none' : '';
+  document.getElementById('beamOnlyHint').style.display = beamOnly ? '' : 'none';
+  document.getElementById('columnTypesLabel').style.display = beamOnly ? 'none' : '';
+  document.getElementById('columnTypesContainer').style.display = beamOnly ? 'none' : '';
+  document.getElementById('addColumnTypeBtn').style.display = beamOnly ? 'none' : '';
+  if(beamOnly){ document.getElementById('ns').value = 1; }
+  renderMemberAssignments();
+  renderPointLoadRows();
+}
+
+// ---------- Linear algebra ----------
+function solveLinear(Ain, bin){
+  const n = bin.length;
+  const A = Ain.map(r=>r.slice()); const b = bin.slice();
+  for(let col=0; col<n; col++){
+    let maxRow=col;
+    for(let r=col+1;r<n;r++) if(Math.abs(A[r][col])>Math.abs(A[maxRow][col])) maxRow=r;
+    [A[col],A[maxRow]]=[A[maxRow],A[col]]; [b[col],b[maxRow]]=[b[maxRow],b[col]];
+    const piv=A[col][col];
+    if(Math.abs(piv)<1e-9) continue;
+    for(let r=0;r<n;r++){
+      if(r===col) continue;
+      const factor=A[r][col]/piv;
+      if(factor===0) continue;
+      for(let c=col;c<n;c++) A[r][c]-=factor*A[col][c];
+      b[r]-=factor*b[col];
+    }
+  }
+  const x=new Array(n);
+  for(let i=0;i<n;i++) x[i]=Math.abs(A[i][i])<1e-9?0:b[i]/A[i][i];
+  return x;
+}
+function matMulMat(A,B){
+  const res=Array.from({length:A.length},()=>new Array(B[0].length).fill(0));
+  for(let i=0;i<A.length;i++) for(let j=0;j<B[0].length;j++){ let s=0; for(let k=0;k<B.length;k++) s+=A[i][k]*B[k][j]; res[i][j]=s; }
+  return res;
+}
+function transpose(M){ return M[0].map((_,c)=>M.map(row=>row[c])); }
+function matMulVec(M,v){ return M.map(row=>row.reduce((s,val,i)=>s+val*v[i],0)); }
+function cross(a,b){ return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]; }
+function norm(v){ return Math.sqrt(v[0]**2+v[1]**2+v[2]**2); }
+function normalize(v){ const n=norm(v); return n<1e-9?[0,0,0]:[v[0]/n,v[1]/n,v[2]/n]; }
+
+function torsionConstant(b,h){
+  const a=Math.max(b,h), bb=Math.min(b,h);
+  return Math.pow(bb,3)*a*(1/3 - 0.21*(bb/a)*(1-Math.pow(bb/a,4)/12));
+}
+
+function localK3D(E,G,A,Iy,Iz,J,L){
+  const k=Array.from({length:12},()=>new Array(12).fill(0));
+  const EA_L=E*A/L;
+  k[0][0]=EA_L; k[0][6]=-EA_L; k[6][0]=-EA_L; k[6][6]=EA_L;
+  const GJ_L=G*J/L;
+  k[3][3]=GJ_L; k[3][9]=-GJ_L; k[9][3]=-GJ_L; k[9][9]=GJ_L;
+  const EIz=E*Iz;
+  k[1][1]=12*EIz/L**3; k[1][5]=6*EIz/L**2; k[1][7]=-12*EIz/L**3; k[1][11]=6*EIz/L**2;
+  k[5][1]=6*EIz/L**2; k[5][5]=4*EIz/L; k[5][7]=-6*EIz/L**2; k[5][11]=2*EIz/L;
+  k[7][1]=-12*EIz/L**3; k[7][5]=-6*EIz/L**2; k[7][7]=12*EIz/L**3; k[7][11]=-6*EIz/L**2;
+  k[11][1]=6*EIz/L**2; k[11][5]=2*EIz/L; k[11][7]=-6*EIz/L**2; k[11][11]=4*EIz/L;
+  const EIy=E*Iy;
+  k[2][2]=12*EIy/L**3; k[2][4]=-6*EIy/L**2; k[2][8]=-12*EIy/L**3; k[2][10]=-6*EIy/L**2;
+  k[4][2]=-6*EIy/L**2; k[4][4]=4*EIy/L; k[4][8]=6*EIy/L**2; k[4][10]=2*EIy/L;
+  k[8][2]=-12*EIy/L**3; k[8][4]=6*EIy/L**2; k[8][8]=12*EIy/L**3; k[8][10]=6*EIy/L**2;
+  k[10][2]=-6*EIy/L**2; k[10][4]=2*EIy/L; k[10][8]=6*EIy/L**2; k[10][10]=4*EIy/L;
+  return k;
+}
+
+function getAxes(n1,n2){
+  const d=[n2.x-n1.x,n2.y-n1.y,n2.z-n1.z];
+  const L=norm(d);
+  const lx=[d[0]/L,d[1]/L,d[2]/L];
+  let ref = Math.abs(lx[2])<0.999 ? [0,0,1] : [1,0,0];
+  const ly=normalize(cross(ref,lx));
+  const lz=cross(lx,ly);
+  return {L,lx,ly,lz};
+}
+function T12(lx,ly,lz){
+  const T=Array.from({length:12},()=>new Array(12).fill(0));
+  const R=[lx,ly,lz];
+  for(let b=0;b<4;b++){
+    for(let i=0;i<3;i++) for(let j=0;j<3;j++) T[3*b+i][3*b+j]=R[i][j];
+  }
+  return T;
+}
+
+// ---------- Base model (with section-type assignment) ----------
+function buildBaseModel(p, columnTypes, beamTypes, assignments, customMembers=[]){
+  const beamOnly = p.frameType==='beamOnly';
+  const nx=p.nx, ny=p.ny, ns= beamOnly ? 1 : p.ns;
+  const nodesPerFloor=(nx+1)*(ny+1);
+  const nodes=[];
+
+  if(beamOnly){
+    // Single-level beam grid at z=0. Perimeter nodes are the supports (isSupport flag)
+    // instead of a separate ground floor row.
+    for(let i=0; i<=nx; i++){
+      for(let j=0; j<=ny; j++){
+        const isSupport = (i===0 || i===nx || j===0 || j===ny);
+        nodes.push({row:0, i, j, x:i*p.bayX, y:j*p.bayY, z:0, id: i*(ny+1)+j, isSupport});
+      }
+    }
+  } else {
+    for(let row=0; row<=ns; row++){
+      for(let i=0; i<=nx; i++){
+        for(let j=0; j<=ny; j++){
+          nodes.push({row,i,j,x:i*p.bayX, y:j*p.bayY, z:row*p.storyH, id: row*nodesPerFloor + i*(ny+1) + j, isSupport:(row===0)});
+        }
+      }
+    }
+  }
+
+  function nid(row,i,j){ return beamOnly ? (i*(ny+1)+j) : (row*nodesPerFloor + i*(ny+1) + j); }
+  const members=[];
+  let mi=0;
+  function pickType(cat, idx){
+    const list = cat==='column'?columnTypes:beamTypes;
+    const assigned = assignments[idx];
+    const t = list.find(t=>t.id===assigned) || list[0];
+    return t;
+  }
+
+  if(!beamOnly){
+    for(let row=0; row<ns; row++){
+      for(let i=0; i<=nx; i++){
+        for(let j=0; j<=ny; j++){
+          const idx=mi++;
+          const t=pickType('column', idx);
+          members.push({origIndex:idx, type:'column', n1: nid(row,i,j), n2: nid(row+1,i,j), b:t.b, h:t.h, typeId:t.id, udl:0});
+        }
+      }
+    }
+  }
+
+  const beamRows = beamOnly ? [0] : Array.from({length:ns},(_,k)=>k+1);
+  beamRows.forEach(row=>{
+    for(let j=0; j<=ny; j++){
+      for(let i=0; i<nx; i++){
+        const idx=mi++;
+        const t=pickType('beam', idx);
+        members.push({origIndex:idx, type:'beamX', n1: nid(row,i,j), n2: nid(row,i+1,j), b:t.b, h:t.h, typeId:t.id, udl:0});
+      }
+    }
+    for(let i=0; i<=nx; i++){
+      for(let j=0; j<ny; j++){
+        const idx=mi++;
+        const t=pickType('beam', idx);
+        members.push({origIndex:idx, type:'beamY', n1: nid(row,i,j), n2: nid(row,i,j+1), b:t.b, h:t.h, typeId:t.id, udl:0});
+      }
+    }
+  });
+
+  members.forEach(m=>{
+    const n1=nodes.find(n=>n.id===m.n1), n2=nodes.find(n=>n.id===m.n2);
+    const L=norm([n2.x-n1.x,n2.y-n1.y,n2.z-n1.z]);
+    m.origN1=m.n1; m.origN2=m.n2; m.origL=L; m.startDist=0; m.endDist=L;
+  });
+  return {nodes, members, nodesPerFloor, nx, ny, ns, beamOnly};
+}
+
+function resolvePointLoads(model, pointLoadDefs){
+  const nodes = model.nodes.map(n=>({...n}));
+  let members = model.members.map(m=>({...m}));
+  const nodalLoads = [];
+  let nextNodeId = nodes.length ? Math.max(...nodes.map(n=>n.id))+1 : 0;
+
+  pointLoadDefs.forEach(pl=>{
+    if(pl.mode==='node'){
+      nodalLoads.push({nodeId: pl.nodeId, Fx:pl.Fx, Fy:pl.Fy, Fz:pl.Fz, case:pl.case});
+      return;
+    }
+    const d = pl.dist;
+    const idx = members.findIndex(m=>m.origIndex===pl.origIndex && d >= m.startDist-1e-6 && d <= m.endDist+1e-6);
+    if(idx===-1){ return; }
+    const m = members[idx];
+    if(Math.abs(d-m.startDist)<1e-6){
+      nodalLoads.push({nodeId:m.n1, Fx:pl.Fx, Fy:pl.Fy, Fz:pl.Fz, case:pl.case});
+      return;
+    }
+    if(Math.abs(d-m.endDist)<1e-6){
+      nodalLoads.push({nodeId:m.n2, Fx:pl.Fx, Fy:pl.Fy, Fz:pl.Fz, case:pl.case});
+      return;
+    }
+    const on1=nodes.find(n=>n.id===m.origN1), on2=nodes.find(n=>n.id===m.origN2);
+    const t = d/m.origL;
+    const pos = { x: on1.x+(on2.x-on1.x)*t, y: on1.y+(on2.y-on1.y)*t, z: on1.z+(on2.z-on1.z)*t };
+    const newNode = { id: nextNodeId++, x:pos.x, y:pos.y, z:pos.z, row:-1, i:-1, j:-1, isSplit:true, isSupport:false };
+    nodes.push(newNode);
+    const mA = {...m, n2:newNode.id, endDist:d};
+    const mB = {...m, n1:newNode.id, startDist:d};
+    members.splice(idx,1,mA,mB);
+    nodalLoads.push({nodeId:newNode.id, Fx:pl.Fx, Fy:pl.Fy, Fz:pl.Fz, case:pl.case});
+  });
+
+  return {nodes, members, nodalLoads};
+}
+
+function computeSelfWeight(nodes, members, unitWeight){
+  const swNodalLoads = [];
+  let totalColumnWeight = 0, totalBeamWeight=0;
+  members.forEach(m=>{
+    const b=m.b/1000, h=m.h/1000, A=b*h;
+    if(m.type==='beamX' || m.type==='beamY' || m.type==='beamDiag'){
+      const n1=nodes.find(n=>n.id===m.n1), n2=nodes.find(n=>n.id===m.n2);
+      const L = norm([n2.x-n1.x,n2.y-n1.y,n2.z-n1.z]);
+      const rate = unitWeight*A;
+      m.selfweightRate = rate;
+      totalBeamWeight += rate*L;
+    } else if(m.type==='column'){
+      const n1=nodes.find(n=>n.id===m.n1), n2=nodes.find(n=>n.id===m.n2);
+      const L = norm([n2.x-n1.x,n2.y-n1.y,n2.z-n1.z]);
+      const W = unitWeight*A*L;
+      totalColumnWeight += W;
+      swNodalLoads.push({nodeId:m.n1, Fx:0,Fy:0,Fz:-W/2, case:'dead'});
+      swNodalLoads.push({nodeId:m.n2, Fx:0,Fy:0,Fz:-W/2, case:'dead'});
+    }
+  });
+  return { swNodalLoads, totalColumnWeight, totalBeamWeight };
+}
+
+function analyze(nodes, members, p, extraNodalLoads){
+  const N=nodes.length;
+  const idMap = new Map(nodes.map((n,i)=>[n.id,i]));
+  const ndof=6*N;
+  const K=Array.from({length:ndof},()=>new Array(ndof).fill(0));
+  const P=new Array(ndof).fill(0);
+  const E=4700*Math.sqrt(p.fc)*1000;
+  const G=E/2.4;
+  const fD=p.fD, fL=p.fL;
+
+  const memberData=members.map(m=>{
+    const node1=nodes[idMap.get(m.n1)], node2=nodes[idMap.get(m.n2)];
+    const {L,lx,ly,lz}=getAxes(node1,node2);
+    const b=m.b/1000, h=m.h/1000;
+    // Iy = bending about the local y-axis (resists deflection along local z);
+    // Iz = bending about the local z-axis (resists deflection along local y).
+    // For a rectangle of width b (local y) x depth h (local z): Iy = b*h^3/12, Iz = h*b^3/12.
+    const A=b*h, Iy=b*Math.pow(h,3)/12, Iz=h*Math.pow(b,3)/12, J=torsionConstant(b,h);
+    const swRate = m.selfweightRate||0;
+    const effUDL = (m.type!=='column') ? fD*((m.udl||0)+swRate) + fL*(m.liveUDL||0) : 0;
+    return {...m, L, lx, ly, lz, A, Iy, Iz, J, node1, node2, effUDL};
+  });
+
+  memberData.forEach(m=>{
+    const kloc=localK3D(E,G,m.A,m.Iy,m.Iz,m.J,m.L);
+    const T=T12(m.lx,m.ly,m.lz);
+    const Tt=transpose(T);
+    const kglob=matMulMat(matMulMat(Tt,kloc),T);
+    m.kloc=kloc; m.T=T;
+    const i1=idMap.get(m.n1), i2=idMap.get(m.n2);
+    const dofs=[]; for(const ni of [i1,i2]) for(let k=0;k<6;k++) dofs.push(6*ni+k);
+    m.dofs=dofs;
+    for(let i=0;i<12;i++) for(let j=0;j<12;j++) K[dofs[i]][dofs[j]]+=kglob[i][j];
+
+    if(m.effUDL && m.effUDL!==0){
+      const w=m.effUDL;
+      const fFE=new Array(12).fill(0);
+      fFE[2]=w*m.L/2; fFE[4]=-w*m.L*m.L/12; fFE[8]=w*m.L/2; fFE[10]=w*m.L*m.L/12;
+      m.fFE_local=fFE;
+      const fFE_global=matMulVec(Tt, fFE);
+      for(let i=0;i<12;i++) P[dofs[i]]+=-fFE_global[i];
+    } else { m.fFE_local=new Array(12).fill(0); }
+  });
+
+  extraNodalLoads.forEach(nl=>{
+    const i = idMap.get(nl.nodeId);
+    if(i===undefined) return;
+    const factor = nl.case==='live' ? fL : fD;
+    P[6*i]   += factor*nl.Fx;
+    P[6*i+1] += factor*nl.Fy;
+    P[6*i+2] += factor*nl.Fz;
+  });
+
+  if(p.frameType!=='beamOnly'){
+    for(let row=1; row<=p.ns; row++){
+      const nodesAtFloor = nodes.filter(n=>n.row===row);
+      const count = nodesAtFloor.length;
+      if(count===0) continue;
+      nodesAtFloor.forEach(n=>{
+        const i=idMap.get(n.id);
+        P[6*i] += p.latX/count;
+        P[6*i+1] += p.latY/count;
+      });
+    }
+  }
+
+  const restrained=new Array(ndof).fill(false);
+  nodes.filter(n=>n.isSupport).forEach(n=>{
+    const i=idMap.get(n.id);
+    restrained[6*i]=true; restrained[6*i+1]=true; restrained[6*i+2]=true;
+    if(p.supportType==='fixed'){ restrained[6*i+3]=true; restrained[6*i+4]=true; restrained[6*i+5]=true; }
+  });
+
+  const freeDofs=[]; for(let i=0;i<ndof;i++) if(!restrained[i]) freeDofs.push(i);
+  const nf=freeDofs.length;
+  const Kff=Array.from({length:nf},()=>new Array(nf).fill(0));
+  const Pf=new Array(nf).fill(0);
+  for(let i=0;i<nf;i++){ Pf[i]=P[freeDofs[i]]; for(let j=0;j<nf;j++) Kff[i][j]=K[freeDofs[i]][freeDofs[j]]; }
+  const df=solveLinear(Kff,Pf);
+  const d=new Array(ndof).fill(0);
+  freeDofs.forEach((dof,i)=>{ d[dof]=df[i]; });
+
+  const reactions={};
+  for(let i=0;i<ndof;i++){
+    if(restrained[i]){ let sum=0; for(let j=0;j<ndof;j++) sum+=K[i][j]*d[j]; reactions[i]=sum-P[i]; }
+  }
+
+  memberData.forEach(m=>{
+    const dloc=m.dofs.map(dof=>d[dof]);
+    const dlocT=matMulVec(m.T,dloc);
+    const p_local=matMulVec(m.kloc,dlocT).map((v,i)=>v+m.fFE_local[i]);
+    m.forces=p_local;
+    const Mres1=Math.sqrt(p_local[4]**2+p_local[5]**2);
+    const Mres2=Math.sqrt(p_local[10]**2+p_local[11]**2);
+    m.maxMres=Math.max(Mres1,Mres2);
+  });
+
+  return {nodes, memberData, d, reactions, restrained, E, ndof, idMap};
+}
+
+// ---------- Section library state (b,h always stored in mm regardless of display unit) ----------
+let columnTypes = [{id:'C1', b:350, h:350, barSize:'#6', barCount:8, tieSize:'#3', tieSpacing:150}];
+let beamTypes = [{id:'B1', b:300, h:500, barSize:'#5', barCount:4, stirrupSize:'#3', stirrupSpacing:200}];
+let sectionAssignments = {};
+let customMemberId = 0;
+let customMembers = [];
+let udlAssignments = {};
+
+function nextTypeId(list, prefix){
+  let n=1;
+  const ids = new Set(list.map(t=>t.id));
+  while(ids.has(prefix+n)) n++;
+  return prefix+n;
+}
+function addColumnType(){
+  const d = unitSystem==='us' ? toSI(14,'dim') : 350;
+  columnTypes.push({id:nextTypeId(columnTypes,'C'), b:d, h:d, barSize:'#6', barCount:8, tieSize:'#3', tieSpacing:150});
+  renderSectionLibrary(); renderMemberAssignments();
+}
+function addBeamType(){
+  const b = unitSystem==='us' ? toSI(12,'dim') : 300;
+  const h = unitSystem==='us' ? toSI(20,'dim') : 500;
+  beamTypes.push({id:nextTypeId(beamTypes,'B'), b, h, barSize:'#5', barCount:4, stirrupSize:'#3', stirrupSpacing:200});
+  renderSectionLibrary(); renderMemberAssignments();
+}
+function removeColumnType(id){
+  if(columnTypes.length<=1) return;
+  columnTypes = columnTypes.filter(t=>t.id!==id);
+  Object.keys(sectionAssignments).forEach(k=>{ if(sectionAssignments[k]===id) delete sectionAssignments[k]; });
+  renderSectionLibrary(); renderMemberAssignments();
+}
+function removeBeamType(id){
+  if(beamTypes.length<=1) return;
+  beamTypes = beamTypes.filter(t=>t.id!==id);
+  Object.keys(sectionAssignments).forEach(k=>{ if(sectionAssignments[k]===id) delete sectionAssignments[k]; });
+  renderSectionLibrary(); renderMemberAssignments();
+}
+function updateType(list, id, field, value){
+  const t = list.find(t=>t.id===id);
+  if(t) t[field]=value;
+}
+
+function renderSectionLibrary(){
+  const cc = document.getElementById('columnTypesContainer');
+  cc.innerHTML = columnTypes.map(t=>`
+    <div class="type-row">
+      <span class="type-id">${t.id}</span>
+      <input type="number" value="${fmtDim(t.b)}" title="b (${ul('dim')})" onchange="updateType(columnTypes,'${t.id}','b',toSI(parseFloat(this.value),'dim')); renderMemberAssignments();">
+      <span style="color:var(--ink-dim);font-size:11px;">&times;</span>
+      <input type="number" value="${fmtDim(t.h)}" title="h (${ul('dim')})" onchange="updateType(columnTypes,'${t.id}','h',toSI(parseFloat(this.value),'dim')); renderMemberAssignments();">
+      <button class="type-remove" onclick="removeColumnType('${t.id}')">&times;</button>
+    </div>`).join('');
+  const bc = document.getElementById('beamTypesContainer');
+  bc.innerHTML = beamTypes.map(t=>`
+    <div class="type-row">
+      <span class="type-id">${t.id}</span>
+      <input type="number" value="${fmtDim(t.b)}" title="b (${ul('dim')})" onchange="updateType(beamTypes,'${t.id}','b',toSI(parseFloat(this.value),'dim')); renderMemberAssignments();">
+      <span style="color:var(--ink-dim);font-size:11px;">&times;</span>
+      <input type="number" value="${fmtDim(t.h)}" title="h (${ul('dim')})" onchange="updateType(beamTypes,'${t.id}','h',toSI(parseFloat(this.value),'dim')); renderMemberAssignments();">
+      <button class="type-remove" onclick="removeBeamType('${t.id}')">&times;</button>
+    </div>`).join('');
+}
+
+function currentGeomParams(){
+  return {
+    frameType: document.getElementById('frameType').value,
+    nx: parseInt(document.getElementById('nx').value)||1,
+    ny: parseInt(document.getElementById('ny').value)||1,
+    ns: parseInt(document.getElementById('ns').value)||1,
+    bayX: toSI(parseFloat(document.getElementById('bayX').value)||1, 'length'),
+    bayY: toSI(parseFloat(document.getElementById('bayY').value)||1, 'length'),
+    storyH: toSI(parseFloat(document.getElementById('storyH').value)||1, 'length')
+  };
+}
+
+function renderMemberAssignments(){
+  const gp = currentGeomParams();
+  const baseModel = buildBaseModel(gp, columnTypes, beamTypes, sectionAssignments);
+  const customModel = resolveCustomMembers(baseModel, customMembers, beamTypes);
+  const model = customModel;
+  document.getElementById('memberCount').textContent = `(${model.members.length})`;
+  const list = document.getElementById('assignList');
+  list.innerHTML = model.members.map(m=>{
+    const isCol = m.type==='column';
+    const options = (isCol?columnTypes:beamTypes).map(t=>`<option value="${t.id}" ${m.typeId===t.id?'selected':''}>${t.id} (${fmtDim(t.b)}&times;${fmtDim(t.h)})</option>`).join('');
+    const load=udlAssignments[m.origIndex]||{enabled:false,dead:0,live:0};
+    const udlControl=!isCol ? `<div class="member-udl">
+      <input type="checkbox" ${load.enabled?'checked':''} onchange="toggleMemberUDL(${m.origIndex},this.checked)"> Apply UDL
+      <span>D</span><input type="number" step="0.1" value="${fromSI(load.dead||0,'forcePerLength').toFixed(2)}" onchange="updateMemberUDL(${m.origIndex},'dead',toSI(parseFloat(this.value)||0,'forcePerLength'))">
+      <span>L</span><input type="number" step="0.1" value="${fromSI(load.live||0,'forcePerLength').toFixed(2)}" onchange="updateMemberUDL(${m.origIndex},'live',toSI(parseFloat(this.value)||0,'forcePerLength'))"> ${ul('forcePerLength')}
+    </div>` : '';
+    return `<div class="assign-row">
+      <span class="assign-label"><b>M${m.origIndex}</b> ${m.type} L=${fromSI(m.origL,'length').toFixed(2)}${ul('length')}</span>
+      <div style="flex:1"><select class="assign-select" onchange="sectionAssignments[${m.origIndex}]=this.value;">${options}</select>${udlControl}</div>
+    </div>`;
+  }).join('');
+  renderSelectedMemberEditor();
+  renderCustomMembers();
+}
+
+function toggleMemberUDL(index,enabled){
+  if(!udlAssignments[index]) udlAssignments[index]={dead:0,live:0};
+  if(enabled && !udlAssignments[index].dead && !udlAssignments[index].live){
+    udlAssignments[index].dead=toSI(parseFloat(document.getElementById('beamUDL_D').value)||0,'forcePerLength');
+    udlAssignments[index].live=toSI(parseFloat(document.getElementById('beamUDL_L').value)||0,'forcePerLength');
+  }
+  udlAssignments[index].enabled=enabled;
+  renderMemberAssignments();
+}
+function updateMemberUDL(index,field,value){
+  if(!udlAssignments[index]) udlAssignments[index]={enabled:false,dead:0,live:0};
+  udlAssignments[index][field]=value;
+}
+
+function selectMember(index){
+  selectedMemberIndex=index;
+  renderMemberAssignments();
+  if(lastResult) render(lastResult,currentMode);
+}
+
+const BAR_SIZES=['#4','#5','#6','#7','#8','#9'];
+function updateRebar(list,id,field,value){
+  const t=list.find(x=>x.id===id);
+  if(t) t[field]=(field==='barSize'||field==='tieSize'||field==='stirrupSize') ? value : parseFloat(value);
+}
+function renderReinforcementLibrary(){
+  const renderColumns=columnTypes.map(t=>`
+    <div class="rebar-row">
+      <div class="rebar-title">${t.id} &middot; ${fmtDim(t.b)}&times;${fmtDim(t.h)} ${ul('dim')}</div>
+      <div class="rebar-grid">
+        <div><label>Longitudinal bars</label><select onchange="updateRebar(columnTypes,'${t.id}','barSize',this.value)">${BAR_SIZES.map(s=>`<option ${t.barSize===s?'selected':''}>${s}</option>`).join('')}</select></div>
+        <div><label>Number required</label><input type="number" min="4" step="1" value="${t.barCount}" onchange="updateRebar(columnTypes,'${t.id}','barCount',this.value)"></div>
+        <div><label>Tie size</label><select onchange="updateRebar(columnTypes,'${t.id}','tieSize',this.value)">${BAR_SIZES.map(s=>`<option ${t.tieSize===s?'selected':''}>${s}</option>`).join('')}</select></div>
+        <div><label>Tie spacing (${ul('dim')})</label><input type="number" min="25" step="5" value="${fmtDim(t.tieSpacing)}" onchange="updateRebar(columnTypes,'${t.id}','tieSpacing',toSI(parseFloat(this.value),'dim'))"></div>
+      </div>
+    </div>`).join('');
+  const renderBeams=beamTypes.map(t=>`
+    <div class="rebar-row">
+      <div class="rebar-title">${t.id} &middot; ${fmtDim(t.b)}&times;${fmtDim(t.h)} ${ul('dim')}</div>
+      <div class="rebar-grid">
+        <div><label>Longitudinal bars</label><select onchange="updateRebar(beamTypes,'${t.id}','barSize',this.value)">${BAR_SIZES.map(s=>`<option ${t.barSize===s?'selected':''}>${s}</option>`).join('')}</select></div>
+        <div><label>Number required</label><input type="number" min="2" step="1" value="${t.barCount}" onchange="updateRebar(beamTypes,'${t.id}','barCount',this.value)"></div>
+        <div><label>Stirrup size</label><select onchange="updateRebar(beamTypes,'${t.id}','stirrupSize',this.value)">${BAR_SIZES.map(s=>`<option ${t.stirrupSize===s?'selected':''}>${s}</option>`).join('')}</select></div>
+        <div><label>Stirrup spacing (${ul('dim')})</label><input type="number" min="25" step="5" value="${fmtDim(t.stirrupSpacing)}" onchange="updateRebar(beamTypes,'${t.id}','stirrupSpacing',toSI(parseFloat(this.value),'dim'))"></div>
+      </div>
+    </div>`).join('');
+  document.getElementById('columnRebarContainer').innerHTML=renderColumns;
+  document.getElementById('beamRebarContainer').innerHTML=renderBeams;
+}
+function updateSelectedMemberType(value){
+  const gp=currentGeomParams();
+  const base=buildBaseModel(gp,columnTypes,beamTypes,sectionAssignments);
+  const preview=resolveCustomMembers(base,customMembers,beamTypes);
+  const m=preview.members.find(mm=>mm.origIndex===selectedMemberIndex);
+  if(!m) return;
+  if(m.type==='beamDiag'){
+    const cm=customMembers.find(x=>x.id===m.customId);
+    if(cm) cm.typeId=value;
+  } else {
+    sectionAssignments[selectedMemberIndex]=value;
+  }
+  renderMemberAssignments();
+  if(lastResult) render(lastResult,currentMode);
+}
+function renderSelectedMemberEditor(){
+  const box=document.getElementById('selectedMemberEditor');
+  if(!box) return;
+  if(selectedMemberIndex===null){ box.innerHTML=''; return; }
+  const gp=currentGeomParams();
+  const base=buildBaseModel(gp,columnTypes,beamTypes,sectionAssignments);
+  const preview=resolveCustomMembers(base,customMembers,beamTypes);
+  const m=preview.members.find(mm=>mm.origIndex===selectedMemberIndex);
+  if(!m){ box.innerHTML=''; return; }
+  const options=beamTypes.map(t=>`<option value="${t.id}" ${m.typeId===t.id?'selected':''}>${t.id} (${fmtDim(t.b)}&times;${fmtDim(t.h)})</option>`).join('');
+  box.innerHTML=`<div><strong>Selected M${m.origIndex}</strong> &middot; ${m.type}</div>
+    <label style="margin-top:8px;">Edit beam section</label>
+    <select onchange="updateSelectedMemberType(this.value)">${options}</select>
+    <p class="hint">Choose another beam in the drawing to edit it.</p>`;
+}
+
+function addCustomMember(){
+  const gp=currentGeomParams();
+  const model=buildBaseModel(gp, columnTypes, beamTypes, sectionAssignments);
+  if(model.nodes.length<2) return;
+  customMembers.push({
+    id:customMemberId++, typeId:beamTypes[0].id,
+    aMode:'node', aNode:model.nodes[0].id, aMember:model.members[0]?.origIndex||0, aDist:0,
+    bMode:'node', bNode:model.nodes[model.nodes.length-1].id, bMember:model.members[0]?.origIndex||0, bDist:0
+  });
+  renderMemberAssignments();
+  renderPointLoadRows();
+}
+function removeCustomMember(id){
+  customMembers=customMembers.filter(m=>m.id!==id);
+  renderMemberAssignments();
+  renderPointLoadRows();
+}
+function updateCustomMember(id, field, value){
+  const m=customMembers.find(cm=>cm.id===id);
+  if(m) m[field]=field==='typeId' ? value : (field.endsWith('Mode') ? value : parseFloat(value));
+  renderMemberAssignments();
+  renderPointLoadRows();
+}
+function renderCustomMembers(){
+  const container=document.getElementById('customMembersContainer');
+  const count=document.getElementById('customMemberCount');
+  if(!container || !count) return;
+  count.textContent=`(${customMembers.length})`;
+  const gp=currentGeomParams();
+  const model=buildBaseModel(gp, columnTypes, beamTypes, sectionAssignments);
+  const nodeOptions=(selected)=>model.nodes.map(n=>
+    `<option value="${n.id}" ${n.id===selected?'selected':''}>${nodeLabel(n)}</option>`).join('');
+  const memberOptions=(selected)=>model.members.map(m=>
+    `<option value="${m.origIndex}" ${m.origIndex===selected?'selected':''}>${memberLabel(m)}</option>`).join('');
+  const typeOptions=(selected)=>beamTypes.map(t=>
+    `<option value="${t.id}" ${t.id===selected?'selected':''}>${t.id} (${fmtDim(t.b)}&times;${fmtDim(t.h)})</option>`).join('');
+  const endpoint=(cm,prefix,label)=>cm[prefix+'Mode']==='node' ? `
+    <div class="field"><label>${label}</label><select onchange="updateCustomMember(${cm.id},'${prefix}Node',this.value)">${nodeOptions(cm[prefix+'Node'])}</select></div>` : `
+    <div class="field"><label>${label} member</label><select onchange="updateCustomMember(${cm.id},'${prefix}Member',this.value)">${memberOptions(cm[prefix+'Member'])}</select></div>
+    <div class="field"><label>Distance from N1 (${ul('length')})</label><input type="number" min="0" step="0.1" value="${fromSI(cm[prefix+'Dist']||0,'length').toFixed(3)}" onchange="updateCustomMember(${cm.id},'${prefix}Dist',toSI(parseFloat(this.value),'length'))"></div>`;
+  container.innerHTML=customMembers.map(cm=>`
+    <div class="pl-row">
+      <button class="pl-remove" onclick="removeCustomMember(${cm.id})">&times;</button>
+      <div class="row">
+        <div class="field"><label>Start location</label><select onchange="updateCustomMember(${cm.id},'aMode',this.value)">
+          <option value="node" ${cm.aMode==='node'?'selected':''}>At node</option><option value="member" ${cm.aMode==='member'?'selected':''}>Along member</option>
+        </select></div>
+        ${endpoint(cm,'a','Start')}
+      </div>
+      <div class="row">
+        <div class="field"><label>End location</label><select onchange="updateCustomMember(${cm.id},'bMode',this.value)">
+          <option value="node" ${cm.bMode==='node'?'selected':''}>At node</option><option value="member" ${cm.bMode==='member'?'selected':''}>Along member</option>
+        </select></div>
+        ${endpoint(cm,'b','End')}
+      </div>
+      <div class="row">
+        <div class="field"><label>Beam section</label><select onchange="updateCustomMember(${cm.id},'typeId',this.value)">${typeOptions(cm.typeId)}</select></div>
+      </div>
+    </div>`).join('');
+  renderReinforcementLibrary();
+}
+
+['nx','ny','ns','bayX','bayY','storyH'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', ()=>{ renderMemberAssignments(); renderPointLoadRows(); });
+});
+
+// ---------- Point load rows (Fx,Fy,Fz always kN; dist always meters, regardless of display unit) ----------
+let plRowId = 0;
+const plRows = [];
+
+function nodeLabel(n){ return `N${n.id} (x=${fromSI(n.x,'length').toFixed(2)}, y=${fromSI(n.y,'length').toFixed(2)}, z=${fromSI(n.z,'length').toFixed(2)} ${ul('length')})`; }
+function memberLabel(m){ return `M${m.origIndex} ${m.type} L=${fromSI(m.origL,'length').toFixed(2)}${ul('length')}`; }
+
+function addPointLoadRow(){
+  const id = plRowId++;
+  const defFz = unitSystem==='us' ? toSI(-2,'force') : -10;
+  plRows.push({id, mode:'node', nodeId:0, origIndex:0, dist:0, Fx:0, Fy:0, Fz:defFz, caseVal:'dead'});
+  renderPointLoadRows();
+}
+function removePointLoadRow(id){
+  const idx = plRows.findIndex(r=>r.id===id);
+  if(idx!==-1) plRows.splice(idx,1);
+  renderPointLoadRows();
+}
+function updatePLField(id, field, value){
+  const row = plRows.find(r=>r.id===id);
+  if(row) row[field] = value;
+  if(field==='mode') renderPointLoadRows();
+}
+
+function renderPointLoadRows(){
+  const container = document.getElementById('pointLoadsContainer');
+  document.getElementById('plCount').textContent = `(${plRows.length})`;
+  const gp = currentGeomParams();
+  const baseModel = buildBaseModel(gp, columnTypes, beamTypes, sectionAssignments);
+  // Include user-defined beams so point loads can be placed on them too.
+  const model = resolveCustomMembers(baseModel, customMembers, beamTypes);
+
+  container.innerHTML = plRows.map(row=>{
+    const nodeOptions = model.nodes.map(n=>`<option value="${n.id}" ${row.nodeId==n.id?'selected':''}>${nodeLabel(n)}</option>`).join('');
+    const memberOptions = model.members.map(m=>`<option value="${m.origIndex}" ${row.origIndex==m.origIndex?'selected':''}>${memberLabel(m)}</option>`).join('');
+    return `
+    <div class="pl-row">
+      <button class="pl-remove" onclick="removePointLoadRow(${row.id})">&times;</button>
+      <div class="row">
+        <div class="field">
+          <label>Location</label>
+          <select onchange="updatePLField(${row.id},'mode',this.value)">
+            <option value="node" ${row.mode==='node'?'selected':''}>At node</option>
+            <option value="member" ${row.mode==='member'?'selected':''}>Along member</option>
+          </select>
+        </div>
+      </div>
+      ${row.mode==='node' ? `
+      <div class="row">
+        <div class="field"><label>Node</label><select onchange="updatePLField(${row.id},'nodeId',parseInt(this.value))">${nodeOptions}</select></div>
+      </div>` : `
+      <div class="row">
+        <div class="field"><label>Member</label><select onchange="updatePLField(${row.id},'origIndex',parseInt(this.value))">${memberOptions}</select></div>
+        <div class="field"><label>Distance from N1 (${ul('length')})</label><input type="number" step="0.1" value="${fromSI(row.dist,'length').toFixed(3)}" onchange="updatePLField(${row.id},'dist',toSI(parseFloat(this.value),'length'))"></div>
+      </div>`}
+      <div class="row">
+        <div class="field"><label>Fx (${ul('force')})</label><input type="number" step="1" value="${fromSI(row.Fx,'force').toFixed(2)}" onchange="updatePLField(${row.id},'Fx',toSI(parseFloat(this.value),'force'))"></div>
+        <div class="field"><label>Fy (${ul('force')})</label><input type="number" step="1" value="${fromSI(row.Fy,'force').toFixed(2)}" onchange="updatePLField(${row.id},'Fy',toSI(parseFloat(this.value),'force'))"></div>
+        <div class="field"><label>Fz (${ul('force')})</label><input type="number" step="1" value="${fromSI(row.Fz,'force').toFixed(2)}" onchange="updatePLField(${row.id},'Fz',toSI(parseFloat(this.value),'force'))"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Case</label>
+          <select onchange="updatePLField(${row.id},'caseVal',this.value)">
+            <option value="dead" ${row.caseVal==='dead'?'selected':''}>Dead</option>
+            <option value="live" ${row.caseVal==='live'?'selected':''}>Live</option>
+          </select>
+        </div>
+      </div>
+      <p class="hint">Fz negative = downward. Arrow shown on the Geometry view after solving.</p>
+    </div>`;
+  }).join('');
+}
+
+function resolveCustomMembers(model, defs, beamTypes){
+  const nodes=model.nodes.map(n=>({...n}));
+  const members=model.members.map(m=>({...m}));
+  let nextNodeId=nodes.length ? Math.max(...nodes.map(n=>n.id))+1 : 0;
+  function endpoint(def,prefix){
+    if(def[prefix+'Mode']==='node') return nodes.find(n=>n.id===parseInt(def[prefix+'Node']));
+    const wanted=members.find(mm=>mm.origIndex===parseInt(def[prefix+'Member']) &&
+      (parseFloat(def[prefix+'Dist'])||0)>=mm.startDist-1e-6 &&
+      (parseFloat(def[prefix+'Dist'])||0)<=mm.endDist+1e-6);
+    const m=wanted;
+    if(!m) return null;
+    const base1=nodes.find(n=>n.id===m.origN1), base2=nodes.find(n=>n.id===m.origN2);
+    const d=Math.max(m.startDist,Math.min(m.endDist,parseFloat(def[prefix+'Dist'])||0));
+    if(Math.abs(d-m.startDist)<1e-6) return nodes.find(n=>n.id===m.n1);
+    if(Math.abs(d-m.endDist)<1e-6) return nodes.find(n=>n.id===m.n2);
+    const t=d/m.origL;
+    const point={x:base1.x+(base2.x-base1.x)*t,y:base1.y+(base2.y-base1.y)*t,z:base1.z+(base2.z-base1.z)*t};
+    const newNode={id:nextNodeId++,x:point.x,y:point.y,z:point.z,row:-1,i:-1,j:-1,isSplit:true,isSupport:false};
+    nodes.push(newNode);
+    const idx=members.indexOf(m);
+    members.splice(idx,1,{...m,n2:newNode.id,endDist:d},{...m,n1:newNode.id,startDist:d});
+    return newNode;
+  }
+  defs.forEach(def=>{
+    const n1=endpoint(def,'a'), n2=endpoint(def,'b');
+    if(!n1 || !n2 || n1.id===n2.id) return;
+    const t=beamTypes.find(bt=>bt.id===def.typeId)||beamTypes[0];
+    const idx=members.reduce((max,m)=>Math.max(max,m.origIndex),-1)+1;
+    const customLength=norm([n2.x-n1.x,n2.y-n1.y,n2.z-n1.z]);
+    members.push({origIndex:idx,type:'beamDiag',n1:n1.id,n2:n2.id,b:t.b,h:t.h,typeId:t.id,udl:0,customId:def.id,origN1:n1.id,origN2:n2.id,origL:customLength,startDist:0,endDist:customLength});
+  });
+  return {nodes,members};
+}
+
+function applyComboPreset(){
+  const combo = document.getElementById('combo').value;
+  if(combo==='service'){ document.getElementById('fD').value=1.0; document.getElementById('fL').value=1.0; }
+  else if(combo==='factored'){ document.getElementById('fD').value=1.2; document.getElementById('fL').value=1.6; }
+}
+
+function applyPreset(){
+  document.getElementById('frameType').value='full';
+  onFrameTypeChange();
+  document.getElementById('nx').value=1;
+  document.getElementById('ny').value=1;
+  document.getElementById('ns').value=1;
+  if(unitSystem==='us'){
+    document.getElementById('bayX').value=20;
+    document.getElementById('bayY').value=20;
+    document.getElementById('storyH').value=12;
+  } else {
+    document.getElementById('bayX').value=6;
+    document.getElementById('bayY').value=6;
+    document.getElementById('storyH').value=3.5;
+  }
+  renderMemberAssignments();
+  renderPointLoadRows();
+}
+
+// ---------- Solve & render ----------
+const COLORS={ blueDeep:'#0E3A5F', linework:'#EAF3FF', lineworkDim:'rgba(234,243,255,0.78)', moment:'#FF6B4A', shear:'#63D9B8', axialC:'#F2C94C', axialT:'#7FB3FF', dead:'#FF6B4A', live:'#B37FFF', section:'#4FE3A6', udlLabel:'#BFE0FF' };
+let currentMode='geometry';
+let lastResult=null;
+let selectedMemberIndex=null;
+let geometryDisplay={beamNumbers:true,beamSections:true,columnNumbers:true,columnSections:true};
+let currentInputTab='geometry';
+
+function setInputTab(tab){
+  currentInputTab=tab;
+  document.querySelectorAll('.panel > [data-input-tab]').forEach(el=>{
+    el.style.display=(tab==='all' || el.dataset.inputTab===tab) ? '' : 'none';
+  });
+  document.querySelectorAll('.input-tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.inputTab===tab));
+}
+
+function updateGeometryDisplay(){
+  geometryDisplay={
+    beamNumbers:document.getElementById('showBeamNumbers').checked,
+    beamSections:document.getElementById('showBeamSections').checked,
+    columnNumbers:document.getElementById('showColumnNumbers').checked,
+    columnSections:document.getElementById('showColumnSections').checked
+  };
+  if(lastResult) render(lastResult,currentMode);
+}
+
+document.getElementById('tabs').addEventListener('click',e=>{
+  if(e.target.classList.contains('tab')){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    e.target.classList.add('active');
+    currentMode=e.target.dataset.mode;
+    if(lastResult) render(lastResult, currentMode);
+  }
+});
+
+function getParams(){
+  const frameType = document.getElementById('frameType').value;
+  return {
+    frameType,
+    nx: parseInt(document.getElementById('nx').value),
+    ny: parseInt(document.getElementById('ny').value),
+    ns: frameType==='beamOnly' ? 1 : parseInt(document.getElementById('ns').value),
+    bayX: toSI(parseFloat(document.getElementById('bayX').value),'length'),
+    bayY: toSI(parseFloat(document.getElementById('bayY').value),'length'),
+    storyH: toSI(parseFloat(document.getElementById('storyH').value),'length'),
+    supportType: document.getElementById('supportType').value,
+    fc: toSI(parseFloat(document.getElementById('fc').value),'stress'),
+    unitWeight: toSI(parseFloat(document.getElementById('unitWeight').value),'unitWeight'),
+    designCode: document.getElementById('designCode').value,
+    fy: toSI(parseFloat(document.getElementById('fy').value),'stress'),
+    cover: toSI(parseFloat(document.getElementById('cover').value),'dim'),
+    beamUDL_D: toSI(parseFloat(document.getElementById('beamUDL_D').value),'forcePerLength'),
+    beamUDL_L: toSI(parseFloat(document.getElementById('beamUDL_L').value),'forcePerLength'),
+    latX: frameType==='beamOnly' ? 0 : toSI(parseFloat(document.getElementById('latX').value),'force'),
+    latY: frameType==='beamOnly' ? 0 : toSI(parseFloat(document.getElementById('latY').value),'force'),
+    fD: parseFloat(document.getElementById('fD').value),
+    fL: parseFloat(document.getElementById('fL').value)
+  };
+}
+
+function solve(){
+  const p=getParams();
+  const base = buildBaseModel(p, columnTypes, beamTypes, sectionAssignments, customMembers);
+  base.members.forEach(m=>{
+    if(m.type!=='column'){
+      const load=udlAssignments[m.origIndex];
+      m.udl=(load&&load.enabled) ? (load.dead||0) : p.beamUDL_D;
+      m.liveUDL=(load&&load.enabled) ? (load.live||0) : p.beamUDL_L;
+    }
+  });
+  const userLoadDefs = plRows.map(r=>({
+    mode:r.mode, nodeId:r.nodeId, origIndex:r.origIndex, dist:r.dist,
+    Fx:r.Fx||0, Fy:r.Fy||0, Fz:r.Fz||0, case:r.caseVal
+  }));
+  // Build custom beams first. Point loads can then target both original and
+  // user-defined members, with the same automatic splitting behavior.
+  const customGeometry = resolveCustomMembers(base, customMembers, beamTypes);
+  customGeometry.members.forEach(m=>{
+    if(m.type==='beamX' || m.type==='beamY'){
+      const load=udlAssignments[m.origIndex];
+      m.udl=(load&&load.enabled) ? (load.dead||0) : p.beamUDL_D;
+      m.liveUDL=(load&&load.enabled) ? (load.live||0) : p.beamUDL_L;
+    } else if(m.type==='beamDiag'){
+      // Diagonal/bracing members don't carry the floor UDL by default, only self-weight
+      // and any explicit per-member override or point loads.
+      const load=udlAssignments[m.origIndex];
+      m.udl=(load&&load.enabled) ? (load.dead||0) : 0;
+      m.liveUDL=(load&&load.enabled) ? (load.live||0) : 0;
+    }
+  });
+  const resolvedLoads = resolvePointLoads(customGeometry, userLoadDefs);
+  const sw = computeSelfWeight(resolvedLoads.nodes, resolvedLoads.members, p.unitWeight);
+  const allNodalLoads = resolvedLoads.nodalLoads.concat(sw.swNodalLoads);
+
+  const result = analyze(resolvedLoads.nodes, resolvedLoads.members, p, allNodalLoads);
+  lastResult = {...result, p, userLoads: resolvedLoads.nodalLoads, model:{nodes:resolvedLoads.nodes, nodesPerFloor:base.nodesPerFloor}};
+  render(lastResult, currentMode);
+  renderTables(lastResult);
+  document.getElementById('results').style.display='block';
+
+  const swInfo = document.getElementById('swInfo');
+  swInfo.style.display='block';
+  const beamRates = [...new Set(resolvedLoads.members.filter(m=>m.type!=='column').map(m=>fromSI(m.selfweightRate,'forcePerLength').toFixed(2)))];
+  const colPart = p.frameType==='beamOnly' ? '' : ` &middot; columns ${fromSI(sw.totalColumnWeight,'force').toFixed(1)} ${ul('force')} total, split to end nodes`;
+  swInfo.innerHTML = `<b>Self-weight (auto):</b> beams +${beamRates.join('/')} ${ul('forcePerLength')} by section${colPart}. Included under Dead.`;
+}
+
+function isoProject(x,y,z){
+  const c=Math.cos(Math.PI/6), s=Math.sin(Math.PI/6);
+  return { ix: (x-y)*c, iy: (x+y)*s - z };
+}
+
+// Samples the true internal-force diagram along a member's length using basic
+// equilibrium of the free body from node1 to x, given the member's local end
+// forces (already solved) and its constant local-z UDL (0 for columns).
+// This reproduces the classic BMD/SFD shapes: a parabola for a UDL-loaded beam
+// (M(x) = My1 + Vz1*x - w*x^2/2) and a straight taper for members with no
+// in-span load (columns), matching how M(0)=My1 and M(L)=-My2 fall out of the
+// element's stiffness/fixed-end-force sign convention used elsewhere in this file.
+function sampleMemberValues(m, mode, n){
+  const L=m.L, w=m.effUDL||0;
+  const f=m.forces;
+  const N1=f[0], Vy1=f[1], Vz1=f[2], T1=f[3], My1=f[4], Mz1=f[5];
+  const pts=[];
+  for(let i=0;i<n;i++){
+    const t=i/(n-1);
+    const x=t*L;
+    let val;
+    if(mode==='moment'){
+      const My=My1+Vz1*x-w*x*x/2;
+      const Mz=Mz1+Vy1*x;
+      val=Math.sqrt(My*My+Mz*Mz);
+    } else if(mode==='shear'){
+      const Vz=Vz1-w*x;
+      val=Math.sqrt(Vy1*Vy1+Vz*Vz);
+    } else if(mode==='axial'){
+      val=N1;
+    } else if(mode==='torsion'){
+      val=T1;
+    } else { val=0; }
+    pts.push({t,val});
+  }
+  return pts;
+}
+
+function render(result, mode){
+  const {memberData, p} = result;
+  const nodes = result.model.nodes;
+  const stage=document.getElementById('stage');
+  const margin=90;
+
+  let pts = nodes.map(n=>isoProject(n.x,n.y,n.z));
+  const xs=pts.map(pt=>pt.ix), ys=pts.map(pt=>pt.iy);
+  const minX=Math.min(...xs), maxX=Math.max(...xs), minY=Math.min(...ys), maxY=Math.max(...ys);
+  const rangeX=Math.max(maxX-minX,0.1), rangeY=Math.max(maxY-minY,0.1);
+  const availW=600, availH=440;
+  const scale=Math.min(availW/rangeX, availH/rangeY);
+  const svgW=availW+margin*2, svgH=availH+margin*2+40;
+
+  function toScreen(x,y,z){
+    const proj=isoProject(x,y,z);
+    return { px: margin + (proj.ix-minX)*scale, py: margin + (proj.iy-minY)*scale };
+  }
+
+  const DIAGRAM_N=17;
+  const isDiagramMode=(mode==='moment'||mode==='shear'||mode==='axial'||mode==='torsion');
+  let maxForce=0.0001;
+  let diagramMin=Infinity, diagramMax=0;
+  if(isDiagramMode){
+    memberData.forEach(m=>{
+      m._diagram=sampleMemberValues(m, mode, DIAGRAM_N);
+      m._diagram.forEach(pt=>{
+        maxForce=Math.max(maxForce, Math.abs(pt.val));
+        diagramMin=Math.min(diagramMin,Math.abs(pt.val));
+        diagramMax=Math.max(diagramMax,Math.abs(pt.val));
+      });
+    });
+  }
+  const centroidPx={x:0,y:0};
+  if(isDiagramMode){
+    nodes.forEach(n=>{ const sc=isoProject(n.x,n.y,n.z); centroidPx.x+=sc.ix; centroidPx.y+=sc.iy; });
+    centroidPx.x = margin + (centroidPx.x/nodes.length - minX)*scale;
+    centroidPx.y = margin + (centroidPx.y/nodes.length - minY)*scale;
+  }
+
+  let svg=`<svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<defs>
+    <marker id="loadArrow" markerWidth="8" markerHeight="8" refX="7.6" refY="4" orient="auto"><path d="M0,0 L0,8 L8,4 Z" fill="${COLORS.dead}"/></marker>
+    <marker id="loadArrowLive" markerWidth="8" markerHeight="8" refX="7.6" refY="4" orient="auto"><path d="M0,0 L0,8 L8,4 Z" fill="${COLORS.live}"/></marker>
+  </defs>`;
+
+  const sortedMembers = memberData.slice().sort((a,b)=>{
+    const da=(a.node1.x+a.node1.y-a.node1.z)+(a.node2.x+a.node2.y-a.node2.z);
+    const db=(b.node1.x+b.node1.y-b.node1.z)+(b.node2.x+b.node2.y-b.node2.z);
+    return da-db;
+  });
+
+  sortedMembers.forEach(m=>{
+    const a=toScreen(m.node1.x,m.node1.y,m.node1.z), b=toScreen(m.node2.x,m.node2.y,m.node2.z);
+
+    if(isDiagramMode){
+      // Filled diagram: offset each sampled point perpendicular to the member's
+      // screen direction, choosing the side that points away from the frame's
+      // centroid so diagrams "explode outward" the way a hand-drawn BMD/SFD does.
+      const dx=b.px-a.px, dy=b.py-a.py, segLen=Math.sqrt(dx*dx+dy*dy)||1;
+      let perp={ x:-dy/segLen, y:dx/segLen };
+      const midx=(a.px+b.px)/2, midy=(a.py+b.py)/2;
+      const outDot=(midx-centroidPx.x)*perp.x + (midy-centroidPx.y)*perp.y;
+      if(outDot<0){ perp={ x:-perp.x, y:-perp.y }; }
+      const maxOffset=32;
+
+      let color=COLORS.linework, unitKind='force';
+      if(mode==='moment'){ color=COLORS.moment; unitKind='moment'; }
+      else if(mode==='shear'){ color=COLORS.shear; unitKind='force'; }
+      else if(mode==='torsion'){ color=COLORS.axialC; unitKind='moment'; }
+      else if(mode==='axial'){ color = m.forces[0]>=0 ? COLORS.axialC : COLORS.axialT; unitKind='force'; }
+
+      const curvePts=m._diagram.map(pt=>{
+        const bx=a.px+dx*pt.t, by=a.py+dy*pt.t;
+        const off=(Math.abs(pt.val)/maxForce)*maxOffset;
+        return { x:bx+perp.x*off, y:by+perp.y*off };
+      });
+
+       const selected = selectedMemberIndex===m.origIndex;
+       svg += `<line class="member-hit" onclick="selectMember(${m.origIndex})" x1="${a.px}" y1="${a.py}" x2="${b.px}" y2="${b.py}" stroke="${selected?COLORS.moment:COLORS.linework}" stroke-width="${selected?4:1.4}" opacity="${selected?1:0.5}"/>`;
+      let path=`M ${a.px.toFixed(1)} ${a.py.toFixed(1)} `;
+      curvePts.forEach(p=>{ path+=`L ${p.x.toFixed(1)} ${p.y.toFixed(1)} `; });
+      path+=`L ${b.px.toFixed(1)} ${b.py.toFixed(1)} Z`;
+      svg += `<path d="${path}" fill="${color}" fill-opacity="0.34" stroke="${color}" stroke-width="1.3" stroke-opacity="0.95"/>`;
+
+      const endVal1=m._diagram[0].val, endVal2=m._diagram[m._diagram.length-1].val;
+      const lbl1=fromSI(mode==='moment'||mode==='shear'?Math.abs(endVal1):endVal1, unitKind).toFixed(mode==='torsion'?2:1);
+      const lbl2=fromSI(mode==='moment'||mode==='shear'?Math.abs(endVal2):endVal2, unitKind).toFixed(mode==='torsion'?2:1);
+      // Place each label a short distance along this member's own direction, away from
+      // its endpoint (plus a small perpendicular nudge off the line). Members meeting at
+      // the same joint point in different directions, so this fans their labels apart
+      // instead of stacking them all at the shared node point.
+      const dirIn={x:dx/segLen, y:dy/segLen};
+      const labelDist=26, perpNudge=8;
+      const p1={ x:a.px+dirIn.x*labelDist+perp.x*perpNudge, y:a.py+dirIn.y*labelDist+perp.y*perpNudge };
+      const p2={ x:b.px-dirIn.x*labelDist+perp.x*perpNudge, y:b.py-dirIn.y*labelDist+perp.y*perpNudge };
+      svg += `<text x="${p1.x}" y="${p1.y}" text-anchor="middle" font-size="9.5" fill="${COLORS.linework}">${lbl1}</text>`;
+      svg += `<text x="${p2.x}" y="${p2.y}" text-anchor="middle" font-size="9.5" fill="${COLORS.linework}">${lbl2}</text>`;
+      if(mode==='moment' && m.type!=='column'){
+        const midIndex=Math.floor(m._diagram.length/2);
+        const midVal=m._diagram[midIndex].val;
+        const midPt=curvePts[midIndex];
+        const midLabel=fromSI(Math.abs(midVal),unitKind).toFixed(1);
+        svg += `<circle cx="${midPt.x}" cy="${midPt.y}" r="2.5" fill="${COLORS.moment}" stroke="${COLORS.linework}" stroke-width="0.8"/>`;
+        svg += `<text x="${midPt.x}" y="${midPt.y-8}" text-anchor="middle" font-size="9.5" font-weight="600" fill="${COLORS.linework}">Mmid ${midLabel} ${ul('moment')}</text>`;
+      }
+      return;
+    }
+
+    let stroke=COLORS.linework, width=2.5;
+     const selected = selectedMemberIndex===m.origIndex;
+     svg += `<line class="member-hit" onclick="selectMember(${m.origIndex})" x1="${a.px}" y1="${a.py}" x2="${b.px}" y2="${b.py}" stroke="${selected?COLORS.moment:stroke}" stroke-width="${selected?5:width}" stroke-linecap="round" opacity="${selected?1:0.95}"/>`;
+    if(mode==='geometry'){
+      const mx=(a.px+b.px)/2, my=(a.py+b.py)/2;
+      const isColumn=m.type==='column';
+      const showNumber=isColumn?geometryDisplay.columnNumbers:geometryDisplay.beamNumbers;
+      const showSection=isColumn?geometryDisplay.columnSections:geometryDisplay.beamSections;
+      if(showNumber) svg += `<text x="${mx}" y="${my-20}" text-anchor="middle" font-size="10" font-weight="700" fill="${COLORS.linework}">M${m.origIndex}</text>`;
+      if(showSection) svg += `<text x="${mx}" y="${my-9}" text-anchor="middle" font-size="9.5" font-weight="600" fill="${COLORS.section}">${m.typeId} (${fmtDim(m.b)}&times;${fmtDim(m.h)} ${ul('dim')})</text>`;
+      if(m.type!=='column' && (m.udl || m.liveUDL)){
+        const dRate=fromSI(m.udl+(m.selfweightRate||0),'forcePerLength'), lRate=fromSI(m.liveUDL||0,'forcePerLength');
+        svg += `<text x="${mx}" y="${my+16}" text-anchor="middle" font-size="9" font-weight="500" fill="${COLORS.udlLabel}">D${dRate.toFixed(2)}+L${lRate.toFixed(2)} ${ul('forcePerLength')}</text>`;
+      }
+    }
+  });
+
+  // UDL arrows (geometry only) — point downward onto the member, representing gravity load
+  if(mode==='geometry'){
+    memberData.filter(m=>m.type!=='column' && (m.udl || m.liveUDL)).forEach(m=>{
+      const a=toScreen(m.node1.x,m.node1.y,m.node1.z), b=toScreen(m.node2.x,m.node2.y,m.node2.z);
+      const n=5;
+      const arrowColor=m.udl ? COLORS.dead : COLORS.live;
+      const arrowMarker=m.udl ? 'url(#loadArrow)' : 'url(#loadArrowLive)';
+      for(let i=1;i<n;i++){
+        const t=i/n;
+        const x=a.px+(b.px-a.px)*t, y=a.py+(b.py-a.py)*t;
+        svg += `<line x1="${x}" y1="${y-13}" x2="${x}" y2="${y-2}" stroke="${arrowColor}" stroke-width="1.1" marker-end="${arrowMarker}" opacity="0.85"/>`;
+      }
+    });
+    if(p.frameType!=='beamOnly'){
+      for(let row=1; row<=p.ns; row++){
+        const nodesAtFloor = nodes.filter(n=>n.row===row);
+        if(!nodesAtFloor.length) continue;
+        const n0 = nodesAtFloor[0];
+        if(Math.abs(p.latX)>1e-6 || Math.abs(p.latY)>1e-6){
+          // Arrow direction follows the actual sign of the lateral load vector (X,Y),
+          // so a negative latX/latY correctly points the arrow the opposite way.
+          const dir=normalize([p.latX,p.latY,0]);
+          const arm=1.4;
+          const tail={x:n0.x-dir[0]*arm, y:n0.y-dir[1]*arm, z:n0.z};
+          const sTail=toScreen(tail.x,tail.y,tail.z), sHead=toScreen(n0.x,n0.y,n0.z);
+          svg += `<line x1="${sTail.px}" y1="${sTail.py}" x2="${sHead.px}" y2="${sHead.py}" stroke="${COLORS.shear}" stroke-width="1.8" marker-end="url(#loadArrow)"/>`;
+          const mag=norm([p.latX,p.latY,0]);
+          svg += `<text x="${sTail.px}" y="${sTail.py-6}" text-anchor="middle" font-size="9" fill="${COLORS.lineworkDim}">${fromSI(mag,'force').toFixed(1)} ${ul('force')}</text>`;
+        }
+      }
+    }
+    // point load arrows — arrow points toward the node in the actual direction of (Fx,Fy,Fz)
+    (result.userLoads||[]).forEach(nl=>{
+      const nodeObj = nodes.find(n=>n.id===nl.nodeId);
+      if(!nodeObj) return;
+      const dir = normalize([nl.Fx,nl.Fy,nl.Fz]);
+      if(norm(dir)<1e-6) return;
+      const arm = 1.6; // meters, for arrow length in model space
+      const tail = {x:nodeObj.x-dir[0]*arm, y:nodeObj.y-dir[1]*arm, z:nodeObj.z-dir[2]*arm};
+      const sTail = toScreen(tail.x,tail.y,tail.z), sHead = toScreen(nodeObj.x,nodeObj.y,nodeObj.z);
+      const color = nl.case==='live' ? COLORS.live : COLORS.dead;
+      const marker = nl.case==='live' ? 'url(#loadArrowLive)' : 'url(#loadArrow)';
+      const mag = norm([nl.Fx,nl.Fy,nl.Fz]);
+      svg += `<line x1="${sTail.px}" y1="${sTail.py}" x2="${sHead.px}" y2="${sHead.py}" stroke="${color}" stroke-width="2.2" marker-end="${marker}"/>`;
+      svg += `<text x="${sTail.px}" y="${sTail.py-6}" text-anchor="middle" font-size="9" fill="${color}">${fromSI(mag,'force').toFixed(1)} ${ul('force')}</text>`;
+    });
+  }
+
+  nodes.filter(n=>n.isSupport).forEach(n=>{
+    const s=toScreen(n.x,n.y,n.z);
+    if(p.supportType==='fixed'){
+      svg += `<rect x="${s.px-9}" y="${s.py}" width="18" height="7" fill="none" stroke="${COLORS.linework}" stroke-width="1.3"/>`;
+      for(let i=-8;i<=8;i+=4) svg += `<line x1="${s.px+i}" y1="${s.py+7}" x2="${s.px+i-4}" y2="${s.py+13}" stroke="${COLORS.lineworkDim}" stroke-width="1"/>`;
+    } else {
+      svg += `<circle cx="${s.px}" cy="${s.py+5}" r="6" fill="none" stroke="${COLORS.linework}" stroke-width="1.3"/>`;
+    }
+  });
+
+  if(mode!=='deflected'){
+    nodes.forEach(n=>{
+      const s=toScreen(n.x,n.y,n.z);
+      const r = n.isSplit ? 3.4 : 2.8;
+      svg += `<circle cx="${s.px}" cy="${s.py}" r="${r}" fill="${n.isSplit?COLORS.moment:COLORS.blueDeep}" stroke="${COLORS.linework}" stroke-width="1.2"/>`;
+    });
+  }
+
+  if(mode==='deflected'){
+    const scaleAmp = 250;
+    const d=result.d;
+    const idMap = result.idMap;
+    nodes.forEach(n=>{
+      const ni=idMap.get(n.id);
+      const displacement=Math.sqrt(d[6*ni]**2+d[6*ni+1]**2+d[6*ni+2]**2);
+      diagramMin=Math.min(diagramMin,displacement);
+      diagramMax=Math.max(diagramMax,displacement);
+    });
+    memberData.forEach(m=>{
+      const i1=idMap.get(m.n1), i2=idMap.get(m.n2);
+      const dx1=d[6*i1], dy1=d[6*i1+1], dz1=d[6*i1+2];
+      const dx2=d[6*i2], dy2=d[6*i2+1], dz2=d[6*i2+2];
+      const a=toScreen(m.node1.x+dx1*scaleAmp, m.node1.y+dy1*scaleAmp, m.node1.z+dz1*scaleAmp);
+      const b=toScreen(m.node2.x+dx2*scaleAmp, m.node2.y+dy2*scaleAmp, m.node2.z+dz2*scaleAmp);
+      svg += `<line x1="${a.px}" y1="${a.py}" x2="${b.px}" y2="${b.py}" stroke="${COLORS.moment}" stroke-width="2" stroke-dasharray="4 3"/>`;
+    });
+  }
+
+  svg += `</svg>`;
+  stage.innerHTML=svg;
+
+  const legendLine=document.getElementById('legendLine');
+  const legends={
+    geometry: `<span class="legend-item"><span class="swatch" style="background:${COLORS.linework}"></span>member index (M0, M1&hellip;)</span><span class="legend-item"><span class="swatch" style="background:${COLORS.section}"></span>section label (C1/B1&hellip;)</span><span class="legend-item"><span class="swatch" style="background:${COLORS.dead}"></span>dead load arrow</span><span class="legend-item"><span class="swatch" style="background:${COLORS.live}"></span>live load arrow</span>`,
+    moment: `<span class="legend-item"><span class="swatch" style="background:${COLORS.moment}"></span>BMD, resultant &radic;(My&sup2;+Mz&sup2;), ${ul('moment')} &mdash; parabola under UDL, taper on columns</span><span class="legend-item">min ${fromSI(diagramMin,'moment').toFixed(2)} ${ul('moment')} &middot; max ${fromSI(diagramMax,'moment').toFixed(2)} ${ul('moment')}</span>`,
+    shear: `<span class="legend-item"><span class="swatch" style="background:${COLORS.shear}"></span>SFD, resultant shear, ${ul('force')}</span><span class="legend-item">min ${fromSI(diagramMin,'force').toFixed(2)} ${ul('force')} &middot; max ${fromSI(diagramMax,'force').toFixed(2)} ${ul('force')}</span>`,
+    axial: `<span class="legend-item"><span class="swatch" style="background:${COLORS.axialC}"></span>compression</span><span class="legend-item"><span class="swatch" style="background:${COLORS.axialT}"></span>tension</span>`,
+    torsion: `<span class="legend-item"><span class="swatch" style="background:${COLORS.axialC}"></span>torsion T diagram, ${ul('moment')}</span>`,
+    deflected: `<span class="legend-item"><span class="swatch" style="background:${COLORS.moment}"></span>deflected shape (amplified)</span><span class="legend-item">min ${fromSI(diagramMin,'length').toFixed(4)} ${ul('length')} &middot; max ${fromSI(diagramMax,'length').toFixed(4)} ${ul('length')}</span>`
+  };
+  legendLine.innerHTML = legends[mode] || '';
+}
+
+function renderTables(result){
+  const nodes = result.model.nodes;
+  const {memberData, reactions, p, idMap} = result;
+
+  document.getElementById('reactionUnitsNote').textContent = `(${ul('force')}${p.supportType==='fixed' ? ', '+ul('moment') : ''})`;
+  document.getElementById('memberUnitsNote').textContent = `(${ul('force')} / ${ul('moment')})`;
+
+  const rt=document.getElementById('reactionTable');
+  let html=`<thead><tr><th>Node</th><th>Fx</th><th>Fy</th><th>Fz</th>${p.supportType==='fixed'?'<th>Mx</th><th>My</th><th>Mz</th>':''}</tr></thead><tbody>`;
+  nodes.filter(n=>n.isSupport).forEach(n=>{
+    const i=idMap.get(n.id);
+    const fx=fromSI(reactions[6*i]||0,'force'), fy=fromSI(reactions[6*i+1]||0,'force'), fz=fromSI(reactions[6*i+2]||0,'force');
+    const mx=fromSI(reactions[6*i+3]||0,'moment'), my=fromSI(reactions[6*i+4]||0,'moment'), mz=fromSI(reactions[6*i+5]||0,'moment');
+    html += `<tr><td>N${n.id}</td><td>${fx.toFixed(2)}</td><td>${fy.toFixed(2)}</td><td>${fz.toFixed(2)}</td>${p.supportType==='fixed'?`<td>${mx.toFixed(2)}</td><td>${my.toFixed(2)}</td><td>${mz.toFixed(2)}</td>`:''}</tr>`;
+  });
+  html += `</tbody>`;
+  rt.innerHTML=html;
+
+  const forceIdx = new Set([0,1,2,6,7,8]); // N, Vy, Vz local dof indices in the 12-vector forces array
+  const mb=document.getElementById('memberBody');
+  mb.innerHTML = memberData.map((m,i)=>{
+    const f=m.forces;
+    const fd = f.map((v,idx)=> forceIdx.has(idx) ? fromSI(v,'force') : fromSI(v,'moment'));
+    return `<tr><td>M${m.origIndex}</td><td>${m.type}</td><td>${m.typeId} (${fmtDim(m.b)}&times;${fmtDim(m.h)})</td>${fd.map(v=>`<td>${v.toFixed(1)}</td>`).join('')}<td>${fromSI(m.maxMres,'moment').toFixed(1)}</td></tr>`;
+  }).join('');
+  renderDetailingReport(result);
+}
+
+const BAR_DIAMETER_MM={'#4':12.7,'#5':15.9,'#6':19.1,'#7':22.2,'#8':25.4,'#9':28.7,'#3':9.5};
+function barAreaMm2(size){ const d=BAR_DIAMETER_MM[size]||15.9; return Math.PI*d*d/4; }
+function renderDetailingReport(result){
+  const table=document.getElementById('detailingTable');
+  if(!table) return;
+  const p=result.p, fy=p.fy||420, fc=p.fc||25, cover=p.cover||40;
+  const rows=[];
+  result.memberData.forEach(m=>{
+    const sec=(m.type==='column'?columnTypes:beamTypes).find(t=>t.id===m.typeId)||{};
+    const b=m.b, h=m.h, mainDia=BAR_DIAMETER_MM[sec.barSize]||15.9;
+    const d=Math.max(50,h-cover-(BAR_DIAMETER_MM[sec.stirrupSize||sec.tieSize]||9.5)/2-mainDia/2);
+    const provided=(sec.barCount||0)*barAreaMm2(sec.barSize);
+    if(m.type==='column'){
+      const ag=b*h, amin=0.01*ag, amax=0.08*ag;
+      const tieDia=BAR_DIAMETER_MM[sec.tieSize]||9.5;
+      const smax=Math.min(16*mainDia,48*tieDia,Math.min(b,h));
+      const sProvided=sec.tieSpacing||0;
+      const ok=provided>=amin && provided<=amax && sProvided<=smax;
+      rows.push(`<tr><td>M${m.origIndex}</td><td>Column ${m.typeId}</td><td>${sec.barCount||0}${sec.barSize||''} longitudinal</td><td>${(provided/100).toFixed(1)} cm² / ${(amin/100).toFixed(1)} cm² min</td><td>${sec.tieSize||''} @ ${fmtDim(sProvided)} ${ul('dim')}</td><td>${fmtDim(smax)} ${ul('dim')}</td><td style="color:${ok?'var(--shear)':'var(--moment)'}">${ok?'OK':'CHECK'}</td></tr>`);
+    } else {
+      const AsMin=Math.max(0.25*Math.sqrt(fc)*b/fy,1.4*b/fy);
+      const momentSamples=sampleMemberValues(m,'moment',33);
+      const Mu=Math.max(...momentSamples.map(pt=>Math.abs(pt.val)));
+      const target=Mu*1e6/0.9;
+      // Keep the search inside the valid singly-reinforced rectangular
+      // stress-block range. Beyond this range Mn falls again, which caused
+      // the old unconstrained search to return its 200000 mm² upper bound.
+      const AsLimit=0.85*fc*b*d/fy;
+      const maxMn=AsLimit*fy*(d-AsLimit*fy/(2*0.85*fc*b));
+      let lo=0,hi=AsLimit;
+      for(let k=0;k<40;k++){
+        const a=(lo+hi)/2;
+        const mn=a*fy*(d-a*fy/(2*0.85*fc*b));
+        if(mn<target) lo=a; else hi=a;
+      }
+      const AsFlexReq=target>maxMn ? Infinity : hi;
+      const AsReq=Math.max(AsMin,AsFlexReq), stirrupDia=BAR_DIAMETER_MM[sec.stirrupSize]||9.5;
+      const AvProvided=2*barAreaMm2(sec.stirrupSize), Vu=Math.max(Math.abs(m.forces[1]),Math.abs(m.forces[2]),Math.abs(m.forces[7]),Math.abs(m.forces[8]));
+      const AvsReq=Vu*1000/(0.75*fy*d), sReq=AvsReq>0?AvProvided/AvsReq:9999, sProvided=sec.stirrupSpacing||0;
+      const ok=provided>=AsReq && sProvided<=sReq;
+      const requiredText=Number.isFinite(AsReq)?`${(AsReq/100).toFixed(1)} cm² required`:`beyond singly-reinforced capacity`;
+      rows.push(`<tr><td>M${m.origIndex}</td><td>Beam ${m.typeId}</td><td>${sec.barCount||0}${sec.barSize||''} = ${(provided/100).toFixed(1)} cm²</td><td>${requiredText}</td><td>${sec.stirrupSize||''} @ ${fmtDim(sProvided)} ${ul('dim')}</td><td>&le; ${fmtDim(sReq)} ${ul('dim')}</td><td style="color:${ok?'var(--shear)':'var(--moment)'}">${ok?'OK':'CHECK'}</td></tr>`);
+    }
+  });
+  table.innerHTML=`<thead><tr><th>Mbr</th><th>Member</th><th>Longitudinal reinforcement</th><th>Required / limit</th><th>Transverse reinforcement</th><th>Spacing limit</th><th>Status</th></tr></thead><tbody>${rows.join('')}</tbody>`;
+  renderCriticalSections(result);
+}
+
+function criticalSectionSvg(m,sec,isBeam,p){
+  const W=240,H=235, x=66,y=18,w=108,h=170;
+  const bMm=m.b, hMm=m.h;
+  const cover=p.cover||40, scale=Math.min((w-2)/bMm,(h-2)/hMm);
+  const inset=Math.max(8,Math.min(22,cover*scale));
+  const ix=x+inset, iy=y+inset, iw=w-2*inset, ih=h-2*inset;
+  const count=Math.max(2,parseInt(sec.barCount)||4), size=sec.barSize||'#5';
+  let bars='';
+  function circle(cx,cy,color){ return `<circle cx="${cx}" cy="${cy}" r="6" fill="${color}" stroke="#F3EFE6" stroke-width="1.2"/>`; }
+  if(isBeam){
+    const bottom=Math.max(2,Math.ceil(count/2)), top=Math.max(2,count-bottom);
+    for(let i=0;i<top;i++) bars+=circle(ix+(i+0.5)*iw/top,iy,'#63D9B8');
+    for(let i=0;i<bottom;i++) bars+=circle(ix+(i+0.5)*iw/bottom,iy+ih,'#FF6B4A');
+  } else {
+    const perimeter=Math.max(4,count);
+    for(let i=0;i<Math.ceil(perimeter/4);i++){ const t=(i+0.5)/Math.ceil(perimeter/4); bars+=circle(ix+t*iw,iy,'#63D9B8'); bars+=circle(ix+t*iw,iy+ih,'#63D9B8'); }
+    for(let i=0;i<Math.max(0,Math.floor(perimeter/4)-1);i++){ const t=(i+1)/Math.max(1,Math.floor(perimeter/4)); bars+=circle(ix,iy+t*ih,'#63D9B8'); bars+=circle(ix+iw,iy+t*ih,'#63D9B8'); }
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    <defs><pattern id="hatch${m.origIndex}" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(25)"><line width="1" y1="0" y2="7" stroke="#D9D2C0" opacity=".35"/></pattern></defs>
+    <text x="8" y="12" fill="#63D9B8" font-size="10">M${m.origIndex} ${isBeam?'BEAM':'COLUMN'}</text>
+    <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#1B2A38" stroke="#F3EFE6" stroke-width="1.5"/>
+    <rect x="${x+3}" y="${y+3}" width="${w-6}" height="${h-6}" fill="url(#hatch${m.origIndex})"/>
+    <rect x="${ix}" y="${iy}" width="${iw}" height="${ih}" fill="none" stroke="#63D9B8" stroke-width="1.5"/>
+    ${bars}
+    <line x1="${x}" y1="${y-8}" x2="${x+w}" y2="${y-8}" stroke="#F3EFE6"/><text x="${x+w/2}" y="${y-13}" text-anchor="middle" fill="#EAF3FF" font-size="10">b = ${fmtDim(bMm)} ${ul('dim')}</text>
+    <line x1="${x+w+10}" y1="${y}" x2="${x+w+10}" y2="${y+h}" stroke="#F3EFE6"/><text x="${x+w+18}" y="${y+h/2}" fill="#EAF3FF" font-size="10" transform="rotate(90 ${x+w+18} ${y+h/2})">h = ${fmtDim(hMm)} ${ul('dim')}</text>
+    <text x="8" y="${H-24}" fill="#EAF3FF" font-size="9">${count}${size} longitudinal</text>
+    <text x="8" y="${H-10}" fill="#EAF3FF" font-size="9">${isBeam?(sec.stirrupSize||'')+' stirrups @ '+fmtDim(sec.stirrupSpacing||0): (sec.tieSize||'')+' ties @ '+fmtDim(sec.tieSpacing||0)} ${ul('dim')}</text>
+  </svg>`;
+}
+function renderCriticalSections(result){
+  const box=document.getElementById('criticalSections');
+  if(!box) return;
+  const beams=result.memberData.filter(m=>m.type!=='column');
+  const columns=result.memberData.filter(m=>m.type==='column');
+  const beam=beams.slice().sort((a,b)=>(b.maxMres||0)-(a.maxMres||0))[0];
+  const column=columns.slice().sort((a,b)=>Math.max(Math.abs(b.forces[0]),Math.abs(b.forces[6]))-Math.max(Math.abs(a.forces[0]),Math.abs(a.forces[6])))[0];
+  const cards=[];
+  if(beam){
+    const sec=beamTypes.find(t=>t.id===beam.typeId)||{};
+    cards.push(`<div class="critical-card"><h4>Critical beam &mdash; M${beam.origIndex}</h4>${criticalSectionSvg(beam,sec,true,result.p)}<p>Governing resultant moment: ${fromSI(beam.maxMres,'moment').toFixed(2)} ${ul('moment')}</p></div>`);
+  }
+  if(column){
+    const sec=columnTypes.find(t=>t.id===column.typeId)||{};
+    const pu=Math.max(Math.abs(column.forces[0]),Math.abs(column.forces[6]));
+    cards.push(`<div class="critical-card"><h4>Critical column &mdash; M${column.origIndex}</h4>${criticalSectionSvg(column,sec,false,result.p)}<p>Governing axial force: ${fromSI(pu,'force').toFixed(2)} ${ul('force')}</p></div>`);
+  }
+  box.innerHTML=cards.join('')||'<p class="placeholder">No beam or column members available.</p>';
+}
+
+// init
+rebuildFcOptions();
+renderSectionLibrary();
+renderMemberAssignments();
+renderPointLoadRows();
+setInputTab('geometry');
+</script>
+</body>
+</html>

@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rigid Pavement Design Tool</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --bg:#14171d;
+    --panel:#1b1f27;
+    --panel2:#20242d;
+    --line:#2e3542;
+    --line-soft:#252b35;
+    --ink:#eef1f5;
+    --sub:#8d98a8;
+    --blue-bg:#0c2c4a;
+    --blue-bg2:#081f38;
+    --draw-line:#eaf4ff;
+    --draw-dim:#7fd4e8;
+    --accent:#f0a63c;
+    --accent2:#4fe0c4;
+    --pass:#4cc38a;
+    --fail:#f0704a;
+    --pcc:#c9cdd3;
+    --base-mat:#8a7a63;
+    --subgrade:#6b5644;
+    --steel:#a8b0bd;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  header{
+    padding:24px 30px 18px; border-bottom:1px solid var(--line);
+    display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
+    background:linear-gradient(180deg, rgba(79,224,196,0.04), transparent);
+  }
+  header h1{font-size:21px; margin:0; letter-spacing:0.2px; font-weight:800;}
+  header .tag{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--accent2); background:rgba(79,224,196,0.09); padding:4px 10px; border-radius:20px; border:1px solid rgba(79,224,196,0.25);}
+  header .sub{font-size:13px; color:var(--sub);}
+
+  .layout{ display:grid; grid-template-columns: 340px 1fr; gap:0; min-height:calc(100vh - 80px); }
+  @media (max-width: 950px){ .layout{grid-template-columns:1fr;} }
+
+  .controls{ padding:22px 20px 60px; border-right:1px solid var(--line); background:var(--panel); overflow-y:auto; }
+  .group{margin-bottom:22px;}
+  .group h3{
+    font-size:10.5px; text-transform:uppercase; letter-spacing:1.4px; color:var(--accent2);
+    margin:0 0 12px; font-weight:700; display:flex; align-items:center; gap:8px;
+  }
+  .group h3::after{content:""; flex:1; height:1px; background:var(--line);}
+  .field{margin-bottom:11px;}
+  .field label{ display:block; font-size:12px; color:var(--sub); margin-bottom:5px; font-weight:500; }
+  .numfield{
+    display:flex; align-items:stretch; border:1px solid var(--line); border-radius:9px;
+    background:var(--panel2); overflow:hidden; transition:border-color .15s ease;
+  }
+  .numfield:focus-within{border-color:var(--accent2); box-shadow:0 0 0 3px rgba(79,224,196,0.12);}
+  .numfield input{
+    flex:1; min-width:0; border:none; background:transparent; padding:9px 10px;
+    color:var(--ink); font-family:'JetBrains Mono',monospace; font-size:13.5px; font-weight:600;
+  }
+  .numfield input:focus{outline:none;}
+  .numfield .unit{
+    padding:9px 10px; color:var(--sub); font-size:11.5px; font-family:'JetBrains Mono',monospace;
+    display:flex; align-items:center; border-left:1px solid var(--line); background:rgba(255,255,255,0.015);
+    white-space:nowrap;
+  }
+  select{
+    width:100%; padding:9px 10px; background:var(--panel2); border:1px solid var(--line);
+    color:var(--ink); border-radius:9px; font-family:'JetBrains Mono',monospace; font-size:13px;
+  }
+  select:focus{outline:none; border-color:var(--accent2);}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;}
+
+  .guidance{
+    margin-top:10px; padding:11px 13px; background:var(--panel2); border:1px solid var(--line);
+    border-left:3px solid var(--accent2); border-radius:6px; font-size:11.5px; color:var(--sub); line-height:1.6;
+  }
+  .guidance b{color:var(--ink);}
+
+  .main{padding:24px 28px; overflow-x:hidden;}
+  .drawings{display:grid; grid-template-columns: 1fr 1.3fr; gap:18px; margin-bottom:22px; align-items:start;}
+  @media (max-width: 1150px){ .drawings{grid-template-columns:1fr;} }
+  .card{
+    background: linear-gradient(165deg, var(--blue-bg) 0%, var(--blue-bg2) 100%);
+    border:1px solid #123b5e; border-radius:12px; padding:16px 16px 12px; position:relative;
+    box-shadow:0 8px 24px rgba(0,0,0,0.18);
+  }
+  .card .label{
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--draw-dim);
+    text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; display:flex; justify-content:space-between;
+  }
+  .card svg{width:100%; height:auto; display:block;}
+
+  .results{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:22px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.12);
+  }
+  .results h3{margin:0; padding:13px 18px; font-size:11.5px; text-transform:uppercase; letter-spacing:1.2px; color:var(--accent2); border-bottom:1px solid var(--line); font-weight:700;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{text-align:left; font-size:10.5px; color:var(--sub); text-transform:uppercase; letter-spacing:0.6px; padding:10px 18px; border-bottom:1px solid var(--line);}
+  td{padding:10px 18px; border-bottom:1px solid var(--line-soft); font-family:'JetBrains Mono',monospace;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(255,255,255,0.015);}
+  .badge{ display:inline-block; padding:2px 10px; border-radius:20px; font-size:10.5px; font-weight:700; font-family:'Inter',sans-serif; }
+  .badge.pass{background:rgba(76,195,138,0.14); color:var(--pass); border:1px solid rgba(76,195,138,0.35);}
+  .badge.fail{background:rgba(240,112,74,0.14); color:var(--fail); border:1px solid rgba(240,112,74,0.35);}
+
+  .notes{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px 20px; font-size:12.5px; color:var(--sub); line-height:1.65; }
+  .notes b{color:var(--ink);}
+  .notes h3{font-size:11.5px; text-transform:uppercase; letter-spacing:1.2px; color:var(--accent2); margin:0 0 10px; font-weight:700;}
+  .notes ul{margin:6px 0 10px 18px; padding:0;}
+  .footnote{font-size:11px; color:#66707f; margin-top:14px; border-top:1px dashed var(--line); padding-top:10px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Rigid Pavement Design Tool</h1>
+  <span class="tag">AASHTO 1993 · PCC slab thickness method</span>
+  <span class="sub">Type in traffic, concrete, joint, and foundation inputs — the cross-section and slab checks update live</span>
+</header>
+
+<div class="layout">
+  <div class="controls">
+
+    <div class="group">
+      <h3>Traffic &amp; reliability</h3>
+      <div class="field"><label>Design ESALs, W18</label>
+        <div class="numfield"><input type="number" id="w18" placeholder="5000000" value="5000000"><span class="unit">18-kip</span></div></div>
+      <div class="field"><label>Reliability, R</label>
+        <select id="reliability">
+          <option value="50">50%</option>
+          <option value="60">60%</option>
+          <option value="70">70%</option>
+          <option value="75">75%</option>
+          <option value="80">80%</option>
+          <option value="85">85%</option>
+          <option value="90" selected>90%</option>
+          <option value="95">95%</option>
+          <option value="99">99%</option>
+          <option value="99.9">99.9%</option>
+        </select>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Overall S0</label>
+          <div class="numfield"><input type="number" id="s0" placeholder="0.35" value="0.35" step="0.01"><span class="unit">—</span></div></div>
+        <div class="field"><label>&nbsp;</label>
+          <div class="guidance" id="zrShow" style="margin-top:0;"></div></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3>Serviceability</h3>
+      <div class="row2">
+        <div class="field"><label>Initial, p0</label>
+          <div class="numfield"><input type="number" id="p0" placeholder="4.5" value="4.5" step="0.1"><span class="unit">psi</span></div></div>
+        <div class="field"><label>Terminal, pt</label>
+          <div class="numfield"><input type="number" id="pt" placeholder="2.5" value="2.5" step="0.1"><span class="unit">psi</span></div></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3>Concrete slab properties</h3>
+      <div class="field"><label>Modulus of rupture, Sc′ (28-day flexural strength)</label>
+        <div class="numfield"><input type="number" id="sc" placeholder="650" value="650"><span class="unit">psi</span></div></div>
+      <div class="field"><label>Elastic modulus, Ec</label>
+        <div class="numfield"><input type="number" id="ec" placeholder="4000000" value="4000000"><span class="unit">psi</span></div></div>
+    </div>
+
+    <div class="group">
+      <h3>Load transfer &amp; drainage</h3>
+      <div class="field"><label>Load transfer coefficient, J</label>
+        <select id="j">
+          <option value="2.6">2.6 — doweled joints, tied PCC shoulder</option>
+          <option value="2.8" selected>2.8 — doweled joints, AC shoulder</option>
+          <option value="3.2">3.2 — doweled joints, no shoulder</option>
+          <option value="3.6">3.6 — undoweled joints, AC shoulder</option>
+          <option value="4.0">4.0 — undoweled joints, no shoulder</option>
+        </select>
+      </div>
+      <div class="field"><label>Drainage coefficient, Cd</label>
+        <select id="cd">
+          <option value="1.25">1.25 — excellent drainage, low exposure</option>
+          <option value="1.10">1.10 — good drainage</option>
+          <option value="1.00" selected>1.00 — fair drainage</option>
+          <option value="0.90">0.90 — poor drainage</option>
+          <option value="0.70">0.70 — very poor drainage, high exposure</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3>Foundation support</h3>
+      <div class="field"><label>Effective modulus of subgrade reaction, k</label>
+        <div class="numfield"><input type="number" id="k" placeholder="200" value="200"><span class="unit">pci</span></div></div>
+      <div class="row2">
+        <div class="field"><label>Subgrade MR (optional, for cross-check)</label>
+          <div class="numfield"><input type="number" id="mrSub" placeholder="7000" value="7000"><span class="unit">psi</span></div></div>
+        <div class="field"><label>&nbsp;</label>
+          <div class="guidance" id="kSuggest" style="margin-top:0;"></div></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3>Base course (informational)</h3>
+      <div class="field"><label>Base thickness (drawn only — not part of the AASHTO rigid SN check)</label>
+        <div class="numfield"><input type="number" id="dBase" placeholder="6" value="6" step="0.5"><span class="unit">in</span></div></div>
+    </div>
+
+    <div class="group">
+      <h3>Proposed slab thickness</h3>
+      <div class="field"><label>PCC slab, D</label>
+        <div class="numfield"><input type="number" id="dSlab" placeholder="9" value="9" step="0.25"><span class="unit">in</span></div></div>
+      <div class="guidance" id="minThkNote"></div>
+    </div>
+
+  </div>
+
+  <div class="main">
+
+    <div class="drawings">
+      <div class="card">
+        <div class="label"><span>Typical cross-section</span><span id="sectionDims"></span></div>
+        <div id="svgSection"></div>
+      </div>
+      <div class="card">
+        <div class="label"><span>Traffic capacity check</span><span id="capDims"></span></div>
+        <div id="svgCap"></div>
+      </div>
+    </div>
+
+    <div class="results">
+      <h3>Slab design checks</h3>
+      <table>
+        <thead><tr><th>Check</th><th>Required</th><th>Provided / supported</th><th>Ratio</th><th>Status</th></tr></thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+
+    <div class="results">
+      <h3>Practical minimum slab thickness (common agency practice, by traffic level)</h3>
+      <table>
+        <thead><tr><th>Item</th><th>Provided</th><th>Typical practical minimum</th><th>Ratio</th><th>Status</th></tr></thead>
+        <tbody id="minBody"></tbody>
+      </table>
+    </div>
+
+    <div class="notes">
+      <h3>Reference basis &amp; assumptions</h3>
+      <ul>
+        <li>Design equation: <b>log10(W18) = ZR·S0 + 7.35·log10(D+1) − 0.06 + [log10(ΔPSI/3.0)] / [1 + 1.624×10⁷/(D+1)^8.46] + (4.22 − 0.32·pt)·log10{ [Sc′·Cd·(D^0.75 − 1.132)] / [215.63·J·(D^0.75 − 18.42/(Ec/k)^0.25)] }</b> — the 1993 AASHTO Guide for Design of Pavement Structures rigid pavement equation. It's implicit in slab thickness D, so this tool solves it by bisection.</li>
+        <li>The <b>3.0 in the ΔPSI term is a fixed constant</b> (4.5 − 1.5, from the original AASHO Road Test scale for PCC), not your actual p0 − pt — that difference is the numerator, ΔPSI, which you do control.</li>
+        <li><b>k is the effective, composite modulus of subgrade reaction</b> — it already reflects the subgrade plus any subbase and any loss of support (LS) adjustment. The AASHTO Guide derives it from a nomograph combining subgrade MR, subbase modulus/thickness, and LS; entering it directly is the standard approach for this method. The MR/19.4 figure shown alongside it is only a rough order-of-magnitude cross-check for a bare subgrade with no subbase, not a substitute for the nomograph or a nondestructive-testing-based estimate.</li>
+        <li>Unlike the flexible method, rigid design does not use a layered structural-number build-up — the PCC slab alone carries the structural check. Base/subbase layers under a slab are mainly there to control pumping, erosion, and construction support, and are shown in the drawing for reference but are not part of the AASHTO SN-style check.</li>
+        <li>Typical inputs: Sc′ ≈ 550–750 psi (28-day third-point flexural strength), Ec ≈ 3–5×10⁶ psi, J ≈ 2.6–3.2 for doweled joints with a tied/AC shoulder (higher, up to ~4.0, for undoweled joints and no shoulder), Cd ≈ 0.70–1.25 depending on drainage quality and time of near-saturation exposure.</li>
+        <li>AASHTO 1993 does not publish a formal minimum-PCC-thickness table by traffic level the way it does for flexible pavements (its Table 3.1). The bands below reflect commonly cited practical minimums from agency practice, not a formal Guide table — treat them as a sanity floor, not a substitute for the slab check above.</li>
+      </ul>
+      <div class="footnote">This tool implements the classic 1993 AASHTO empirical rigid pavement method for preliminary/educational sizing. It does not cover joint spacing/faulting design, dowel bar sizing, reinforcement (for JRCP/CRCP), CRCP-specific analysis, or mechanistic-empirical (MEPDG) analysis. Have the final pavement design verified by a licensed engineer familiar with local subgrade and climate conditions before construction.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const ids = ['w18','reliability','s0','p0','pt','sc','ec','j','cd','k','mrSub','dBase','dSlab'];
+const els = {};
+ids.forEach(id=>{ els[id] = document.getElementById(id); });
+
+const ZR_TABLE = {
+  '50':0.000, '60':-0.253, '70':-0.524, '75':-0.674, '80':-0.841,
+  '85':-1.037, '90':-1.282, '95':-1.645, '99':-2.327, '99.9':-3.090
+};
+
+function fmt(n, d=0){ return Number(n).toLocaleString(undefined,{maximumFractionDigits:d, minimumFractionDigits:d}); }
+
+function readState(){
+  return {
+    w18: +els.w18.value || 1,
+    ZR: ZR_TABLE[els.reliability.value],
+    R: els.reliability.value,
+    s0: +els.s0.value || 0.35,
+    p0: +els.p0.value || 4.5,
+    pt: +els.pt.value || 2.5,
+    sc: +els.sc.value || 600,
+    ec: +els.ec.value || 4000000,
+    j: +els.j.value || 3.0,
+    cd: +els.cd.value || 1.0,
+    k: +els.k.value || 100,
+    mrSub: +els.mrSub.value || 0,
+    dBase: +els.dBase.value || 0,
+    dSlab: +els.dSlab.value || 0,
+  };
+}
+
+// rhs(D) = log10(W18) predicted by the AASHTO 1993 rigid equation for a given slab thickness D.
+function rhs(D, ZR, S0, deltaPSI, pt, Sc, Cd, J, Ec, k){
+  const term1 = ZR*S0;
+  const term2 = 7.35*Math.log10(D+1) - 0.06;
+  const term3 = Math.log10(deltaPSI/3.0) / (1 + 1.624e7/Math.pow(D+1,8.46));
+  const ratioDenomInner = Math.pow(D,0.75) - 18.42/Math.pow(Ec/k,0.25);
+  const ratioNumInner = Math.pow(D,0.75) - 1.132;
+  const ratio = (Sc*Cd*ratioNumInner) / (215.63*J*ratioDenomInner);
+  const term4 = (4.22 - 0.32*pt) * Math.log10(ratio);
+  return term1 + term2 + term3 + term4;
+}
+
+function isFeasible(D, Ec, k){
+  return (Math.pow(D,0.75) - 18.42/Math.pow(Ec/k,0.25)) > 1e-6 && (Math.pow(D,0.75) - 1.132) > 1e-6;
+}
+
+// Solve the implicit AASHTO 1993 rigid pavement equation for D via bisection.
+function solveD(targetLogW18, ZR, S0, deltaPSI, pt, Sc, Cd, J, Ec, k){
+  let feasLo = null;
+  for(let D=0.5; D<=40; D+=0.02){
+    if(isFeasible(D, Ec, k)){ feasLo = D; break; }
+  }
+  if(feasLo === null) return null;
+  let lo = feasLo, hi = 40;
+  for(let i=0;i<80;i++){
+    const mid = (lo+hi)/2;
+    const val = rhs(mid, ZR, S0, deltaPSI, pt, Sc, Cd, J, Ec, k);
+    if(val < targetLogW18) lo = mid; else hi = mid;
+  }
+  return (lo+hi)/2;
+}
+
+function capacityFor(D, ZR, S0, deltaPSI, pt, Sc, Cd, J, Ec, k){
+  if(!isFeasible(D, Ec, k)) return 0;
+  const logCap = rhs(D, ZR, S0, deltaPSI, pt, Sc, Cd, J, Ec, k);
+  return Math.pow(10, logCap);
+}
+
+function minSlabThickness(w18){
+  if(w18 < 50000) return 5.0;
+  if(w18 <= 150000) return 6.0;
+  if(w18 <= 500000) return 6.5;
+  if(w18 <= 2000000) return 7.5;
+  if(w18 <= 7000000) return 8.5;
+  return 10.0;
+}
+
+function compute(s){
+  const deltaPSI = s.p0 - s.pt;
+  const logW18 = Math.log10(s.w18);
+
+  const Dreq = solveD(logW18, s.ZR, s.s0, deltaPSI, s.pt, s.sc, s.cd, s.j, s.ec, s.k);
+  const capacity = capacityFor(s.dSlab, s.ZR, s.s0, deltaPSI, s.pt, s.sc, s.cd, s.j, s.ec, s.k);
+  const kSuggest = s.mrSub > 0 ? s.mrSub/19.4 : null;
+  const minSlab = minSlabThickness(s.w18);
+
+  return {deltaPSI, Dreq, capacity, kSuggest, minSlab};
+}
+
+function svg(tag, attrs, children){
+  const ns = "http://www.w3.org/2000/svg";
+  const el = document.createElementNS(ns, tag);
+  for(const k in attrs) el.setAttribute(k, attrs[k]);
+  (children||[]).forEach(c=>el.appendChild(c));
+  return el;
+}
+function text(x,y,str,opts={}){
+  const t = svg('text', Object.assign({x,y,fill:'var(--draw-dim)','font-size':opts.size||12,'font-family':"'JetBrains Mono',monospace",'text-anchor':opts.anchor||'middle'}, opts.attrs||{}));
+  t.textContent = str;
+  return t;
+}
+function line(x1,y1,x2,y2,opts={}){
+  return svg('line', Object.assign({x1,y1,x2,y2,stroke:opts.stroke||'var(--draw-line)','stroke-width':opts.w||1.5},opts.attrs||{}));
+}
+function dimLine(x1,y1,x2,y2,label,offset){
+  const g = svg('g',{});
+  const dc = 'var(--draw-dim)';
+  g.appendChild(line(x1,y1,x2,y2,{stroke:dc,w:1}));
+  const tick=5;
+  g.appendChild(line(x1-tick,y1,x1+tick,y1,{stroke:dc,w:1}));
+  g.appendChild(line(x2-tick,y2,x2+tick,y2,{stroke:dc,w:1}));
+  g.appendChild(text(x1+(offset||16), (y1+y2)/2, label, {size:11, anchor:'middle', attrs:{transform:`rotate(-90 ${x1+(offset||16)} ${(y1+y2)/2})`}}));
+  return g;
+}
+
+function drawSection(s){
+  const container = document.getElementById('svgSection');
+  container.innerHTML='';
+  const W = 260;
+  const scale = 14; // px per inch
+  const dSlabPx = Math.max(s.dSlab*scale, 10);
+  const dBasePx = Math.max(s.dBase*scale, 6);
+  const subgradeH = 70;
+  const pad = 60;
+  const totalH = dSlabPx+dBasePx+subgradeH;
+  const vw = W+pad*2, vh = totalH+pad*1.7;
+  const root = svg('svg',{viewBox:`0 0 ${vw} ${vh}`, width:'100%'});
+  const ox = pad, oy = pad*0.75;
+
+  const defs = svg('defs',{});
+  // PCC slab: light concrete fill with fine speckle aggregate texture
+  const pPCC = svg('pattern',{id:'pPCC', patternUnits:'userSpaceOnUse', width:16, height:16});
+  pPCC.appendChild(svg('rect',{width:16,height:16,fill:'#c9cdd3'}));
+  [[3,3,1.1],[10,5,0.9],[6,11,1.0],[13,13,0.8],[1,9,0.7]].forEach(([px,py,r])=>{
+    pPCC.appendChild(svg('circle',{cx:px,cy:py,r, fill:'#9fa5ad', opacity:0.7}));
+  });
+  defs.appendChild(pPCC);
+
+  // base course: coarse aggregate on tan base
+  const pBase = svg('pattern',{id:'pBase', patternUnits:'userSpaceOnUse', width:22, height:16});
+  pBase.appendChild(svg('rect',{width:22,height:16,fill:'#8a7a63'}));
+  [[3,4,2.6],[13,3,2.1],[8,10,2.4],[18,11,1.9],[2,13,1.6]].forEach(([px,py,r])=>{
+    pBase.appendChild(svg('circle',{cx:px,cy:py,r, fill:'#c9bda3', opacity:0.85}));
+  });
+  defs.appendChild(pBase);
+
+  // subgrade: soil hatch
+  const pSubgrade = svg('pattern',{id:'pSubgrade', patternUnits:'userSpaceOnUse', width:16, height:16, patternTransform:'rotate(45)'});
+  pSubgrade.appendChild(svg('rect',{width:16,height:16,fill:'#6b5644'}));
+  pSubgrade.appendChild(line(0,4,16,4,{stroke:'#4a3c2f',w:1.2}));
+  pSubgrade.appendChild(svg('circle',{cx:8,cy:11,r:1.1, fill:'#4a3c2f'}));
+  defs.appendChild(pSubgrade);
+  root.appendChild(defs);
+
+  let y = oy;
+
+  // PCC slab, split into two panels with a doweled joint in the middle
+  const jointX = ox + W/2;
+  root.appendChild(svg('rect',{x:ox,y,width:W,height:dSlabPx, fill:'url(#pPCC)', stroke:'var(--draw-line)','stroke-width':1.5}));
+  // saw-cut joint reveal
+  root.appendChild(svg('rect',{x:jointX-3,y:y,width:6,height:dSlabPx*0.35, fill:'#14171d'}));
+  // dowel bar through the joint, lower-mid depth
+  const dowelY = y + dSlabPx*0.62;
+  root.appendChild(line(jointX-22, dowelY, jointX+22, dowelY, {stroke:'var(--steel)', w:3.2}));
+  root.appendChild(svg('circle',{cx:jointX-22, cy:dowelY, r:2.2, fill:'var(--steel)'}));
+  root.appendChild(svg('circle',{cx:jointX+22, cy:dowelY, r:2.2, fill:'var(--steel)'}));
+  root.appendChild(text(jointX, y-8, 'sawed joint + dowel', {size:9.5, attrs:{fill:'var(--draw-dim)'}}));
+  root.appendChild(dimLine(ox-18, y, ox-18, y+dSlabPx, `D=${fmt(s.dSlab,2)}in`, -30));
+  y += dSlabPx;
+
+  if(s.dBase > 0){
+    root.appendChild(svg('rect',{x:ox,y,width:W,height:dBasePx, fill:'url(#pBase)', stroke:'var(--draw-line)','stroke-width':1.5}));
+    root.appendChild(dimLine(ox-18, y, ox-18, y+dBasePx, `${fmt(s.dBase,1)}in`, -30));
+    y += dBasePx;
+  }
+
+  root.appendChild(svg('rect',{x:ox,y,width:W,height:subgradeH, fill:'url(#pSubgrade)', stroke:'var(--draw-line)','stroke-width':1.5}));
+  const zig = [];
+  const teeth = 10;
+  for(let i=0;i<=teeth;i++){
+    const zx = ox + (W/teeth)*i;
+    const zy = y+subgradeH + (i%2===0? 0 : 7);
+    zig.push(`${zx},${zy}`);
+  }
+  root.appendChild(svg('polyline',{points:zig.join(' '), fill:'none', stroke:'var(--draw-line)','stroke-width':1.5}));
+
+  root.appendChild(text(ox+W/2, oy+dSlabPx/2+22, 'PCC slab', {size:11, attrs:{fill:'#20242d'}}));
+  if(s.dBase > 0) root.appendChild(text(ox+W/2, oy+dSlabPx+dBasePx/2+4, 'Base', {size:11, attrs:{fill:'#2a2116'}}));
+  root.appendChild(text(ox+W/2, y+subgradeH/2+4, 'Subgrade, k', {size:11, attrs:{fill:'#f2ece2'}}));
+
+  container.appendChild(root);
+  document.getElementById('sectionDims').textContent = `D + base = ${fmt(s.dSlab+s.dBase,2)} in`;
+}
+
+function drawCapacityChart(s, c){
+  const container = document.getElementById('svgCap');
+  container.innerHTML='';
+  const chartW = 480, chartH = 240, pad = 50;
+  const vw = chartW+pad*2, vh = chartH+pad*1.8;
+  const root = svg('svg',{viewBox:`0 0 ${vw} ${vh}`, width:'100%'});
+  const ox = pad, oy = pad*0.7;
+
+  const design = s.w18;
+  const capacity = c.capacity;
+  const maxVal = Math.max(design, capacity, 1) * 1.15;
+  const scaleY = v => chartH - (v/maxVal)*chartH;
+
+  root.appendChild(line(ox, oy, ox, oy+chartH, {stroke:'var(--draw-line)', w:1.5}));
+  root.appendChild(line(ox, oy+chartH, ox+chartW, oy+chartH, {stroke:'var(--draw-line)', w:1.5}));
+
+  const barW = 90;
+  const cx1 = ox + chartW*0.28;
+  const cx2 = ox + chartW*0.72;
+  const pass = capacity >= design;
+
+  // Design ESALs bar (outline)
+  const yDesign = oy+scaleY(design);
+  root.appendChild(svg('rect',{x:cx1-barW/2, y:yDesign, width:barW, height:oy+chartH-yDesign, fill:'none', stroke:'var(--accent)','stroke-width':2}));
+  root.appendChild(text(cx1, yDesign-10, fmt(design), {size:11, attrs:{fill:'var(--accent)'}}));
+  root.appendChild(text(cx1, oy+chartH+22, 'Design ESALs', {size:11}));
+  root.appendChild(text(cx1, oy+chartH+36, `(W18 input)`, {size:9.5, attrs:{fill:'var(--sub)'}}));
+
+  // Supported capacity bar (filled)
+  const yCap = oy+scaleY(capacity);
+  root.appendChild(svg('rect',{x:cx2-barW/2, y:yCap, width:barW, height:oy+chartH-yCap, fill: pass?'var(--pass)':'var(--fail)', attrs:{opacity:0.55}, stroke: pass?'var(--pass)':'var(--fail)', 'stroke-width':1.5}));
+  root.appendChild(text(cx2, yCap-10, fmt(capacity), {size:11, attrs:{fill: pass?'var(--pass)':'var(--fail)'}}));
+  root.appendChild(text(cx2, oy+chartH+22, 'Supported ESALs', {size:11}));
+  root.appendChild(text(cx2, oy+chartH+36, `(from D = ${fmt(s.dSlab,2)} in)`, {size:9.5, attrs:{fill:'var(--sub)'}}));
+
+  // legend
+  root.appendChild(svg('rect',{x:ox, y:oy+chartH+54, width:10, height:10, fill:'none', stroke:'var(--accent)','stroke-width':2}));
+  root.appendChild(text(ox+42, oy+chartH+62, 'Design traffic', {size:10, anchor:'start', attrs:{fill:'var(--sub)'}}));
+  root.appendChild(svg('rect',{x:ox+150, y:oy+chartH+54, width:10, height:10, fill:'var(--pass)', attrs:{opacity:0.55}}));
+  root.appendChild(text(ox+192, oy+chartH+62, 'Slab capacity', {size:10, anchor:'start', attrs:{fill:'var(--sub)'}}));
+
+  container.appendChild(root);
+  document.getElementById('capDims').textContent = c.Dreq ? `D required = ${fmt(c.Dreq,2)} in` : `D required = n/a`;
+}
+
+function statusRow(name, req, prov, unit=''){
+  const pass = prov >= req;
+  return `<tr>
+    <td>${name}</td>
+    <td>${fmt(req,2)} ${unit}</td>
+    <td>${fmt(prov,2)} ${unit}</td>
+    <td>${fmt(prov/req,2)}</td>
+    <td><span class="badge ${pass?'pass':'fail'}">${pass?'PASS':'FAIL'}</span></td>
+  </tr>`;
+}
+
+function render(){
+  const s = readState();
+  const c = compute(s);
+
+  document.getElementById('zrShow').innerHTML = `ZR = <b>${s.ZR.toFixed(3)}</b> at R=${s.R}%`;
+  document.getElementById('kSuggest').innerHTML = c.kSuggest
+    ? `k ≈ <b>${fmt(c.kSuggest)}</b> pci from MR/19.4<br><span style="opacity:.75">(bare subgrade only — rough check)</span>`
+    : `Enter subgrade MR for a rough cross-check`;
+
+  drawSection(s);
+  drawCapacityChart(s, c);
+
+  let rows = '';
+  if(c.Dreq !== null){
+    rows += statusRow('Slab thickness — required vs provided', c.Dreq, s.dSlab, 'in');
+  } else {
+    rows += `<tr><td>Slab thickness — required vs provided</td><td colspan="4" style="color:var(--fail)">No feasible slab thickness for this Ec/k combination — increase k or reduce Ec</td></tr>`;
+  }
+  rows += statusRow('Traffic capacity — design vs supported ESALs', s.w18, c.capacity);
+  document.getElementById('resultsBody').innerHTML = rows;
+
+  let minRows = '';
+  minRows += statusRow('PCC slab thickness', c.minSlab, s.dSlab, 'in');
+  document.getElementById('minBody').innerHTML = minRows;
+
+  document.getElementById('minThkNote').innerHTML =
+    `For <b>${fmt(s.w18)}</b> ESALs, common agency practice suggests a practical minimum PCC slab thickness around <b>${fmt(c.minSlab,1)} in</b>.`;
+}
+
+Object.values(els).forEach(el=>{
+  el.addEventListener('input', render);
+  el.addEventListener('change', render);
+});
+
+render();
+</script>
+</body>
+</html>

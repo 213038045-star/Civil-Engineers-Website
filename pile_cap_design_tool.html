@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pile Cap Design Tool</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --bg:#14171d;
+    --panel:#1b1f27;
+    --panel2:#20242d;
+    --line:#2e3542;
+    --line-soft:#252b35;
+    --ink:#eef1f5;
+    --sub:#8d98a8;
+    --blue-bg:#0c2c4a;
+    --blue-bg2:#081f38;
+    --draw-line:#eaf4ff;
+    --draw-dim:#7fd4e8;
+    --accent:#f0a63c;
+    --accent2:#4fe0c4;
+    --pass:#4cc38a;
+    --fail:#f0704a;
+    --steel:#dbe2e8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  header{
+    padding:24px 30px 18px; border-bottom:1px solid var(--line);
+    display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
+    background:linear-gradient(180deg, rgba(79,224,196,0.04), transparent);
+  }
+  header h1{font-size:21px; margin:0; letter-spacing:0.2px; font-weight:800;}
+  header .tag{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--accent2); background:rgba(79,224,196,0.09); padding:4px 10px; border-radius:20px; border:1px solid rgba(79,224,196,0.25);}
+  header .sub{font-size:13px; color:var(--sub);}
+
+  .layout{
+    display:grid; grid-template-columns: 320px 1fr; gap:0;
+    min-height:calc(100vh - 80px);
+  }
+  @media (max-width: 900px){ .layout{grid-template-columns:1fr;} }
+
+  .controls{
+    padding:22px 20px 60px; border-right:1px solid var(--line); background:var(--panel);
+    overflow-y:auto;
+  }
+  .group{margin-bottom:24px;}
+  .group h3{
+    font-size:10.5px; text-transform:uppercase; letter-spacing:1.4px; color:var(--accent2);
+    margin:0 0 12px; font-weight:700; display:flex; align-items:center; gap:8px;
+  }
+  .group h3::after{content:""; flex:1; height:1px; background:var(--line);}
+
+  .field{margin-bottom:11px;}
+  .field label{
+    display:block; font-size:12px; color:var(--sub); margin-bottom:5px; font-weight:500;
+  }
+  .numfield{
+    display:flex; align-items:stretch; border:1px solid var(--line); border-radius:9px;
+    background:var(--panel2); overflow:hidden; transition:border-color .15s ease;
+  }
+  .numfield:focus-within{border-color:var(--accent2); box-shadow:0 0 0 3px rgba(79,224,196,0.12);}
+  .numfield input{
+    flex:1; min-width:0; border:none; background:transparent; padding:9px 10px;
+    color:var(--ink); font-family:'JetBrains Mono',monospace; font-size:13.5px; font-weight:600;
+  }
+  .numfield input:focus{outline:none;}
+  .numfield input::placeholder{color:#4d5563;}
+  .numfield .unit{
+    padding:9px 10px; color:var(--sub); font-size:11.5px; font-family:'JetBrains Mono',monospace;
+    display:flex; align-items:center; border-left:1px solid var(--line); background:rgba(255,255,255,0.015);
+    white-space:nowrap;
+  }
+  select{
+    width:100%; padding:9px 10px; background:var(--panel2); border:1px solid var(--line);
+    color:var(--ink); border-radius:9px; font-family:'JetBrains Mono',monospace; font-size:13px;
+  }
+  select:focus{outline:none; border-color:var(--accent2);}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+
+  .guidance{
+    margin-top:10px; padding:11px 13px; background:var(--panel2); border:1px solid var(--line);
+    border-left:3px solid var(--accent2); border-radius:6px; font-size:11.5px; color:var(--sub); line-height:1.6;
+  }
+  .guidance b{color:var(--ink);}
+
+  .main{padding:24px 28px; overflow-x:hidden;}
+  .drawings{display:grid; grid-template-columns: 1.1fr 1fr; gap:18px; margin-bottom:22px;}
+  @media (max-width: 1150px){ .drawings{grid-template-columns:1fr;} }
+  .card{
+    background: linear-gradient(165deg, var(--blue-bg) 0%, var(--blue-bg2) 100%);
+    border:1px solid #123b5e; border-radius:12px; padding:16px 16px 12px; position:relative;
+    box-shadow:0 8px 24px rgba(0,0,0,0.18);
+  }
+  .card .label{
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--draw-dim);
+    text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; display:flex; justify-content:space-between;
+  }
+  .card svg{width:100%; height:auto; display:block;}
+  .card.wide{grid-column: 1 / -1;}
+
+  .results{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:22px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.12);
+  }
+  .results h3{margin:0; padding:13px 18px; font-size:11.5px; text-transform:uppercase; letter-spacing:1.2px; color:var(--accent2); border-bottom:1px solid var(--line); font-weight:700;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{text-align:left; font-size:10.5px; color:var(--sub); text-transform:uppercase; letter-spacing:0.6px; padding:10px 18px; border-bottom:1px solid var(--line);}
+  td{padding:10px 18px; border-bottom:1px solid var(--line-soft); font-family:'JetBrains Mono',monospace;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(255,255,255,0.015);}
+  .badge{
+    display:inline-block; padding:2px 10px; border-radius:20px; font-size:10.5px; font-weight:700; font-family:'Inter',sans-serif;
+  }
+  .badge.pass{background:rgba(76,195,138,0.14); color:var(--pass); border:1px solid rgba(76,195,138,0.35);}
+  .badge.fail{background:rgba(240,112,74,0.14); color:var(--fail); border:1px solid rgba(240,112,74,0.35);}
+
+  .notes{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px 20px; font-size:12.5px; color:var(--sub); line-height:1.65;
+  }
+  .notes b{color:var(--ink);}
+  .notes h3{font-size:11.5px; text-transform:uppercase; letter-spacing:1.2px; color:var(--accent2); margin:0 0 10px; font-weight:700;}
+  .notes ul{margin:6px 0 10px 18px; padding:0;}
+  .footnote{font-size:11px; color:#66707f; margin-top:14px; border-top:1px dashed var(--line); padding-top:10px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Pile Cap Design Tool</h1>
+  <span class="tag">BNBC 2020 · ACI 318 sectional method</span>
+  <span class="sub">Type in geometry, edge distance and rebar — plan / cross-section / long-section update live</span>
+</header>
+
+<div class="layout">
+  <div class="controls">
+
+    <div class="group">
+      <h3>Configuration</h3>
+      <div class="field">
+        <label>Number of piles</label>
+        <select id="numPiles">
+          <option value="2">2 (in a row)</option>
+          <option value="3">3 (triangular)</option>
+          <option value="4" selected>4 (square group)</option>
+          <option value="6">6 (2 × 3 group)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3>Materials</h3>
+      <div class="row2">
+        <div class="field"><label>f'c</label>
+          <div class="numfield"><input type="number" id="fck" placeholder="25" value="25"><span class="unit">MPa</span></div></div>
+        <div class="field"><label>fy</label>
+          <div class="numfield"><input type="number" id="fy" placeholder="400" value="400"><span class="unit">MPa</span></div></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3>Column</h3>
+      <div class="row2">
+        <div class="field"><label>Width Bc</label>
+          <div class="numfield"><input type="number" id="colB" placeholder="450" value="450"><span class="unit">mm</span></div></div>
+        <div class="field"><label>Depth Dc</label>
+          <div class="numfield"><input type="number" id="colD" placeholder="450" value="450"><span class="unit">mm</span></div></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3>Piles</h3>
+      <div class="field"><label>Pile diameter</label>
+        <div class="numfield"><input type="number" id="pileDia" placeholder="400" value="400"><span class="unit">mm</span></div></div>
+      <div class="field"><label>Pile spacing (c/c)</label>
+        <div class="numfield"><input type="number" id="spacing" placeholder="1200" value="1200"><span class="unit">mm</span></div></div>
+      <div class="field"><label>Ultimate load / pile, Pu</label>
+        <div class="numfield"><input type="number" id="puPile" placeholder="700" value="700"><span class="unit">kN</span></div></div>
+      <div class="guidance" id="pileGuidance"></div>
+    </div>
+
+    <div class="group">
+      <h3>Cap geometry</h3>
+      <div class="field"><label>Cap thickness, h</label>
+        <div class="numfield"><input type="number" id="thk" placeholder="900" value="900"><span class="unit">mm</span></div></div>
+      <div class="field"><label>Edge distance, e (pile face to cap edge)</label>
+        <div class="numfield"><input type="number" id="edge" placeholder="150" value="150"><span class="unit">mm</span></div></div>
+      <div class="field"><label>Concrete cover to bottom bars</label>
+        <div class="numfield"><input type="number" id="cover" placeholder="75" value="75"><span class="unit">mm</span></div></div>
+      <div class="field"><label>Pile embedment into cap</label>
+        <div class="numfield"><input type="number" id="emb" placeholder="100" value="100"><span class="unit">mm</span></div></div>
+    </div>
+
+    <div class="group">
+      <h3>Bottom reinforcement — X dir.</h3>
+      <div class="row2">
+        <div class="field"><label>Bar dia</label>
+          <div class="numfield"><input type="number" id="barX" placeholder="20" value="20"><span class="unit">mm</span></div></div>
+        <div class="field"><label>No. of bars</label>
+          <div class="numfield"><input type="number" id="nBarX" placeholder="10" value="10"><span class="unit">nos</span></div></div>
+      </div>
+    </div>
+    <div class="group">
+      <h3>Bottom reinforcement — Y dir.</h3>
+      <div class="row2">
+        <div class="field"><label>Bar dia</label>
+          <div class="numfield"><input type="number" id="barY" placeholder="20" value="20"><span class="unit">mm</span></div></div>
+        <div class="field"><label>No. of bars</label>
+          <div class="numfield"><input type="number" id="nBarY" placeholder="10" value="10"><span class="unit">nos</span></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="main">
+
+    <div class="drawings">
+      <div class="card wide">
+        <div class="label"><span>Plan — reinforcement &amp; pile spacing</span><span id="planDims"></span></div>
+        <div id="svgPlan"></div>
+      </div>
+      <div class="card">
+        <div class="label"><span>Section A–A (short direction)</span><span id="secADims"></span></div>
+        <div id="svgSecA"></div>
+      </div>
+      <div class="card">
+        <div class="label"><span>Section B–B (long direction)</span><span id="secBDims"></span></div>
+        <div id="svgSecB"></div>
+      </div>
+    </div>
+
+    <div class="results">
+      <h3>Design checks (ultimate limit state)</h3>
+      <table>
+        <thead><tr><th>Check</th><th>Demand</th><th>Capacity (φ)</th><th>Ratio</th><th>Status</th></tr></thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+
+    <div class="notes">
+      <h3>Reference basis &amp; assumptions</h3>
+      <ul>
+        <li><b>BNBC 2020, Part 6, Ch.6 (Concrete Structures)</b> adopts ACI 318 strength design provisions almost verbatim for shear and flexure; <b>Ch.8 (Foundations)</b> covers pile cap general requirements. This tool applies the ACI 318 sectional (beam-analogy) method — permitted by BNBC/ACI as an alternative to strut-and-tie for pile caps where piles fall outside the strut-and-tie applicability limits.</li>
+        <li>Two-way (punching) shear at the column: φVc = φ·0.33λ√f'c·bo·d, φ = 0.75, checked on a perimeter at d/2 from the column face.</li>
+        <li>One-way shear: φVc = φ·0.17λ√f'c·b·d, φ = 0.75, checked at a section d from the column face.</li>
+        <li>Flexure at column face: As,req = Mu /(φ·fy·0.9d), φ = 0.9; compared against As provided and the code minimum steel ratio.</li>
+        <li>Effective depth is taken as the <b>average of the two reinforcement mats</b> for shear checks, per common two-way footing/pile-cap practice (bottom mat placed as two orthogonal curtains).</li>
+        <li>Pile spacing and edge distance minimums follow common regional practice (CRSI / IS 2911-style guidance): c/c spacing ≥ 3×pile diameter, edge distance ≥ max(150 mm, 0.5×pile diameter).</li>
+      </ul>
+      <div class="footnote">This tool produces a preliminary sectional check only. It does not cover strut-and-tie verification, punching shear at corner/edge piles, seismic detailing, pile uplift/lateral checks, or serviceability (crack width, deflection). Have the final design verified and stamped by a licensed structural engineer before construction.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const ids = ['numPiles','fck','fy','colB','colD','pileDia','spacing','puPile','thk','edge','cover','emb','barX','nBarX','barY','nBarY'];
+const els = {};
+ids.forEach(id=>{ els[id] = document.getElementById(id); });
+
+function fmt(n, d=0){ return Number(n).toLocaleString(undefined,{maximumFractionDigits:d, minimumFractionDigits:d}); }
+
+function pileLayout(config, s){
+  if(config==='2'){
+    return [{x:-s/2,y:0},{x:s/2,y:0}];
+  }
+  if(config==='3'){
+    const r = s/Math.sqrt(3);
+    return [{x:0,y:-r},{x:-s/2,y:r/2},{x:s/2,y:r/2}];
+  }
+  if(config==='4'){
+    return [{x:-s/2,y:-s/2},{x:s/2,y:-s/2},{x:-s/2,y:s/2},{x:s/2,y:s/2}];
+  }
+  if(config==='6'){
+    return [{x:-s,y:-s/2},{x:0,y:-s/2},{x:s,y:-s/2},{x:-s,y:s/2},{x:0,y:s/2},{x:s,y:s/2}];
+  }
+}
+
+// minimum spanning tree over pile centers -> gives the set of pile-to-pile spacing dimensions worth drawing
+function pileMST(piles){
+  const n = piles.length;
+  if(n<2) return [];
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  const inTree=[0];
+  const remaining=[...Array(n).keys()].slice(1);
+  const edges=[];
+  while(remaining.length){
+    let best=null;
+    inTree.forEach(i=>{
+      remaining.forEach(j=>{
+        const d=dist(piles[i],piles[j]);
+        if(!best || d<best.d) best={i,j,d};
+      });
+    });
+    edges.push(best);
+    inTree.push(best.j);
+    remaining.splice(remaining.indexOf(best.j),1);
+  }
+  return edges;
+}
+
+function readState(){
+  const s = {
+    config: els.numPiles.value,
+    fck: +els.fck.value || 25,
+    fy: +els.fy.value || 400,
+    colB: +els.colB.value || 450,
+    colD: +els.colD.value || 450,
+    pileDia: +els.pileDia.value || 400,
+    spacing: +els.spacing.value || 1200,
+    puPile: +els.puPile.value || 700,
+    thk: +els.thk.value || 900,
+    edge: +els.edge.value || 150,
+    cover: +els.cover.value || 75,
+    emb: +els.emb.value || 100,
+    barX: +els.barX.value || 20,
+    nBarX: +els.nBarX.value || 10,
+    barY: +els.barY.value || 20,
+    nBarY: +els.nBarY.value || 10,
+  };
+  return s;
+}
+
+function pileGuidance(config, pileDia){
+  const minSpacing = 3*pileDia;
+  const minEdge = Math.max(150, pileDia/2);
+  const notes = {
+    '2': `<b>2-pile group</b> — acts as a simple beam strip between piles (no two-way punching between piles). Min. c/c spacing ≥ 3×D = <b>${fmt(minSpacing)} mm</b>. Min. edge distance ≥ <b>${fmt(minEdge)} mm</b> at each end, needed for straight bar anchorage beyond the pile centerline.`,
+    '3': `<b>3-pile (triangular) group</b> — keep spacing equal on all three sides so load shares evenly and bending is symmetric. Min. c/c spacing ≥ 3×D = <b>${fmt(minSpacing)} mm</b>. Min. edge distance ≥ <b>${fmt(minEdge)} mm</b>, measured normal to each triangle face.`,
+    '4': `<b>4-pile (square) group</b> — corner piles usually govern two-way (punching) shear; check the diagonal as well as the orthogonal spacing. Min. c/c spacing ≥ 3×D = <b>${fmt(minSpacing)} mm</b> each way. Min. edge distance ≥ <b>${fmt(minEdge)} mm</b> on all four sides.`,
+    '6': `<b>6-pile (2×3) group</b> — interior piles between rows share load in both directions; verify one-way shear across the full short-direction width. Min. c/c spacing ≥ 3×D = <b>${fmt(minSpacing)} mm</b> each way. Min. edge distance ≥ <b>${fmt(minEdge)} mm</b> all round.`,
+  };
+  return {minSpacing, minEdge, html: notes[config]};
+}
+
+function compute(s){
+  const piles = pileLayout(s.config, s.spacing);
+  const xs = piles.map(p=>p.x), ys = piles.map(p=>p.y);
+  const spanX = Math.max(...xs)-Math.min(...xs);
+  const spanY = Math.max(...ys)-Math.min(...ys);
+  const capL = spanX + s.pileDia + 2*s.edge;
+  const capW = spanY + s.pileDia + 2*s.edge;
+
+  const dX = s.thk - s.cover - s.barX/2;
+  const dY = s.thk - s.cover - s.barX - s.barY/2;
+  const dAvg = (dX+dY)/2;
+
+  const nPiles = piles.length;
+  const PuTotal = nPiles * s.puPile * 1000;
+
+  const boX = s.colB + dAvg;
+  const boY = s.colD + dAvg;
+  const bo = 2*(s.colB+dAvg) + 2*(s.colD+dAvg);
+  let insideLoad = 0;
+  piles.forEach(p=>{ if(Math.abs(p.x) <= boX/2 && Math.abs(p.y) <= boY/2){ insideLoad += s.puPile*1000; } });
+  const VuPunch = PuTotal - insideLoad;
+  const lambda = 1.0;
+  const VcPunch = 0.33*lambda*Math.sqrt(s.fck)*bo*dAvg;
+  const phiV_punch = 0.75*VcPunch;
+
+  const critX = s.colB/2 + dX;
+  let VuOneX = 0;
+  piles.forEach(p=>{ if(Math.abs(p.x) > critX) VuOneX += s.puPile*1000; });
+  const VcOneX = 0.17*lambda*Math.sqrt(s.fck)*capW*dX;
+  const phiV_oneX = 0.75*VcOneX;
+
+  const critY = s.colD/2 + dY;
+  let VuOneY = 0;
+  piles.forEach(p=>{ if(Math.abs(p.y) > critY) VuOneY += s.puPile*1000; });
+  const VcOneY = 0.17*lambda*Math.sqrt(s.fck)*capL*dY;
+  const phiV_oneY = 0.75*VcOneY;
+
+  // Moment at the column face = reactions from piles beyond THAT face only (a cut at the face separates
+  // the free body). Summing |x| across all piles double-counts both faces at once, so take each face
+  // separately and design for the governing (larger) one instead of adding them together.
+  function faceMoment(coordKey, halfDim){
+    let posM=0, negM=0;
+    piles.forEach(p=>{
+      const v = p[coordKey];
+      const loadN = s.puPile*1000;
+      if(v > halfDim) posM += loadN*((v-halfDim)/1000);
+      else if(v < -halfDim) negM += loadN*((-halfDim-v)/1000);
+    });
+    return Math.max(posM,negM); // N·m
+  }
+  const MuX = faceMoment('x', s.colB/2);
+  const MuY = faceMoment('y', s.colD/2);
+
+  const phiFlex = 0.9;
+  const AsReqX = (MuX*1000) / (phiFlex*s.fy*0.9*dX); // MuX (N·m) -> N·mm needs x1000, not x1e6
+  const AsReqY = (MuY*1000) / (phiFlex*s.fy*0.9*dY);
+
+  const AsProvX = s.nBarX * Math.PI/4*s.barX*s.barX;
+  const AsProvY = s.nBarY * Math.PI/4*s.barY*s.barY;
+
+  const AsMinX = Math.max(1.4/s.fy, 0.25*Math.sqrt(s.fck)/s.fy) * capW * dX;
+  const AsMinY = Math.max(1.4/s.fy, 0.25*Math.sqrt(s.fck)/s.fy) * capL * dY;
+
+  return {piles, spanX, spanY, capL, capW, dX, dY, dAvg, nPiles, PuTotal,
+    bo, VuPunch, VcPunch, phiV_punch,
+    critX, VuOneX, VcOneX, phiV_oneX,
+    critY, VuOneY, VcOneY, phiV_oneY,
+    MuX, MuY, AsReqX, AsReqY, AsProvX, AsProvY, AsMinX, AsMinY};
+}
+
+function svg(tag, attrs, children){
+  const ns = "http://www.w3.org/2000/svg";
+  const el = document.createElementNS(ns, tag);
+  for(const k in attrs) el.setAttribute(k, attrs[k]);
+  (children||[]).forEach(c=>el.appendChild(c));
+  return el;
+}
+function text(x,y,str,opts={}){
+  const t = svg('text', Object.assign({x,y,fill:'var(--draw-dim)','font-size':opts.size||12,'font-family':"'JetBrains Mono',monospace",'text-anchor':opts.anchor||'middle'}, opts.attrs||{}));
+  t.textContent = str;
+  return t;
+}
+function line(x1,y1,x2,y2,opts={}){
+  return svg('line', Object.assign({x1,y1,x2,y2,stroke:opts.stroke||'var(--draw-line)','stroke-width':opts.w||1.5},opts.attrs||{}));
+}
+function dimLine(x1,y1,x2,y2,label,offset,vertical){
+  const g = svg('g',{});
+  const dc = 'var(--draw-dim)';
+  g.appendChild(line(x1,y1,x2,y2,{stroke:dc,w:1}));
+  const tick=5;
+  if(vertical){
+    g.appendChild(line(x1-tick,y1,x1+tick,y1,{stroke:dc,w:1}));
+    g.appendChild(line(x2-tick,y2,x2+tick,y2,{stroke:dc,w:1}));
+    const t = text(x1+ (offset||14), (y1+y2)/2, label, {size:11, anchor:'middle', attrs:{transform:`rotate(-90 ${x1+(offset||14)} ${(y1+y2)/2})`}});
+    g.appendChild(t);
+  } else {
+    g.appendChild(line(x1,y1-tick,x1,y1+tick,{stroke:dc,w:1}));
+    g.appendChild(line(x2,y2-tick,x2,y2+tick,{stroke:dc,w:1}));
+    g.appendChild(text((x1+x2)/2, y1+(offset||-8), label, {size:11}));
+  }
+  return g;
+}
+
+// pile-to-pile spacing dimension: offset line parallel to the pile-pile axis, works at any angle (needed for the triangular layout)
+function pileToPileDim(root, x1,y1,x2,y2,label){
+  const dx=x2-x1, dy=y2-y1;
+  const len=Math.hypot(dx,dy)||1;
+  const nx=-dy/len, ny=dx/len;
+  const off=16;
+  const ox1=x1+nx*off, oy1=y1+ny*off, ox2=x2+nx*off, oy2=y2+ny*off;
+  const angleRaw = Math.atan2(dy,dx)*180/Math.PI;
+  const angle = (angleRaw>90||angleRaw<-90) ? angleRaw+180 : angleRaw;
+  root.appendChild(line(x1,y1,ox1,oy1,{stroke:'var(--accent2)',w:0.8,attrs:{opacity:0.6}}));
+  root.appendChild(line(x2,y2,ox2,oy2,{stroke:'var(--accent2)',w:0.8,attrs:{opacity:0.6}}));
+  root.appendChild(line(ox1,oy1,ox2,oy2,{stroke:'var(--accent2)',w:1.3,attrs:{'stroke-dasharray':'5,3'}}));
+  const mx=(ox1+ox2)/2, my=(oy1+oy2)/2;
+  const t = svg('text',{x:mx,y:my-5, fill:'var(--accent2)','font-size':11,'font-weight':600,'font-family':"'JetBrains Mono',monospace",'text-anchor':'middle', transform:`rotate(${angle} ${mx} ${my})`});
+  t.textContent = label;
+  root.appendChild(t);
+}
+
+function drawPlan(s, c){
+  const container = document.getElementById('svgPlan');
+  container.innerHTML='';
+  const pad=64;
+  const scale = Math.min(560/c.capL, 320/c.capW);
+  const W = c.capL*scale, H = c.capW*scale;
+  const vw = W+pad*2, vh = H+pad*2+34;
+  const root = svg('svg',{viewBox:`0 0 ${vw} ${vh}`, width:'100%'});
+  const ox = pad, oy = pad+24;
+  const toX = x=> ox + W/2 + x*scale;
+  const toY = y=> oy + H/2 + y*scale;
+
+  root.appendChild(svg('rect',{x:ox,y:oy,width:W,height:H,fill:'none',stroke:'var(--draw-line)','stroke-width':2}));
+
+  const cw=s.colB*scale, ch=s.colD*scale;
+  root.appendChild(svg('rect',{x:ox+W/2-cw/2,y:oy+H/2-ch/2,width:cw,height:ch,fill:'none',stroke:'var(--accent)','stroke-width':1.5,'stroke-dasharray':'5,4'}));
+
+  const insetX = 45, insetY = 45;
+  for(let i=0;i<s.nBarY;i++){
+    const yy = oy+insetY + (H-2*insetY)*(i/(s.nBarY-1||1));
+    root.appendChild(line(ox+8,yy,ox+W-8,yy,{stroke:'var(--steel)',w:1.1}));
+  }
+  for(let i=0;i<s.nBarX;i++){
+    const xx = ox+insetX + (W-2*insetX)*(i/(s.nBarX-1||1));
+    root.appendChild(line(xx,oy+8,xx,oy+H-8,{stroke:'var(--steel)',w:1.1}));
+  }
+
+  const pr = (s.pileDia/2)*scale;
+  c.piles.forEach(p=>{
+    const px=toX(p.x), py=toY(p.y);
+    root.appendChild(svg('circle',{cx:px,cy:py,r:pr,fill:'rgba(234,244,255,0.05)',stroke:'var(--draw-line)','stroke-width':2}));
+    root.appendChild(svg('circle',{cx:px,cy:py,r:2,fill:'var(--draw-dim)'}));
+    root.appendChild(line(px-pr*0.6,py,px+pr*0.6,py,{stroke:'var(--draw-dim)',w:0.7}));
+    root.appendChild(line(px,py-pr*0.6,px,py+pr*0.6,{stroke:'var(--draw-dim)',w:0.7}));
+  });
+
+  // pile-to-pile spacing dimensions (minimum spanning tree keeps the drawing legible for every configuration)
+  const mst = pileMST(c.piles);
+  mst.forEach(e=>{
+    const p1=c.piles[e.i], p2=c.piles[e.j];
+    pileToPileDim(root, toX(p1.x), toY(p1.y), toX(p2.x), toY(p2.y), `${fmt(e.d)}`);
+  });
+
+  root.appendChild(text(ox-30, oy+H/2+4, 'A', {size:13, attrs:{fill:'var(--accent)','font-weight':'bold'}}));
+  root.appendChild(text(ox+W+30, oy+H/2+4, 'A', {size:13, attrs:{fill:'var(--accent)','font-weight':'bold'}}));
+  root.appendChild(text(ox+W/2, oy-32, 'B', {size:13, attrs:{fill:'var(--accent)','font-weight':'bold'}}));
+  root.appendChild(text(ox+W/2, oy+H+42, 'B', {size:13, attrs:{fill:'var(--accent)','font-weight':'bold'}}));
+
+  root.appendChild(dimLine(ox,oy+H+20,ox+W,oy+H+20, `L = ${fmt(c.capL)} mm`, -8, false));
+  root.appendChild(dimLine(ox+W+16,oy,ox+W+16,oy+H, `W = ${fmt(c.capW)} mm`, 26, true));
+
+  container.appendChild(root);
+  document.getElementById('planDims').textContent = `${s.config}-pile · ${fmt(c.capL)}×${fmt(c.capW)} mm`;
+}
+
+function drawSection(containerId, s, c, dir, labelId){
+  const container = document.getElementById(containerId);
+  container.innerHTML='';
+  const span = dir==='A' ? c.capW : c.capL;
+  const coordKey = dir==='A' ? 'y' : 'x';
+  const uniquePos = [...new Set(c.piles.map(p=>Math.round(p[coordKey])))].sort((a,b)=>a-b);
+
+  const pad=56;
+  const scaleW = 480/span;
+  const scaleH = 220/(s.thk+250);
+  const scale = Math.min(scaleW, scaleH, 0.5);
+  const W = span*scale;
+  const capH = s.thk*scale;
+  const vw = W+pad*2, vh = capH+pad*2+140;
+  const root = svg('svg',{viewBox:`0 0 ${vw} ${vh}`, width:'100%'});
+  const ox = pad, oy = pad+40;
+
+  const colH = 70;
+  const colW = (dir==='A'? s.colD : s.colB)*scale;
+
+  root.appendChild(svg('rect',{x:ox+W/2-colW/2, y:oy-colH, width:colW, height:colH, fill:'none', stroke:'var(--draw-line)','stroke-width':2}));
+  const nDowel=4;
+  for(let i=0;i<nDowel;i++){
+    const xx = ox+W/2-colW/2+8 + (colW-16)*(i/(nDowel-1));
+    root.appendChild(line(xx, oy-colH+4, xx, oy+capH-14, {stroke:'var(--steel)', w:1.6}));
+    root.appendChild(line(xx, oy+capH-14, xx+ (i<nDowel/2? -10:10), oy+capH-14, {stroke:'var(--steel)', w:1.6}));
+  }
+
+  root.appendChild(svg('rect',{x:ox,y:oy,width:W,height:capH,fill:'rgba(234,244,255,0.03)',stroke:'var(--draw-line)','stroke-width':2}));
+  root.appendChild(line(ox+10, oy+16, ox+W-10, oy+16, {stroke:'var(--steel)', w:1.2, attrs:{'stroke-dasharray':'4,3'}}));
+
+  const coverPx = s.cover*scale;
+  const barX_r = Math.max(2.5, s.barX*scale/2);
+  const barY_r = Math.max(2.5, s.barY*scale/2);
+  const layer1Y = oy+capH-coverPx-barX_r;
+  const layer2Y = layer1Y - barX_r - barY_r;
+
+  const nShow = dir==='A' ? s.nBarX : s.nBarY;
+  const dotR = dir==='A' ? barX_r : barY_r;
+  const dotLayerY = dir==='A' ? layer1Y : layer2Y;
+  for(let i=0;i<nShow;i++){
+    const xx = ox+30 + (W-60)*(i/(nShow-1||1));
+    root.appendChild(svg('circle',{cx:xx, cy:dotLayerY, r:dotR, fill:'var(--steel)'}));
+  }
+  const lineLayerY = dir==='A' ? layer2Y : layer1Y;
+  root.appendChild(line(ox+14, lineLayerY, ox+W-14, lineLayerY, {stroke:'var(--steel)', w: (dir==='A'? barY_r:barX_r)*1.6}));
+
+  uniquePos.forEach(pos=>{
+    const px = ox + W/2 + pos*scale;
+    const pw = s.pileDia*scale;
+    const embPx = s.emb*scale;
+    const pileLen = 70;
+    root.appendChild(svg('rect',{x:px-pw/2, y:oy+capH-embPx, width:pw, height:embPx+pileLen, fill:'rgba(255,255,255,0.03)', stroke:'var(--draw-line)','stroke-width':1.6}));
+    root.appendChild(line(px-pw/2, oy+capH-embPx, px+pw/2, oy+capH-embPx, {stroke:'var(--accent)', w:1, attrs:{'stroke-dasharray':'3,2'}}));
+  });
+
+  // pile-to-pile spacing dimension along this section, if more than one pile position
+  if(uniquePos.length>1){
+    const yLine = oy+capH+108;
+    for(let i=0;i<uniquePos.length-1;i++){
+      const x1 = ox+W/2+uniquePos[i]*scale, x2 = ox+W/2+uniquePos[i+1]*scale;
+      const spacingVal = (uniquePos[i+1]-uniquePos[i]);
+      root.appendChild(dimLine(x1,yLine,x2,yLine, `${fmt(spacingVal)}`, -8, false));
+    }
+  }
+
+  root.appendChild(dimLine(ox-24, oy, ox-24, oy+capH, `h=${fmt(s.thk)}`, -34, true));
+  root.appendChild(dimLine(ox, oy+capH+70, ox+W, oy+capH+70, `${dir==='A'?'W':'L'}=${fmt(span)} mm`, -8, false));
+  if(uniquePos.length){
+    const leftPilePx = ox+W/2+uniquePos[0]*scale - (s.pileDia*scale)/2;
+    root.appendChild(dimLine(ox, oy+capH+30, leftPilePx, oy+capH+30, `e=${fmt(s.edge)}`, -8, false));
+  }
+
+  container.appendChild(root);
+  document.getElementById(labelId).textContent = `d≈${fmt(dir==='A'?c.dY:c.dX)} mm`;
+}
+
+function statusRow(name, demand, cap, unit){
+  const ratio = demand/cap;
+  const pass = ratio<=1.0;
+  return `<tr>
+    <td>${name}</td>
+    <td>${fmt(demand/1000,1)} ${unit}</td>
+    <td>${fmt(cap/1000,1)} ${unit}</td>
+    <td>${fmt(ratio,2)}</td>
+    <td><span class="badge ${pass?'pass':'fail'}">${pass?'PASS':'FAIL'}</span></td>
+  </tr>`;
+}
+function statusRowArea(name, demand, cap){
+  const ratio = demand/cap;
+  const pass = ratio<=1.0;
+  return `<tr>
+    <td>${name}</td>
+    <td>${fmt(demand)} mm²</td>
+    <td>${fmt(cap)} mm²</td>
+    <td>${fmt(ratio,2)}</td>
+    <td><span class="badge ${pass?'pass':'fail'}">${pass?'PASS':'FAIL'}</span></td>
+  </tr>`;
+}
+
+function render(){
+  const s = readState();
+  const c = compute(s);
+  drawPlan(s,c);
+  drawSection('svgSecA', s, c, 'A', 'secADims');
+  drawSection('svgSecB', s, c, 'B', 'secBDims');
+
+  const g = pileGuidance(s.config, s.pileDia);
+  document.getElementById('pileGuidance').innerHTML = g.html;
+
+  let rows = '';
+  rows += statusRow('Two-way (punching) shear', c.VuPunch, c.phiV_punch, 'kN');
+  rows += statusRow('One-way shear — X dir.', c.VuOneX, c.phiV_oneX, 'kN');
+  rows += statusRow('One-way shear — Y dir.', c.VuOneY, c.phiV_oneY, 'kN');
+  rows += statusRowArea('Flexure — X dir. steel (As req. vs As prov.)', c.AsReqX, c.AsProvX);
+  rows += statusRowArea('Flexure — Y dir. steel (As req. vs As prov.)', c.AsReqY, c.AsProvY);
+  rows += statusRowArea('Minimum steel — X dir.', c.AsMinX, c.AsProvX);
+  rows += statusRowArea('Minimum steel — Y dir.', c.AsMinY, c.AsProvY);
+
+  const spacingOk = s.spacing >= g.minSpacing;
+  rows += `<tr><td>Pile spacing vs. recommended min. (3×D)</td><td>${fmt(s.spacing)} mm</td><td>${fmt(g.minSpacing)} mm</td><td>${fmt(s.spacing/g.minSpacing,2)}</td><td><span class="badge ${spacingOk?'pass':'fail'}">${spacingOk?'PASS':'FAIL'}</span></td></tr>`;
+
+  const edgeOk = s.edge >= g.minEdge;
+  rows += `<tr><td>Edge distance vs. recommended min.</td><td>${fmt(s.edge)} mm</td><td>${fmt(g.minEdge)} mm</td><td>${fmt(s.edge/g.minEdge,2)}</td><td><span class="badge ${edgeOk?'pass':'fail'}">${edgeOk?'PASS':'FAIL'}</span></td></tr>`;
+
+  document.getElementById('resultsBody').innerHTML = rows;
+}
+
+Object.values(els).forEach(el=>{
+  el.addEventListener('input', render);
+  el.addEventListener('change', render);
+});
+
+render();
+</script>
+</body>
+</html>
