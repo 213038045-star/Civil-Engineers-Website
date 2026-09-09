@@ -1,12 +1,22 @@
 from flask import Flask, render_template, request, redirect, url_for
 import csv
 import os
-from routes.projects import projects_bp 
+from routes.projects import projects_bp
+from flask_mail import Mail, Message
 
 app = Flask(__name__)
 
 # Register the new Blueprint
 app.register_blueprint(projects_bp)
+
+# Mail configuration
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+
+mail = Mail(app)
 
 # Ensure the 'data' directory exists
 if not os.path.exists('data'):
@@ -55,8 +65,20 @@ def contact():
         email = request.form['email']
         message = request.form['message']
         
-        # Save the form data to CSV
+        # Save the form data to CSV (kept as backup)
         save_to_csv(name, email, message)
+
+        # Send an email notification to yourself
+        try:
+            msg = Message(
+                subject=f'New Contact Message from {name}',
+                sender=app.config['MAIL_USERNAME'],
+                recipients=[app.config['MAIL_USERNAME']],
+                body=f'Name: {name}\nEmail: {email}\nMessage: {message}'
+            )
+            mail.send(msg)
+        except Exception as e:
+            print(f'Email failed to send: {e}')
         
         # Redirect to the homepage after submission
         return redirect(url_for('home'))
