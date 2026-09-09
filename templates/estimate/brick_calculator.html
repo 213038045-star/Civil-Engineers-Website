@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brick, Cement & Sand Calculator</title>
+<style>
+  :root{
+    --ink:#e8edf5;
+    --paper:#0a0f1a;
+    --card:#111826;
+    --line:#232d3f;
+    --brick:#34d399;
+    --brick-dark:#10b981;
+    --mortar:#38bdf8;
+    --mortar-light:#1c2536;
+    --muted:#8b96ab;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    background-image:
+      linear-gradient(var(--paper),var(--paper)),
+      repeating-linear-gradient(0deg, transparent, transparent 39px, #ffffff06 39px, #ffffff06 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, #ffffff06 39px, #ffffff06 40px);
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:28px 20px 60px;}
+  header{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    border-bottom:2px solid var(--line);
+    padding-bottom:14px;
+    margin-bottom:22px;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  header h1{
+    font-size:24px;
+    margin:0;
+    letter-spacing:0.5px;
+    color:#f4f7fb;
+    font-weight:800;
+  }
+  header h1 span{color:var(--brick);}
+  header .tag{
+    font-size:12px;
+    color:var(--brick);
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+    border:1px solid var(--line);
+    padding:4px 10px;
+    background:var(--card);
+    border-radius:4px;
+  }
+  .brickrow{
+    display:flex;
+    height:14px;
+    margin-bottom:24px;
+    border:1px solid var(--brick-dark);
+  }
+  .brickrow div{flex:1;background:var(--brick);border-right:2px solid var(--mortar-light);}
+  .brickrow div:last-child{border-right:none;}
+  .brickrow div:nth-child(4n){background:var(--brick-dark);}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:600px){.grid{grid-template-columns:1fr;}}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    padding:18px 20px;
+    margin-bottom:18px;
+    border-radius:6px;
+  }
+  .card h2{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+    margin:0 0 16px;
+    color:var(--brick);
+    border-bottom:1px solid var(--line);
+    padding-bottom:8px;
+    font-weight:700;
+  }
+  label{
+    display:block;
+    font-size:13px;
+    color:var(--muted);
+    margin-bottom:5px;
+    margin-top:12px;
+  }
+  label:first-of-type{margin-top:0;}
+  input[type=number], select{
+    width:100%;
+    padding:9px 10px;
+    font-size:15px;
+    border:1px solid var(--line);
+    background:#0d1420;
+    color:var(--ink);
+    font-family:inherit;
+    border-radius:4px;
+  }
+  input[type=number]:focus, select:focus{
+    outline:none;
+    border-color:var(--brick);
+    background:#0d1420;
+    box-shadow:0 0 0 2px rgba(52,211,153,0.15);
+  }
+  .unit-row{display:flex;gap:8px;}
+  .unit-row > div{flex:1;}
+  .pos-toggle{
+    display:flex;
+    border:1px solid var(--line);
+    border-radius:4px;
+    overflow:hidden;
+  }
+  .pos-toggle button{
+    flex:1;
+    padding:9px 6px;
+    background:#0d1420;
+    border:none;
+    border-right:1px solid var(--line);
+    cursor:pointer;
+    font-size:13px;
+    font-family:inherit;
+    color:var(--ink);
+  }
+  .pos-toggle button:last-child{border-right:none;}
+  .pos-toggle button.active{
+    background:var(--brick);
+    color:#04140d;
+    font-weight:700;
+  }
+  .calc-btn{
+    width:100%;
+    padding:14px;
+    background:var(--brick);
+    color:#04140d;
+    border:none;
+    font-size:15px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    font-weight:700;
+    cursor:pointer;
+    margin-top:6px;
+    border-radius:6px;
+  }
+  .calc-btn:hover{background:var(--brick-dark);}
+
+  .results{
+    display:none;
+  }
+  .results.show{display:block;}
+  .stat-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    margin-bottom:16px;
+    border-radius:6px;
+    overflow:hidden;
+  }
+  @media(max-width:600px){.stat-grid{grid-template-columns:1fr 1fr;}}
+  .stat{
+    background:var(--card);
+    padding:16px 14px;
+    text-align:center;
+  }
+  .stat .num{
+    font-size:26px;
+    font-weight:700;
+    color:var(--brick);
+    display:block;
+  }
+  .stat .lbl{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:var(--muted);
+    margin-top:4px;
+    display:block;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:14px;
+  }
+  table th, table td{
+    text-align:left;
+    padding:8px 6px;
+    border-bottom:1px solid var(--line);
+  }
+  table th{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.8px;
+    color:var(--muted);
+  }
+  table td.val{text-align:right;font-weight:600;}
+  .note{
+    font-size:12.5px;
+    color:var(--muted);
+    line-height:1.6;
+    margin-top:14px;
+    padding-top:12px;
+    border-top:1px dashed var(--line);
+  }
+  .wastage-row{
+    display:flex;
+    gap:8px;
+    margin-top:12px;
+  }
+  .wastage-row button{
+    flex:1;
+    padding:7px;
+    border:1px solid var(--line);
+    background:#0d1420;
+    color:var(--ink);
+    cursor:pointer;
+    font-size:13px;
+    font-family:inherit;
+    border-radius:4px;
+  }
+  .wastage-row button.active{
+    background:var(--mortar);
+    color:#04140d;
+    border-color:var(--mortar);
+    font-weight:700;
+  }
+  .tabnav{
+    display:flex;
+    border:1px solid var(--line);
+    margin-bottom:24px;
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .tabnav button{
+    flex:1;
+    padding:12px 10px;
+    background:var(--card);
+    border:none;
+    border-right:1px solid var(--line);
+    cursor:pointer;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    font-family:inherit;
+    color:var(--muted);
+  }
+  .tabnav button:last-child{border-right:none;}
+  .tabnav button.active{
+    background:var(--brick);
+    color:#04140d;
+    font-weight:700;
+  }
+  .tabpanel{display:none;}
+  .tabpanel.active{display:block;}
+  .chip-toggle{
+    display:flex;
+    border:1px solid var(--line);
+    border-radius:4px;
+    overflow:hidden;
+  }
+  .chip-toggle button{
+    flex:1;
+    padding:9px 6px;
+    background:#0d1420;
+    border:none;
+    border-right:1px solid var(--line);
+    cursor:pointer;
+    font-size:13px;
+    font-family:inherit;
+    color:var(--ink);
+  }
+  .chip-toggle button:last-child{border-right:none;}
+  .chip-toggle button.active{
+    background:var(--mortar);
+    color:#04140d;
+    font-weight:700;
+  }
+  .diagram-row{
+    display:flex;
+    gap:14px;
+    margin-top:14px;
+  }
+  @media(max-width:600px){.diagram-row{flex-direction:column;}}
+  .diagram-box{
+    flex:1;
+    background:#0d1420;
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:10px 6px 4px;
+    text-align:center;
+  }
+  .diagram-box svg{width:100%;height:auto;display:block;}
+  .diagram-box .cap{
+    font-size:11.5px;
+    color:var(--muted);
+    line-height:1.5;
+    padding:8px 8px 4px;
+  }
+  .diagram-box .cap b{color:var(--ink);}
+  .diagram-box.dim{opacity:0.4;}
+  .diagram-box.dim .cap b{color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Brick<span>·</span>Cement<span>·</span>Sand Calculator</h1>
+    <div class="tag">Site Estimator</div>
+  </header>
+
+  <div class="brickrow">
+    <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+    <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+  </div>
+
+  <div class="tabnav">
+    <button type="button" class="tab-btn active" id="tabBtn1">Wall / Soling</button>
+    <button type="button" class="tab-btn" id="tabBtn2">Concrete (chips)</button>
+  </div>
+
+  <div class="tabpanel active" id="tabPanel1">
+
+  <div class="grid">
+
+    <div class="card">
+      <h2>Wall / soling area</h2>
+      <div class="unit-row">
+        <div>
+          <label for="len">Length (ft)</label>
+          <input type="number" id="len" value="120" step="0.01">
+        </div>
+        <div>
+          <label for="wid">Width (ft)</label>
+          <input type="number" id="wid" value="1.167" step="0.001">
+        </div>
+      </div>
+      <label for="thk">Thickness (in)</label>
+      <input type="number" id="thk" value="3" step="0.01">
+    </div>
+
+    <div class="card">
+      <h2>Brick size (inches)</h2>
+      <div class="unit-row">
+        <div>
+          <label for="bl">Length</label>
+          <input type="number" id="bl" value="10" step="0.01">
+        </div>
+        <div>
+          <label for="bw">Width</label>
+          <input type="number" id="bw" value="5" step="0.01">
+        </div>
+        <div>
+          <label for="bh">Height</label>
+          <input type="number" id="bh" value="3" step="0.01">
+        </div>
+      </div>
+      <label>Laying position</label>
+      <div class="pos-toggle">
+        <button type="button" id="posFlat" class="active">Flat (L×W)</button>
+        <button type="button" id="posEdge">On edge (L×H)</button>
+      </div>
+
+      <div class="diagram-row">
+        <div class="diagram-box" id="diagFlat">
+          <svg viewBox="0 0 220 160" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="40,60 110,30 190,60 110,90" fill="#c1602f" stroke="#3d1f10" stroke-width="1.4"/>
+            <line x1="65" y1="47" x2="135" y2="17" stroke="#8a3a20" stroke-width="0.7"/>
+            <line x1="90" y1="80" x2="160" y2="50" stroke="#8a3a20" stroke-width="0.7"/>
+            <polygon points="40,60 110,90 110,113 40,83" fill="#7a3418" stroke="#3d1f10" stroke-width="1.4"/>
+            <line x1="40" y1="71" x2="110" y2="101" stroke="#5c2712" stroke-width="0.7"/>
+            <polygon points="110,90 190,60 190,83 110,113" fill="#9a4522" stroke="#3d1f10" stroke-width="1.4"/>
+            <line x1="110" y1="101" x2="190" y2="71" stroke="#5c2712" stroke-width="0.7"/>
+            <polygon points="38,58 112,28 192,58 112,92 38,62" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-dasharray="5,3"/>
+            <text x="66" y="45" font-size="12" fill="#fff" font-weight="700">L</text>
+            <text x="148" y="45" font-size="12" fill="#fff" font-weight="700">W</text>
+            <text x="22" y="76" font-size="12" fill="var(--ink)" font-weight="700">H</text>
+            <text x="60" y="140" font-size="11" fill="#4ade80" font-weight="700">▲ green outline = face used</text>
+          </svg>
+          <div class="cap"><b>Flat</b> — laid on its largest face. Top face used for area = <b>L × W</b>. Fewer bricks per sft.</div>
+        </div>
+
+        <div class="diagram-box dim" id="diagEdge">
+          <svg viewBox="0 0 220 160" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="55,55 110,32 165,55 110,78" fill="#c1602f" stroke="#3d1f10" stroke-width="1.4"/>
+            <line x1="72" y1="46" x2="127" y2="23" stroke="#8a3a20" stroke-width="0.7"/>
+            <line x1="93" y1="67" x2="148" y2="44" stroke="#8a3a20" stroke-width="0.7"/>
+            <polygon points="55,55 110,78 110,125 55,102" fill="#7a3418" stroke="#3d1f10" stroke-width="1.4"/>
+            <line x1="55" y1="72" x2="110" y2="95" stroke="#5c2712" stroke-width="0.7"/>
+            <line x1="55" y1="88" x2="110" y2="111" stroke="#5c2712" stroke-width="0.7"/>
+            <polygon points="110,78 165,55 165,102 110,125" fill="#9a4522" stroke="#3d1f10" stroke-width="1.4"/>
+            <line x1="110" y1="95" x2="165" y2="72" stroke="#5c2712" stroke-width="0.7"/>
+            <line x1="110" y1="111" x2="165" y2="88" stroke="#5c2712" stroke-width="0.7"/>
+            <polygon points="53,53 112,30 167,53 112,80 53,57" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-dasharray="5,3"/>
+            <text x="72" y="46" font-size="12" fill="#fff" font-weight="700">L</text>
+            <text x="128" y="46" font-size="12" fill="#fff" font-weight="700">H</text>
+            <text x="36" y="82" font-size="12" fill="var(--ink)" font-weight="700">W</text>
+            <text x="60" y="150" font-size="11" fill="#4ade80" font-weight="700">▲ green outline = face used</text>
+          </svg>
+          <div class="cap"><b>On edge</b> — stood on its side. Top face used for area = <b>L × H</b>. More bricks per sft, extra standing height (W).</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <h2>Mortar mix</h2>
+    <div class="unit-row">
+      <div>
+        <label for="ratio">Cement : sand ratio</label>
+        <select id="ratio">
+          <option value="3">1 : 3</option>
+          <option value="4">1 : 4</option>
+          <option value="5">1 : 5</option>
+          <option value="6" selected>1 : 6</option>
+          <option value="8">1 : 8</option>
+        </select>
+      </div>
+      <div>
+        <label for="wcr">Water/cement ratio</label>
+        <select id="wcr">
+          <option value="0.4">0.4</option>
+          <option value="0.45">0.45</option>
+          <option value="0.5" selected>0.5</option>
+          <option value="0.55">0.55</option>
+          <option value="0.6">0.6</option>
+        </select>
+      </div>
+    </div>
+    <label for="jointpct">Mortar / joint volume — % of total volume</label>
+    <input type="number" id="jointpct" value="25" step="1">
+
+    <label>Wastage allowance</label>
+    <div class="wastage-row" id="wastageRow">
+      <button type="button" data-w="0">0%</button>
+      <button type="button" data-w="5" class="active">5%</button>
+      <button type="button" data-w="10">10%</button>
+    </div>
+  </div>
+
+  <button class="calc-btn" id="calcBtn">Calculate</button>
+
+  <div class="results" id="results">
+
+    <div class="stat-grid" id="statGrid"></div>
+
+    <div class="card">
+      <h2>Breakdown</h2>
+      <table id="breakdownTable"></table>
+      <div class="note" id="noteText"></div>
+    </div>
+
+  </div>
+
+  </div>
+
+  <div class="tabpanel" id="tabPanel2">
+
+  <div class="grid">
+
+    <div class="card">
+      <h2>Concrete volume</h2>
+      <div class="unit-row">
+        <div>
+          <label for="clen">Length (ft)</label>
+          <input type="number" id="clen" value="10" step="0.01">
+        </div>
+        <div>
+          <label for="cwid">Width (ft)</label>
+          <input type="number" id="cwid" value="10" step="0.01">
+        </div>
+      </div>
+      <label for="cthk">Thickness (in)</label>
+      <input type="number" id="cthk" value="4" step="0.01">
+    </div>
+
+    <div class="card">
+      <h2>Aggregate type</h2>
+      <label>Coarse aggregate</label>
+      <div class="chip-toggle">
+        <button type="button" id="aggBrick" class="active">Brick chips</button>
+        <button type="button" id="aggStone">Stone chips</button>
+      </div>
+      <div id="brickChipFields">
+        <label for="chipYield">Brick chips yield — cft chips per brick</label>
+        <input type="number" id="chipYield" value="0.11" step="0.01">
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <h2>Concrete mix</h2>
+    <label for="cratio">Cement : sand : aggregate ratio</label>
+    <select id="cratio">
+      <option value="1,1.5,3">1 : 1.5 : 3</option>
+      <option value="1,2,4" selected>1 : 2 : 4</option>
+      <option value="1,3,6">1 : 3 : 6</option>
+      <option value="1,4,8">1 : 4 : 8</option>
+    </select>
+    <div class="unit-row">
+      <div>
+        <label for="cwcr">Water/cement ratio</label>
+        <select id="cwcr">
+          <option value="0.4">0.4</option>
+          <option value="0.45">0.45</option>
+          <option value="0.5" selected>0.5</option>
+          <option value="0.55">0.55</option>
+          <option value="0.6">0.6</option>
+        </select>
+      </div>
+      <div>
+        <label for="dryFactor">Dry volume factor</label>
+        <input type="number" id="dryFactor" value="1.54" step="0.01">
+      </div>
+    </div>
+    <label>Wastage allowance</label>
+    <div class="wastage-row" id="wastageRow2">
+      <button type="button" data-w="0">0%</button>
+      <button type="button" data-w="5" class="active">5%</button>
+      <button type="button" data-w="10">10%</button>
+    </div>
+  </div>
+
+  <button class="calc-btn" id="calcBtn2">Calculate</button>
+
+  <div class="results" id="results2">
+
+    <div class="stat-grid" id="statGrid2"></div>
+
+    <div class="card">
+      <h2>Breakdown</h2>
+      <table id="breakdownTable2"></table>
+      <div class="note" id="noteText2"></div>
+    </div>
+
+  </div>
+
+  </div>
+
+</div>
+
+<script>
+let position = 'flat';
+
+document.getElementById('posFlat').addEventListener('click', () => {
+  position = 'flat';
+  document.getElementById('posFlat').classList.add('active');
+  document.getElementById('posEdge').classList.remove('active');
+  document.getElementById('diagFlat').classList.remove('dim');
+  document.getElementById('diagEdge').classList.add('dim');
+});
+document.getElementById('posEdge').addEventListener('click', () => {
+  position = 'edge';
+  document.getElementById('posEdge').classList.add('active');
+  document.getElementById('posFlat').classList.remove('active');
+  document.getElementById('diagEdge').classList.remove('dim');
+  document.getElementById('diagFlat').classList.add('dim');
+});
+
+let wastage = 5;
+document.getElementById('wastageRow').addEventListener('click', (e) => {
+  if(e.target.tagName !== 'BUTTON') return;
+  document.querySelectorAll('#wastageRow button').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  wastage = Number(e.target.dataset.w);
+});
+
+function round(n, d=2){
+  const f = Math.pow(10,d);
+  return Math.round((n + Number.EPSILON) * f) / f;
+}
+
+function calculate(){
+  const len = parseFloat(document.getElementById('len').value) || 0;
+  const widFt = parseFloat(document.getElementById('wid').value) || 0;
+  const thkIn = parseFloat(document.getElementById('thk').value) || 0;
+
+  const bl = parseFloat(document.getElementById('bl').value) || 1;
+  const bw = parseFloat(document.getElementById('bw').value) || 1;
+  const bh = parseFloat(document.getElementById('bh').value) || 1;
+
+  const ratioSand = parseFloat(document.getElementById('ratio').value);
+  const wcr = parseFloat(document.getElementById('wcr').value);
+  const jointPct = (parseFloat(document.getElementById('jointpct').value) || 0) / 100;
+
+  const thkFt = thkIn / 12;
+  const areaSft = len * widFt;
+  const totalVolCft = areaSft * thkFt;
+
+  const faceIn2 = position === 'flat' ? (bl * bw) : (bl * bh);
+  const faceSft = faceIn2 / 144;
+  const bricksBase = faceSft > 0 ? areaSft / faceSft : 0;
+  const bricksFinal = bricksBase * (1 + wastage/100);
+
+  const mortarWetCft = totalVolCft * jointPct;
+  const mortarDryCft = mortarWetCft * 1.33;
+
+  const cementCftBase = mortarDryCft * (1 / (1 + ratioSand));
+  const sandCftBase = mortarDryCft * (ratioSand / (1 + ratioSand));
+
+  const cementCft = cementCftBase * (1 + wastage/100);
+  const sandCft = sandCftBase * (1 + wastage/100);
+  const cementBags = cementCft / 1.25;
+
+  const cementKg = cementBags * 50;
+  const waterLiters = cementKg * wcr;
+
+  document.getElementById('statGrid').innerHTML = `
+    <div class="stat"><span class="num">${Math.ceil(bricksFinal)}</span><span class="lbl">Bricks</span></div>
+    <div class="stat"><span class="num">${round(cementBags,1)}</span><span class="lbl">Cement bags</span></div>
+    <div class="stat"><span class="num">${round(sandCft,1)}</span><span class="lbl">Sand (cft)</span></div>
+  `;
+
+  document.getElementById('breakdownTable').innerHTML = `
+    <tr><th>Item</th><th style="text-align:right;">Value</th></tr>
+    <tr><td>Area</td><td class="val">${round(areaSft,2)} sft</td></tr>
+    <tr><td>Total volume</td><td class="val">${round(totalVolCft,2)} cft</td></tr>
+    <tr><td>Brick face used</td><td class="val">${round(faceIn2,2)} in² (${position === 'flat' ? bl+'"×'+bw+'"' : bl+'"×'+bh+'"'})</td></tr>
+    <tr><td>Bricks (before wastage)</td><td class="val">${Math.ceil(bricksBase)}</td></tr>
+    <tr><td>Bricks (+${wastage}% wastage)</td><td class="val">${Math.ceil(bricksFinal)}</td></tr>
+    <tr><td>Mortar volume (${round(jointPct*100,0)}% wet)</td><td class="val">${round(mortarWetCft,2)} cft</td></tr>
+    <tr><td>Dry mortar volume (×1.33)</td><td class="val">${round(mortarDryCft,2)} cft</td></tr>
+    <tr><td>Cement (before wastage)</td><td class="val">${round(cementCftBase,2)} cft</td></tr>
+    <tr><td>Cement (+${wastage}% wastage)</td><td class="val">${round(cementCft,2)} cft → ${round(cementBags,2)} bags</td></tr>
+    <tr><td>Sand (before wastage)</td><td class="val">${round(sandCftBase,2)} cft</td></tr>
+    <tr><td>Sand (+${wastage}% wastage)</td><td class="val">${round(sandCft,2)} cft</td></tr>
+    <tr><td>Water (at W/C ${wcr})</td><td class="val">${round(waterLiters,1)} litres</td></tr>
+  `;
+
+  document.getElementById('noteText').innerHTML =
+    `Based on a mortar ratio of 1:${ratioSand} (cement:sand) and a joint volume of ${round(jointPct*100,0)}% of total volume — a common working figure for brick soling/flat brick work in Bangladesh (standing brick walls typically run closer to 30-33%). The same ${wastage}% wastage allowance is applied to bricks, cement, and sand. Adjust the joint % if your site uses thicker or thinner mortar beds. Water quantity is an estimate for mixing the cement only, not for curing.`;
+
+  document.getElementById('results').classList.add('show');
+}
+
+document.getElementById('calcBtn').addEventListener('click', calculate);
+calculate();
+
+document.getElementById('tabBtn1').addEventListener('click', () => {
+  document.getElementById('tabBtn1').classList.add('active');
+  document.getElementById('tabBtn2').classList.remove('active');
+  document.getElementById('tabPanel1').classList.add('active');
+  document.getElementById('tabPanel2').classList.remove('active');
+});
+document.getElementById('tabBtn2').addEventListener('click', () => {
+  document.getElementById('tabBtn2').classList.add('active');
+  document.getElementById('tabBtn1').classList.remove('active');
+  document.getElementById('tabPanel2').classList.add('active');
+  document.getElementById('tabPanel1').classList.remove('active');
+});
+
+let aggType = 'brick';
+document.getElementById('aggBrick').addEventListener('click', () => {
+  aggType = 'brick';
+  document.getElementById('aggBrick').classList.add('active');
+  document.getElementById('aggStone').classList.remove('active');
+  document.getElementById('brickChipFields').style.display = 'block';
+});
+document.getElementById('aggStone').addEventListener('click', () => {
+  aggType = 'stone';
+  document.getElementById('aggStone').classList.add('active');
+  document.getElementById('aggBrick').classList.remove('active');
+  document.getElementById('brickChipFields').style.display = 'none';
+});
+
+let wastage2 = 5;
+document.getElementById('wastageRow2').addEventListener('click', (e) => {
+  if(e.target.tagName !== 'BUTTON') return;
+  document.querySelectorAll('#wastageRow2 button').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  wastage2 = Number(e.target.dataset.w);
+});
+
+function calculate2(){
+  const len = parseFloat(document.getElementById('clen').value) || 0;
+  const wid = parseFloat(document.getElementById('cwid').value) || 0;
+  const thkIn = parseFloat(document.getElementById('cthk').value) || 0;
+  const thkFt = thkIn / 12;
+
+  const areaSft = len * wid;
+  const wetVolCft = areaSft * thkFt;
+
+  const dryFactor = parseFloat(document.getElementById('dryFactor').value) || 1.54;
+  const dryVolCft = wetVolCft * dryFactor;
+
+  const [rc, rs, ra] = document.getElementById('cratio').value.split(',').map(Number);
+  const sumRatio = rc + rs + ra;
+
+  const wcr = parseFloat(document.getElementById('cwcr').value);
+
+  const cementCftBase = dryVolCft * (rc / sumRatio);
+  const sandCftBase = dryVolCft * (rs / sumRatio);
+  const aggCftBase = dryVolCft * (ra / sumRatio);
+
+  const cementCft = cementCftBase * (1 + wastage2/100);
+  const sandCft = sandCftBase * (1 + wastage2/100);
+  const aggCft = aggCftBase * (1 + wastage2/100);
+
+  const cementBags = cementCft / 1.25;
+  const cementKg = cementBags * 50;
+  const waterLiters = cementKg * wcr;
+
+  let bricksNeeded = 0;
+  let chipYield = 0;
+  let brickNote = '';
+
+  if(aggType === 'brick'){
+    chipYield = parseFloat(document.getElementById('chipYield').value) || 0.11;
+    bricksNeeded = chipYield > 0 ? aggCft / chipYield : 0;
+    brickNote = `Assumes each whole brick yields about ${chipYield} cft of brick chips once broken (accounting for dust and breakage loss) — a commonly cited reference for standard bricks in Bangladesh. Adjust this figure if your supplier's bricks or crushing method give a different yield.`;
+  }
+
+  document.getElementById('statGrid2').innerHTML = `
+    <div class="stat"><span class="num">${round(cementBags,1)}</span><span class="lbl">Cement bags</span></div>
+    <div class="stat"><span class="num">${round(sandCft,1)}</span><span class="lbl">Sand (cft)</span></div>
+    <div class="stat"><span class="num">${round(aggCft,1)}</span><span class="lbl">${aggType === 'brick' ? 'Brick chips (cft)' : 'Stone chips (cft)'}</span></div>
+  `;
+
+  let rows = `
+    <tr><th>Item</th><th style="text-align:right;">Value</th></tr>
+    <tr><td>Area</td><td class="val">${round(areaSft,2)} sft</td></tr>
+    <tr><td>Wet concrete volume</td><td class="val">${round(wetVolCft,2)} cft</td></tr>
+    <tr><td>Dry volume (×${dryFactor})</td><td class="val">${round(dryVolCft,2)} cft</td></tr>
+    <tr><td>Cement (before wastage)</td><td class="val">${round(cementCftBase,2)} cft</td></tr>
+    <tr><td>Cement (+${wastage2}% wastage)</td><td class="val">${round(cementCft,2)} cft → ${round(cementBags,2)} bags</td></tr>
+    <tr><td>Sand (before wastage)</td><td class="val">${round(sandCftBase,2)} cft</td></tr>
+    <tr><td>Sand (+${wastage2}% wastage)</td><td class="val">${round(sandCft,2)} cft</td></tr>
+    <tr><td>${aggType === 'brick' ? 'Brick chips' : 'Stone chips'} (before wastage)</td><td class="val">${round(aggCftBase,2)} cft</td></tr>
+    <tr><td>${aggType === 'brick' ? 'Brick chips' : 'Stone chips'} (+${wastage2}% wastage)</td><td class="val">${round(aggCft,2)} cft</td></tr>
+    <tr><td>Water (at W/C ${wcr})</td><td class="val">${round(waterLiters,1)} litres</td></tr>
+  `;
+
+  if(aggType === 'brick'){
+    rows += `<tr><td>Bricks required (for chips)</td><td class="val">${Math.ceil(bricksNeeded)}</td></tr>`;
+  }
+
+  document.getElementById('breakdownTable2').innerHTML = rows;
+
+  document.getElementById('noteText2').innerHTML =
+    `Based on a concrete mix of ${rc}:${rs}:${ra} (cement:sand:${aggType === 'brick' ? 'brick chips' : 'stone chips'}), a dry volume factor of ${dryFactor}, and ${wastage2}% wastage applied to cement, sand, and aggregate. ${brickNote} Water quantity is an estimate for mixing only, not curing.`;
+
+  document.getElementById('results2').classList.add('show');
+}
+
+document.getElementById('calcBtn2').addEventListener('click', calculate2);
+calculate2();
+</script>
+
+</body>
+</html>

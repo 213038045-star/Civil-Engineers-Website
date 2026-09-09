@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beam-Column Interaction &amp; Moment Amplification — AISC 360 Ch. E/F/H</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:        #0f1c2e;
+    --panel:     #142943;
+    --panel-2:   #1a3252;
+    --line:      #2c496f;
+    --cyan:      #7ec8e3;
+    --cyan-dim:  #4a6fa5;
+    --paper:     #f2ede1;
+    --paper-dim: #b9c4d6;
+    --amber:     #e8a33d;
+    --good:      #7fd8a0;
+    --bad:       #e8735d;
+    --warn-bg:   #2e2412;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:
+      linear-gradient(var(--line) 1px, transparent 1px) 0 0/40px 40px,
+      linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0/40px 40px,
+      var(--bg);
+    background-attachment: local;
+    color: var(--paper);
+    font-family: 'IBM Plex Sans', sans-serif;
+    min-height: 100vh;
+    padding: 32px 20px 60px;
+  }
+  .wrap{ max-width: 1180px; margin: 0 auto; }
+
+  header{ margin-bottom: 28px; border-bottom: 1px solid var(--line); padding-bottom: 18px; }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 8px;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight: 700; font-size: clamp(24px, 3.6vw, 34px);
+    margin: 0 0 6px; color: var(--paper); letter-spacing: -0.01em;
+  }
+  .subtitle{ color: var(--paper-dim); font-size: 14px; max-width: 700px; line-height:1.55;}
+  .subtitle code{ font-family:'IBM Plex Mono', monospace; color:var(--cyan); font-size: 12.5px;}
+
+  .grid{ display:grid; grid-template-columns: 380px 1fr; gap: 22px; }
+  @media (max-width: 940px){ .grid{ grid-template-columns: 1fr; } }
+
+  .panel{ background: var(--panel); border: 1px solid var(--line); border-radius: 3px; padding: 22px; }
+  .panel + .panel{ margin-top: 22px; }
+
+  .panel h2{
+    font-family:'Space Grotesk', sans-serif;
+    font-size: 13px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--cyan); margin: 0 0 16px; font-weight:600;
+    display:flex; align-items:center; gap:8px;
+  }
+  .panel h2 .n{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--bg);
+    background: var(--cyan); width:18px; height:18px; border-radius:2px;
+    display:flex; align-items:center; justify-content:center; flex:none;
+  }
+
+  select#sectionSelect{
+    width:100%; background: var(--bg); border:1px solid var(--line);
+    color: var(--paper); font-family:'IBM Plex Mono', monospace; font-size: 13.5px;
+    padding: 9px; border-radius: 2px; outline:none; margin-bottom:10px;
+  }
+  select#sectionSelect:focus{ border-color: var(--cyan); }
+
+  .disclaimer{
+    background: var(--warn-bg); border:1px solid #6b5423; border-radius:2px;
+    padding:9px 11px; font-size:11px; color:#e2c589; line-height:1.5;
+    font-family:'IBM Plex Mono', monospace; margin-bottom:18px;
+  }
+  .disclaimer strong{ color: var(--amber); }
+  .tag-verified{ color: var(--good); }
+
+  .field-group{ margin-bottom:14px; }
+  .field-row{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+  label{
+    display:block; font-family:'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--paper-dim); margin-bottom:5px;
+  }
+  label .unit{ color: var(--cyan-dim); }
+  input[type=number]{
+    width:100%; background: var(--bg); border:1px solid var(--line);
+    color: var(--paper); font-family:'IBM Plex Mono', monospace; font-size: 13.5px;
+    padding: 8px 9px; border-radius: 2px; outline:none;
+  }
+  input[type=number]:focus{ border-color: var(--cyan); }
+  input[type=range]{ width:100%; accent-color: var(--cyan); }
+
+  .hr{ height:1px; background:var(--line); margin: 16px 0; }
+
+  .badges{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px;}
+  .badge{
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px;
+    padding:7px 12px; border-radius:2px; border:1px solid var(--line);
+    display:flex; gap:8px; align-items:baseline;
+  }
+  .badge .label{ color:var(--paper-dim); }
+  .badge .val{ color:var(--paper); font-weight:600; }
+  .badge.compact .val{ color: var(--good); }
+  .badge.noncompact .val{ color: var(--amber); }
+  .badge.slender .val{ color:var(--bad); }
+
+  .answer-box{
+    background: var(--panel-2); border:1px solid var(--cyan);
+    border-radius:3px; padding:18px 20px; margin-bottom:20px;
+    display:grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  }
+  @media (max-width:520px){ .answer-box{grid-template-columns:1fr;} }
+  .answer-box .item .k{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:.08em; color:var(--cyan); text-transform:uppercase;}
+  .answer-box .item .v{ font-family:'Space Grotesk', sans-serif; font-size:24px; font-weight:700; color:var(--paper); margin-top:2px;}
+  .answer-box .item .v small{ font-size:13px; color:var(--paper-dim); font-weight:500;}
+
+  .status-banner{
+    grid-column: 1 / -1;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 16px; border-radius:2px; margin-top:2px;
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:16px;
+  }
+  .status-banner.pass{ background: rgba(127,216,160,0.12); border:1px solid var(--good); color:var(--good); }
+  .status-banner.fail{ background: rgba(232,115,93,0.12); border:1px solid var(--bad); color:var(--bad); }
+  .status-banner .eqtag{
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:.06em;
+    background: rgba(255,255,255,0.08); padding:3px 8px; border-radius:2px; font-weight:500;
+  }
+
+  table.calc{ width:100%; border-collapse: collapse; font-family:'IBM Plex Mono', monospace; font-size: 12.5px; }
+  table.calc th{
+    text-align:left; color:var(--cyan); font-weight:500; font-size:10.5px;
+    letter-spacing:.06em; text-transform:uppercase; padding: 6px 8px; border-bottom:1px solid var(--line);
+  }
+  table.calc td{ padding: 7px 8px; border-bottom:1px solid rgba(44,73,111,.4); color: var(--paper-dim); }
+  table.calc tr:last-child td{ border-bottom:none; }
+  table.calc td.formula{ color: var(--paper); }
+  table.calc td.result{ color: var(--good); text-align:right; white-space:nowrap;}
+  table.calc tr.governing td{ color: var(--amber); }
+  table.calc tr.governing td.result{ color: var(--amber); font-weight:600; }
+  table.calc tr.section-head td{
+    padding-top:16px; color:var(--cyan); font-family:'Space Grotesk', sans-serif;
+    font-size:11px; letter-spacing:.08em; text-transform:uppercase; border-bottom:1px solid var(--line);
+  }
+
+  .chart-wrap{ position:relative; }
+  svg{ width:100%; height:auto; display:block; }
+  .axis-label{ font-family:'IBM Plex Mono', monospace; font-size: 10px; fill: var(--paper-dim); }
+  .curve-h1{ fill:none; stroke: var(--cyan); stroke-width:2; }
+  .gridline{ stroke: var(--line); stroke-width:1; }
+  .marker-line{ stroke: var(--paper-dim); stroke-width:1; stroke-dasharray:3 3;}
+  .pt-first{ fill: var(--cyan); stroke: var(--bg); stroke-width:2; }
+  .pt-amp{ fill: var(--amber); stroke: var(--bg); stroke-width:2; }
+  .conn-line{ stroke: var(--amber); stroke-width:1.5; stroke-dasharray: 4 3; }
+  .legend-swatch{ width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px; vertical-align:middle;}
+
+  footer{ margin-top: 30px; color: var(--paper-dim); font-size: 12px; font-family:'IBM Plex Mono', monospace; line-height:1.7; }
+  footer a{ color: var(--cyan); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">AISC 360 — Chapters E, F &amp; H · Appendix 8</div>
+    <h1>Beam-Column Interaction &amp; Moment Amplification Calculator</h1>
+    <div class="subtitle">
+      Combined axial-flexural strength of a doubly-symmetric pin-ended W-shape carrying an axial
+      load P and a lateral point load Q at midheight (M<sub>ux</sub> = Q<sub>u</sub>L/4). Column strength per
+      <code>AISC-E3</code>, flexural strength per <code>AISC-F2/F3</code>, second-order amplification
+      per <code>Appendix 8, Eq. 8-3</code> (B<sub>1</sub> factor, C<sub>m</sub>=1.0), and interaction per <code>AISC-H1-1</code>.
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- INPUT PANEL -->
+    <div>
+      <div class="panel">
+        <h2><span class="n">1</span>Pick a Section</h2>
+        <select id="sectionSelect" onchange="loadSection(this.value)"></select>
+        <div class="disclaimer">
+          <strong>Note:</strong> <span class="tag-verified">W10×49</span> matches the worked example
+          exactly (A<sub>g</sub>=14.4 in², r<sub>x</sub>=4.35 in, r<sub>y</sub>=2.54 in, Z<sub>x</sub>=60.4 in³, etc.).
+          Other shapes are typical published AISC values included for comparison —
+          double-check against your copy of the Manual before real design use. You can
+          also type any section's properties in manually below.
+        </div>
+
+        <h2><span class="n">2</span>Material</h2>
+        <div class="field-row">
+          <div class="field-group"><label>F<sub>y</sub> <span class="unit">(ksi)</span></label><input type="number" id="Fy" value="50" step="0.5"></div>
+          <div class="field-group"><label>E <span class="unit">(ksi)</span></label><input type="number" id="E" value="29000" step="500"></div>
+        </div>
+
+        <div class="hr"></div>
+        <h2><span class="n">3</span>Section Properties</h2>
+        <div class="field-row">
+          <div class="field-group"><label>A<sub>g</sub> <span class="unit">(in²)</span></label><input type="number" id="Ag" value="14.4" step="0.1"></div>
+          <div class="field-group"><label>r<sub>x</sub> <span class="unit">(in)</span></label><input type="number" id="rx" value="4.35" step="0.01"></div>
+        </div>
+        <div class="field-row">
+          <div class="field-group"><label>r<sub>y</sub> <span class="unit">(in)</span></label><input type="number" id="ry" value="2.54" step="0.01"></div>
+          <div class="field-group"><label>r<sub>ts</sub> <span class="unit">(in)</span></label><input type="number" id="rts" value="2.84" step="0.01"></div>
+        </div>
+        <div class="field-row">
+          <div class="field-group"><label>Z<sub>x</sub> <span class="unit">(in³)</span></label><input type="number" id="Zx" value="60.4" step="0.1"></div>
+          <div class="field-group"><label>S<sub>x</sub> <span class="unit">(in³)</span></label><input type="number" id="Sx" value="54.6" step="0.1"></div>
+        </div>
+        <div class="field-row">
+          <div class="field-group"><label>J <span class="unit">(in⁴)</span></label><input type="number" id="J" value="1.39" step="0.001"></div>
+          <div class="field-group"><label>h<sub>o</sub> <span class="unit">(in)</span></label><input type="number" id="ho" value="9.42" step="0.01"></div>
+        </div>
+        <div class="field-row">
+          <div class="field-group"><label>b<sub>f</sub>/2t<sub>f</sub> <span class="unit">(λ flange)</span></label><input type="number" id="lamF" value="8.92" step="0.01"></div>
+          <div class="field-group"><label>h/t<sub>w</sub> <span class="unit">(λ web)</span></label><input type="number" id="lamW" value="23.1" step="0.1"></div>
+        </div>
+
+        <div class="hr"></div>
+        <h2><span class="n">4</span>Loads</h2>
+        <div class="field-row">
+          <div class="field-group"><label>P<sub>D</sub> axial <span class="unit">(kip)</span></label><input type="number" id="PD" value="35" step="1"></div>
+          <div class="field-group"><label>P<sub>L</sub> axial <span class="unit">(kip)</span></label><input type="number" id="PL" value="99" step="1"></div>
+        </div>
+        <div class="field-row">
+          <div class="field-group"><label>Q<sub>D</sub> lateral <span class="unit">(kip)</span></label><input type="number" id="QD" value="5" step="0.5"></div>
+          <div class="field-group"><label>Q<sub>L</sub> lateral <span class="unit">(kip)</span></label><input type="number" id="QL" value="12" step="0.5"></div>
+        </div>
+
+        <div class="hr"></div>
+        <h2><span class="n">5</span>Geometry &amp; Bracing</h2>
+        <div class="field-group">
+          <label>Length L = L<sub>b</sub> = <span id="LVal" style="color:var(--cyan)">17.0</span> ft &nbsp; (pinned both ends, unbraced except at ends)</label>
+          <input type="range" id="Lft" min="4" max="40" step="0.1" value="17">
+        </div>
+        <div class="field-row">
+          <div class="field-group"><label>L exact <span class="unit">(ft)</span></label><input type="number" id="LftNum" value="17" step="0.1"></div>
+          <div class="field-group"><label>K</label><input type="number" id="K" value="1.0" step="0.05"></div>
+        </div>
+        <div class="field-group"><label>C<sub>b</sub></label><input type="number" id="Cb" value="1.32" step="0.01"></div>
+      </div>
+    </div>
+
+    <!-- RESULTS PANEL -->
+    <div>
+      <div class="panel">
+        <h2><span class="n">6</span>Compactness Classification</h2>
+        <div class="badges" id="badges"></div>
+
+        <div class="answer-box">
+          <div class="item"><div class="k">Factored Axial, P<sub>u</sub></div><div class="v" id="PuOut">— <small>kip</small></div></div>
+          <div class="item"><div class="k">Column Capacity, φ<sub>c</sub>P<sub>n</sub></div><div class="v" id="phiPnOut">— <small>kip</small></div></div>
+          <div class="item"><div class="k">1st-Order Moment, M<sub>ux</sub></div><div class="v" id="Mux0Out">— <small>kip-in</small></div></div>
+          <div class="item"><div class="k">Flexural Capacity, φ<sub>b</sub>M<sub>nx</sub></div><div class="v" id="phiMnxOut">— <small>kip-in</small></div></div>
+          <div class="item"><div class="k">Amplification Factor, B<sub>1</sub></div><div class="v" id="B1Out">—</div></div>
+          <div class="item"><div class="k">Amplified Moment, B<sub>1</sub>M<sub>ux</sub></div><div class="v" id="MuxAmpOut">— <small>kip-in</small></div></div>
+
+          <div class="status-banner" id="statusBanner">
+            <span id="statusText">—</span>
+            <span class="eqtag" id="statusEq">—</span>
+          </div>
+        </div>
+
+        <table class="calc" id="calcTable"></table>
+      </div>
+
+      <div class="panel">
+        <h2><span class="n">7</span>P-M Interaction Diagram</h2>
+        <div style="font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--paper-dim); margin-bottom:10px;">
+          <span class="legend-swatch" style="background:var(--cyan);"></span>1st-order point (amplification neglected)
+          &nbsp;&nbsp;
+          <span class="legend-swatch" style="background:var(--amber);"></span>Amplified point (B<sub>1</sub> applied)
+        </div>
+        <div class="chart-wrap"><svg id="chart" viewBox="0 0 700 380" preserveAspectRatio="xMidYMid meet"></svg></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Interaction: P<sub>u</sub>/φ<sub>c</sub>P<sub>n</sub> + (8/9)(M<sub>ux</sub>/φ<sub>b</sub>M<sub>nx</sub>) ≤ 1.0 for P<sub>u</sub>/φ<sub>c</sub>P<sub>n</sub> ≥ 0.2 &nbsp;[Eq. H1-1a] &nbsp;·&nbsp;
+    P<sub>u</sub>/(2φ<sub>c</sub>P<sub>n</sub>) + (M<sub>ux</sub>/φ<sub>b</sub>M<sub>nx</sub>) ≤ 1.0 for P<sub>u</sub>/φ<sub>c</sub>P<sub>n</sub> &lt; 0.2 &nbsp;[Eq. H1-1b] &nbsp;·&nbsp;
+    φ<sub>c</sub>=0.90, φ<sub>b</sub>=0.90 &nbsp;·&nbsp; B<sub>1</sub>=C<sub>m</sub>/(1−P<sub>u</sub>/P<sub>e1</sub>), C<sub>m</sub>=1.0 &nbsp;[App. 8, Eq. 8-3]
+  </footer>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+/* =====================================================================
+   SECTION DATABASE — W10x49 verified against the worked example;
+   others are typical published values, included for comparison only.
+   ===================================================================== */
+const SECTIONS = {
+  "custom":  { label: "— Custom / manual entry —" },
+  "W10X49":  { label: "W10×49  (verified — matches worked example)", verified:true,
+               Ag:14.4, rx:4.35, ry:2.54, rts:2.84, Zx:60.4, Sx:54.6, J:1.39, ho:9.42, lamF:8.92, lamW:23.1 },
+  "W8X31":   { label: "W8×31",  Ag:9.13, rx:3.47, ry:2.02, rts:2.26, Zx:30.4, Sx:27.5, J:0.536, ho:7.57, lamF:9.19, lamW:22.3 },
+  "W8X24":   { label: "W8×24",  Ag:7.08, rx:3.42, ry:1.61, rts:1.81, Zx:23.1, Sx:20.9, J:0.346, ho:7.53, lamF:8.12, lamW:25.9 },
+  "W10X33":  { label: "W10×33", Ag:9.71, rx:4.19, ry:1.94, rts:2.20, Zx:38.8, Sx:35.0, J:0.583, ho:9.30, lamF:9.15, lamW:27.1 },
+  "W12X50":  { label: "W12×50", Ag:14.6, rx:5.18, ry:1.96, rts:2.25, Zx:71.9, Sx:64.2, J:1.71,  ho:11.6, lamF:6.31, lamW:26.8 },
+  "W12X26":  { label: "W12×26", Ag:7.65, rx:5.17, ry:1.51, rts:1.75, Zx:37.2, Sx:33.4, J:0.300, ho:11.8, lamF:8.54, lamW:47.2 },
+  "W14X30":  { label: "W14×30", Ag:8.85, rx:5.73, ry:1.49, rts:1.77, Zx:47.3, Sx:42.0, J:0.380, ho:13.4, lamF:8.74, lamW:45.4 },
+  "W16X31":  { label: "W16×31", Ag:9.13, rx:6.41, ry:1.17, rts:1.42, Zx:54.0, Sx:47.2, J:0.461, ho:15.5, lamF:6.28, lamW:51.6 },
+  "W18X35":  { label: "W18×35", Ag:10.3, rx:7.04, ry:1.22, rts:1.51, Zx:66.5, Sx:57.6, J:0.506, ho:17.3, lamF:7.06, lamW:53.5 },
+  "W21X44":  { label: "W21×44", Ag:13.0, rx:8.06, ry:1.26, rts:1.60, Zx:95.4, Sx:81.6, J:0.770, ho:20.3, lamF:7.22, lamW:53.6 },
+};
+
+function populateSectionSelect(){
+  const sel = $('sectionSelect');
+  sel.innerHTML = Object.entries(SECTIONS).map(([key,s])=>
+    `<option value="${key}">${s.label}</option>`).join('');
+  sel.value = 'W10X49';
+}
+
+function loadSection(key){
+  const s = SECTIONS[key];
+  if(!s || key==='custom') return;
+  $('Ag').value=s.Ag; $('rx').value=s.rx; $('ry').value=s.ry; $('rts').value=s.rts;
+  $('Zx').value=s.Zx; $('Sx').value=s.Sx; $('J').value=s.J; $('ho').value=s.ho;
+  $('lamF').value=s.lamF; $('lamW').value=s.lamW;
+  compute();
+}
+
+function classify(lam, lam_p, lam_r){
+  if(lam <= lam_p) return 'compact';
+  if(lam <= lam_r) return 'noncompact';
+  return 'slender';
+}
+
+/* =====================================================================
+   AISC 360 CALCULATION ENGINE
+   ===================================================================== */
+function computeAll(inp){
+  const {Fy,E,Ag,rx,ry,rts,Zx,Sx,J,ho,lamF,lamW,PD,PL,QD,QL,L_in,K,Cb} = inp;
+  const c = 1.0;
+
+  // ---- Factored loads (LRFD combo 1.2D + 1.6L) ----
+  const Pu = 1.2*PD + 1.6*PL;
+  const Qu = 1.2*QD + 1.6*QL;
+  const Mux0 = Qu * L_in / 4;   // point lateral load at midheight, pin-pin
+
+  // ---- AISC Table B4.1 compactness limits ----
+  const lam_pf = 0.38*Math.sqrt(E/Fy), lam_rf = 1.00*Math.sqrt(E/Fy);
+  const lam_pw = 3.76*Math.sqrt(E/Fy), lam_rw = 5.70*Math.sqrt(E/Fy);
+  const flangeClass = classify(lamF, lam_pf, lam_rf);
+  const webClass    = classify(lamW, lam_pw, lam_rw);
+
+  // ---- AISC E3 — Column (compression) capacity, governing axis ----
+  const KLrx = K*L_in/rx, KLry = K*L_in/ry;
+  const KLr_gov = Math.max(KLrx, KLry);
+  const lim = 4.71*Math.sqrt(E/Fy);
+  const Fe_gov = Math.PI*Math.PI*E/(KLr_gov*KLr_gov);
+  let Fcr;
+  if(KLr_gov <= lim){
+    Fcr = Math.pow(0.658, Fy/Fe_gov) * Fy;      // Eq. E3-2
+  } else {
+    Fcr = 0.877 * Fe_gov;                        // Eq. E3-3
+  }
+  const Pn = Ag*Fcr;
+  const phiPn = 0.9*Pn;
+  const govAxis = KLrx > KLry ? 'x' : 'y';
+
+  // ---- AISC F2/F3 — Flexural (strong-axis) capacity ----
+  const Mp = Fy*Zx, Mr = 0.7*Fy*Sx;
+  let Mn_flb;
+  if(flangeClass==='compact'){
+    Mn_flb = Mp;
+  } else if(flangeClass==='noncompact'){
+    Mn_flb = Mp - (Mp-Mr)*((lamF-lam_pf)/(lam_rf-lam_pf));
+  } else {
+    const kc = Math.min(0.763, Math.max(0.35, 4/Math.sqrt(lamW)));
+    Mn_flb = 0.9*E*kc*Sx/(lamF*lamF);
+  }
+
+  const Lp = 1.76*ry*Math.sqrt(E/Fy);
+  const Lr = 1.95*rts*(E/(0.7*Fy)) * Math.sqrt((J*c)/(Sx*ho)) *
+             Math.sqrt(1+Math.sqrt(1+6.76*Math.pow((0.7*Fy*Sx*ho)/(E*J*c),2)));
+  const Lb = L_in;
+  let Mn_ltb, zone;
+  if(Lb<=Lp){ zone='none'; Mn_ltb=Mp; }
+  else if(Lb<=Lr){
+    zone='inelastic';
+    Mn_ltb = Cb*(Mp-(Mp-Mr)*((Lb-Lp)/(Lr-Lp)));
+    Mn_ltb = Math.min(Mn_ltb, Mp);
+  } else {
+    zone='elastic';
+    const FcrLTB = Cb*Math.PI*Math.PI*E/((Lb/rts)*(Lb/rts)) *
+                   Math.sqrt(1+0.078*(J*c)/(Sx*ho)*Math.pow(Lb/rts,2));
+    Mn_ltb = Math.min(FcrLTB*Sx, Mp);
+  }
+  const Mnx = Math.min(Mn_flb, Mn_ltb);
+  const flexGoverns = Mn_flb < Mn_ltb ? 'FLB' : 'LTB';
+  const phiMnx = 0.9*Mnx;
+
+  // ---- Appendix 8 — B1 amplification (strong-axis Euler load) ----
+  const Fe_x = Math.PI*Math.PI*E/(KLrx*KLrx);
+  const Pe1 = Fe_x*Ag;
+  const Cm = 1.0;
+  let B1 = Cm/(1-Pu/Pe1);
+  if(B1 < 1.0) B1 = 1.0;
+  const MuxAmp = B1*Mux0;
+
+  // ---- AISC H1 interaction ----
+  const ratioPPn = Pu/phiPn;
+  function interactionValue(Mux){
+    if(ratioPPn >= 0.2){
+      return { val: ratioPPn + (8/9)*(Mux/phiMnx), eq:'H1-1a' };
+    } else {
+      return { val: ratioPPn/2 + (Mux/phiMnx), eq:'H1-1b' };
+    }
+  }
+  const first = interactionValue(Mux0);
+  const amped = interactionValue(MuxAmp);
+
+  return {
+    Pu, Qu, Mux0, flangeClass, webClass, lam_pf, lam_rf, lam_pw, lam_rw,
+    KLrx, KLry, KLr_gov, govAxis, lim, Fe_gov, Fcr, Pn, phiPn,
+    Mp, Mr, Mn_flb, Lp, Lr, Mn_ltb, zone, Mnx, flexGoverns, phiMnx,
+    Fe_x, Pe1, B1, MuxAmp, ratioPPn, first, amped
+  };
+}
+
+function fmt(x,d=1){ return Number(x).toFixed(d); }
+
+function compute(){
+  const inp = {
+    Fy:+$('Fy').value, E:+$('E').value, Ag:+$('Ag').value, rx:+$('rx').value,
+    ry:+$('ry').value, rts:+$('rts').value, Zx:+$('Zx').value, Sx:+$('Sx').value,
+    J:+$('J').value, ho:+$('ho').value, lamF:+$('lamF').value, lamW:+$('lamW').value,
+    PD:+$('PD').value, PL:+$('PL').value, QD:+$('QD').value, QL:+$('QL').value,
+    L_in:(+$('LftNum').value)*12, K:+$('K').value, Cb:+$('Cb').value
+  };
+  const r = computeAll(inp);
+
+  $('badges').innerHTML = `
+    <div class="badge ${r.flangeClass}"><span class="label">Flange</span><span class="val">${r.flangeClass}</span></div>
+    <div class="badge ${r.webClass}"><span class="label">Web</span><span class="val">${r.webClass}</span></div>
+    <div class="badge"><span class="label">Column governs</span><span class="val">${r.govAxis==='x'?'strong (x)':'weak (y)'} axis</span></div>
+  `;
+
+  $('PuOut').innerHTML       = `${fmt(r.Pu)} <small>kip</small>`;
+  $('phiPnOut').innerHTML    = `${fmt(r.phiPn)} <small>kip</small>`;
+  $('Mux0Out').innerHTML     = `${fmt(r.Mux0)} <small>kip-in</small>`;
+  $('phiMnxOut').innerHTML   = `${fmt(r.phiMnx)} <small>kip-in</small>`;
+  $('B1Out').innerHTML       = `${fmt(r.B1,3)}`;
+  $('MuxAmpOut').innerHTML   = `${fmt(r.MuxAmp)} <small>kip-in</small>`;
+
+  const banner = $('statusBanner');
+  const pass = r.amped.val <= 1.0;
+  banner.className = 'status-banner ' + (pass?'pass':'fail');
+  $('statusText').textContent = `Interaction ratio (amplified) = ${fmt(r.amped.val,3)} — ${pass?'OK':'EXCEEDS 1.0'}`;
+  $('statusEq').textContent = `AISC ${r.amped.eq}`;
+
+  $('calcTable').innerHTML = `
+    <tr><th>Quantity</th><th>Formula / Basis</th><th>Result</th></tr>
+
+    <tr class="section-head"><td colspan="3">Loads</td></tr>
+    <tr><td>Factored axial</td><td class="formula">P<sub>u</sub> = 1.2P<sub>D</sub> + 1.6P<sub>L</sub></td><td class="result">${fmt(r.Pu)} kip</td></tr>
+    <tr><td>Factored lateral</td><td class="formula">Q<sub>u</sub> = 1.2Q<sub>D</sub> + 1.6Q<sub>L</sub></td><td class="result">${fmt(r.Qu)} kip</td></tr>
+    <tr><td>1st-order moment</td><td class="formula">M<sub>ux</sub> = Q<sub>u</sub>L/4</td><td class="result">${fmt(r.Mux0)} kip-in</td></tr>
+
+    <tr class="section-head"><td colspan="3">Column Capacity — AISC E3</td></tr>
+    <tr><td>KL/r<sub>x</sub> , KL/r<sub>y</sub></td><td class="formula">governing axis: ${r.govAxis==='x'?'strong (x)':'weak (y)'}</td><td class="result">${fmt(r.KLrx,2)} / ${fmt(r.KLry,2)}</td></tr>
+    <tr><td>4.71√(E/F<sub>y</sub>)</td><td class="formula">elastic/inelastic threshold</td><td class="result">${fmt(r.lim,1)}</td></tr>
+    <tr><td>F<sub>e</sub> (governing)</td><td class="formula">π²E/(KL/r)² &nbsp;[Eq. E3-4]</td><td class="result">${fmt(r.Fe_gov,2)} ksi</td></tr>
+    <tr><td>F<sub>cr</sub></td><td class="formula">${r.KLr_gov<=r.lim?'0.658^(Fy/Fe)·Fy [Eq. E3-2]':'0.877·Fe [Eq. E3-3]'}</td><td class="result">${fmt(r.Fcr,2)} ksi</td></tr>
+    <tr class="governing"><td>φ<sub>c</sub>P<sub>n</sub></td><td class="formula">0.9·A<sub>g</sub>·F<sub>cr</sub></td><td class="result">${fmt(r.phiPn)} kip</td></tr>
+    <tr><td>P<sub>u</sub>/φ<sub>c</sub>P<sub>n</sub></td><td class="formula">selects H1-1a (≥0.2) or H1-1b (&lt;0.2)</td><td class="result">${fmt(r.ratioPPn,3)}</td></tr>
+
+    <tr class="section-head"><td colspan="3">Flexural Capacity — AISC F2/F3 (strong axis)</td></tr>
+    <tr><td>M<sub>p</sub></td><td class="formula">F<sub>y</sub>Z<sub>x</sub> &nbsp;[Eq. F2-1]</td><td class="result">${fmt(r.Mp)} kip-in</td></tr>
+    <tr class="${r.flexGoverns==='FLB'?'governing':''}"><td>M<sub>n</sub> (FLB)</td><td class="formula">AISC-F3, flange: ${r.flangeClass}</td><td class="result">${fmt(r.Mn_flb)} kip-in</td></tr>
+    <tr><td>L<sub>p</sub> / L<sub>r</sub></td><td class="formula">Eq. F2-5 / F2-6</td><td class="result">${fmt(r.Lp/12,2)} / ${fmt(r.Lr/12,2)} ft</td></tr>
+    <tr class="${r.flexGoverns==='LTB'?'governing':''}"><td>M<sub>n</sub> (LTB)</td><td class="formula">zone: ${r.zone}, C<sub>b</sub>=${fmt(inp.Cb,2)}</td><td class="result">${fmt(r.Mn_ltb)} kip-in</td></tr>
+    <tr class="governing"><td>φ<sub>b</sub>M<sub>nx</sub></td><td class="formula">0.9·min(M<sub>n,FLB</sub>, M<sub>n,LTB</sub>)</td><td class="result">${fmt(r.phiMnx)} kip-in</td></tr>
+
+    <tr class="section-head"><td colspan="3">Moment Amplification — Appendix 8</td></tr>
+    <tr><td>F<sub>e</sub> (strong axis)</td><td class="formula">π²E/(KL/r<sub>x</sub>)²</td><td class="result">${fmt(r.Fe_x,2)} ksi</td></tr>
+    <tr><td>P<sub>e1</sub></td><td class="formula">F<sub>e,x</sub>·A<sub>g</sub></td><td class="result">${fmt(r.Pe1)} kip</td></tr>
+    <tr class="governing"><td>B<sub>1</sub></td><td class="formula">C<sub>m</sub>/(1−P<sub>u</sub>/P<sub>e1</sub>), C<sub>m</sub>=1.0 &nbsp;[Eq. 8-3]</td><td class="result">${fmt(r.B1,3)}</td></tr>
+    <tr><td>Amplified M<sub>ux</sub></td><td class="formula">B<sub>1</sub>·M<sub>ux</sub></td><td class="result">${fmt(r.MuxAmp)} kip-in</td></tr>
+
+    <tr class="section-head"><td colspan="3">Interaction — AISC H1</td></tr>
+    <tr><td>Ratio (1st-order, unamplified)</td><td class="formula">${r.first.eq}</td><td class="result">${fmt(r.first.val,3)}</td></tr>
+    <tr class="${r.amped.val<=1.0?'':'governing'}"><td><strong>Ratio (amplified, governing)</strong></td><td class="formula">${r.amped.eq}</td><td class="result"><strong>${fmt(r.amped.val,3)}</strong></td></tr>
+  `;
+
+  drawChart(r);
+}
+
+function drawChart(r){
+  const svg = $('chart');
+  const W=700,H=380, ML=64,MR=20,MT=20,MB=44;
+  const plotW=W-ML-MR, plotH=H-MT-MB;
+  const xMax=1.3, yMax=1.05;
+  const xScale = m => ML + (m/xMax)*plotW;
+  const yScale = p => MT + plotH - (p/yMax)*plotH;
+
+  // AISC H1 boundary: for P/Pn>=0.2 -> M/Mn = 9/8*(1-P/Pn); for P/Pn<0.2 -> M/Mn = 1-P/(2Pn)
+  let pts=[];
+  const N=100;
+  for(let i=0;i<=N;i++){
+    const Pfrac = i/N; // 0..1
+    let Mfrac;
+    if(Pfrac>=0.2){ Mfrac = (9/8)*(1-Pfrac); }
+    else { Mfrac = 1-(Pfrac/2); }
+    pts.push([Mfrac, Pfrac]);
+  }
+  const path = pts.map((p,i)=>`${i===0?'M':'L'} ${xScale(p[0]).toFixed(1)} ${yScale(p[1]).toFixed(1)}`).join(' ');
+
+  const yP = r.ratioPPn;
+  const xM1 = r.Mux0/r.phiMnx;
+  const xM2 = r.MuxAmp/r.phiMnx;
+  const p1 = [xScale(xM1), yScale(yP)];
+  const p2 = [xScale(xM2), yScale(yP)];
+
+  let grid='';
+  for(let i=0;i<=5;i++){
+    const yFrac=i/5, y=MT+plotH*yFrac;
+    grid += `<line class="gridline" x1="${ML}" y1="${y}" x2="${W-MR}" y2="${y}"/>`;
+    const pval = yMax*(1-yFrac);
+    grid += `<text class="axis-label" x="${ML-8}" y="${y+4}" text-anchor="end">${pval.toFixed(2)}</text>`;
+  }
+  for(let i=0;i<=6;i++){
+    const xFrac=i/6, x=ML+plotW*xFrac;
+    const mval = xMax*xFrac;
+    grid += `<text class="axis-label" x="${x}" y="${H-MB+18}" text-anchor="middle">${mval.toFixed(2)}</text>`;
+  }
+
+  svg.innerHTML = `
+    ${grid}
+    <line x1="${ML}" y1="${MT}" x2="${ML}" y2="${H-MB}" stroke="var(--line)"/>
+    <line x1="${ML}" y1="${H-MB}" x2="${W-MR}" y2="${H-MB}" stroke="var(--line)"/>
+    <text class="axis-label" x="${ML+plotW/2}" y="${H-6}" text-anchor="middle">M_ux / φ_b M_nx</text>
+    <text class="axis-label" x="16" y="${MT+plotH/2}" text-anchor="middle" transform="rotate(-90 16 ${MT+plotH/2})">P_u / φ_c P_n</text>
+
+    <path d="${path}" class="curve-h1"/>
+
+    <line x1="${p1[0]}" y1="${p1[1]}" x2="${p2[0]}" y2="${p2[1]}" class="conn-line"/>
+    <circle cx="${p1[0]}" cy="${p1[1]}" r="6" class="pt-first"/>
+    <circle cx="${p2[0]}" cy="${p2[1]}" r="6" class="pt-amp"/>
+  `;
+}
+
+['Fy','E','Ag','rx','ry','rts','Zx','Sx','J','ho','lamF','lamW','PD','PL','QD','QL','K','Cb'].forEach(id=>{
+  $(id).addEventListener('input', compute);
+});
+$('Lft').addEventListener('input', ()=>{ $('LftNum').value=$('Lft').value; $('LVal').textContent=(+$('Lft').value).toFixed(1); compute(); });
+$('LftNum').addEventListener('input', ()=>{ $('Lft').value=$('LftNum').value; $('LVal').textContent=(+$('LftNum').value).toFixed(1); compute(); });
+
+populateSectionSelect();
+loadSection('W10X49');
+compute();
+</script>
+</body>
+</html>

@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Shear Lag Factor (U) Calculator — AISC Table D3.1</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:        #101c26;
+    --panel:     #142230;
+    --panel-2:   #0d1720;
+    --line:      #2b3f4f;
+    --line-lt:   #3a5266;
+    --amber:     #e2a13a;
+    --amber-dim: #7a5a26;
+    --text:      #e7edf3;
+    --text-dim:  #8fa3b5;
+    --text-mute: #5d7284;
+    --ok:        #6ec6a0;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--line) 1px, transparent 1px) 0 0/32px 32px,
+      linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0/32px 32px,
+      var(--bg);
+    background-blend-mode: normal, normal, normal;
+    opacity: 1;
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    padding:28px 16px 60px;
+  }
+  body::before{content:none;}
+  .wrap{max-width:960px;margin:0 auto;background:rgba(16,28,38,0.55);}
+
+  .titleblock{
+    border:1px solid var(--line-lt);
+    background:var(--panel-2);
+    padding:18px 22px;
+    margin-bottom:20px;
+    position:relative;
+  }
+  .titleblock::before{
+    content:"";
+    position:absolute; top:6px; left:6px; right:6px; bottom:6px;
+    border:1px solid var(--line);
+    pointer-events:none;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    color:var(--amber);
+    text-transform:uppercase;
+  }
+  h1{
+    font-family:'Oswald',sans-serif;
+    font-weight:600;
+    font-size:26px;
+    letter-spacing:.02em;
+    margin:4px 0 6px;
+    color:var(--text);
+  }
+  .sub{
+    color:var(--text-dim);
+    font-size:13px;
+    line-height:1.6;
+    max-width:640px;
+  }
+  .refline{
+    margin-top:10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--text-mute);
+    border-top:1px dashed var(--line);
+    padding-top:8px;
+  }
+
+  .grid{display:grid;grid-template-columns: 1fr 1fr;gap:18px;}
+  @media(max-width:720px){.grid{grid-template-columns:1fr;}}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    padding:18px 20px;
+  }
+  .card h2{
+    font-family:'Oswald',sans-serif;
+    font-weight:500;
+    font-size:14px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--amber);
+    margin:0 0 14px;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--line);
+  }
+
+  label{
+    display:block;
+    font-size:12px;
+    color:var(--text-dim);
+    margin:12px 0 5px;
+  }
+  label:first-of-type{margin-top:0;}
+  select, input[type=number]{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--line-lt);
+    color:var(--text);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    padding:8px 10px;
+  }
+  select:focus, input:focus{outline:1px solid var(--amber);}
+
+  .hint{font-size:11px;color:var(--text-mute);margin-top:4px;line-height:1.5;}
+
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+  .subfields{
+    margin-top:8px;
+    padding:12px 14px;
+    background:var(--panel-2);
+    border-left:2px solid var(--amber-dim);
+  }
+  .hidden{display:none;}
+
+  .result{
+    background:var(--panel-2);
+    border:1px solid var(--line-lt);
+    padding:20px;
+  }
+  .result .u-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.1em;
+    color:var(--text-mute);
+    text-transform:uppercase;
+  }
+  .u-value{
+    font-family:'Oswald',sans-serif;
+    font-size:52px;
+    font-weight:600;
+    color:var(--amber);
+    line-height:1.1;
+    margin:6px 0 10px;
+  }
+  .u-value span{font-size:22px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;}
+  .case-tag{
+    display:inline-block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--ok);
+    border:1px solid var(--ok);
+    padding:2px 8px;
+    margin-bottom:10px;
+  }
+  .formula{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    color:var(--text-dim);
+    background:var(--bg);
+    border:1px solid var(--line);
+    padding:10px 12px;
+    margin-top:10px;
+    white-space:pre-wrap;
+    line-height:1.7;
+  }
+  .note{
+    margin-top:12px;
+    font-size:12px;
+    color:var(--text-dim);
+    line-height:1.6;
+    border-top:1px dashed var(--line);
+    padding-top:10px;
+  }
+  .note b{color:var(--amber);}
+  .err{color:#e28080;font-size:12px;margin-top:10px;}
+
+  .wide{margin-top:20px;}
+  .capgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:720px){.capgrid{grid-template-columns:1fr;}}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  @media(max-width:560px){.row3{grid-template-columns:1fr;}}
+  .uread{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--bg); border:1px solid var(--line); padding:8px 12px;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--text-dim);
+    margin-top:4px;
+  }
+  .uread b{color:var(--amber);font-size:14px;}
+  table.cap{width:100%; border-collapse:collapse; margin-top:6px; font-family:'IBM Plex Mono',monospace; font-size:12.5px;}
+  table.cap th{text-align:left; color:var(--text-mute); font-weight:500; font-size:11px; text-transform:uppercase; letter-spacing:.05em; padding:6px 8px; border-bottom:1px solid var(--line-lt);}
+  table.cap td{padding:7px 8px; border-bottom:1px solid var(--line); color:var(--text);}
+  table.cap tr.gov td{color:var(--amber);}
+  .gov-badge{font-size:10px;border:1px solid var(--ok);color:var(--ok);padding:1px 6px;margin-left:6px;}
+  .final{
+    margin-top:14px; padding:14px 16px; background:var(--bg); border:1px solid var(--line-lt);
+  }
+  .final .flabel{font-size:11px;color:var(--text-mute);text-transform:uppercase;letter-spacing:.08em;font-family:'IBM Plex Mono',monospace;}
+  .final .fval{font-family:'Oswald',sans-serif;font-size:28px;color:var(--amber);margin-top:4px;}
+
+  .steps{margin-top:14px;}
+  .step{
+    display:grid;
+    grid-template-columns:34px 1fr;
+    gap:12px;
+    padding:12px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .step:last-child{border-bottom:none;}
+  .step .num{
+    font-family:'Oswald',sans-serif;
+    font-size:14px;
+    color:var(--amber-dim);
+    border:1px solid var(--amber-dim);
+    width:28px;height:28px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .step .body .stitle{font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+  .step .body .sform{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--text);line-height:1.7;white-space:pre-wrap;}
+  .step .body .sval{font-family:'Oswald',sans-serif;font-size:18px;color:var(--amber);margin-top:2px;}
+  .row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;}
+  @media(max-width:680px){.row4{grid-template-columns:1fr 1fr;}}
+  .method-toggle{display:flex;gap:0;margin-top:0;}
+  .method-toggle button{
+    flex:1; background:var(--panel-2); border:1px solid var(--line-lt); color:var(--text-dim);
+    font-family:'IBM Plex Mono',monospace; font-size:12px; padding:8px 0; cursor:pointer;
+  }
+  .method-toggle button.active{background:var(--amber-dim); color:var(--text); border-color:var(--amber);}
+
+  .checkgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:720px){.checkgrid{grid-template-columns:1fr;}}
+  .propline{
+    display:flex; justify-content:space-between;
+    font-family:'IBM Plex Mono',monospace; font-size:12.5px;
+    padding:6px 0; border-bottom:1px solid var(--line);
+  }
+  .propline span:first-child{color:var(--text-dim);}
+  .checkrow{
+    display:grid; grid-template-columns:1fr auto auto;
+    gap:10px; align-items:center;
+    font-family:'IBM Plex Mono',monospace; font-size:12.5px;
+    padding:8px 0; border-bottom:1px solid var(--line);
+  }
+  .checkrow .have{color:var(--text-dim);}
+  .pass{color:var(--ok); font-weight:600;}
+  .fail{color:#e28080; font-weight:600;}
+  .verdict{
+    margin-top:14px; padding:16px; text-align:center;
+    font-family:'Oswald',sans-serif; font-size:22px; letter-spacing:.03em;
+  }
+  .verdict.pass{background:rgba(110,198,160,0.12); border:1px solid var(--ok); color:var(--ok);}
+  .verdict.fail{background:rgba(226,128,128,0.12); border:1px solid #e28080; color:#e28080;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="titleblock">
+    <div class="eyebrow">AISC 360 &middot; Table D3.1, Chapter D &amp; Manual Table 1-7</div>
+    <h1>Shear lag factor &amp; tension member design</h1>
+    <div class="sub">Sections 01–03 compute U and check a known section. Section 04 sizes a trial member from your loads. Section 05 pulls real single-angle properties from AISC Manual Table 1-7 and checks whether a chosen angle satisfies the requirements from section 04.</div>
+    <div class="refline">Ae = U &middot; An&nbsp;&nbsp;|&nbsp;&nbsp;Tn = Fu &middot; Ae &nbsp; (fracture limit state)</div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>01 &middot; Member / connection</h2>
+
+      <label for="memberType">Member and connection type</label>
+      <select id="memberType">
+        <option value="case1">All elements connected directly (bolts or welds) — Case 1</option>
+        <option value="case3">Transverse welds to some elements only — Case 3</option>
+        <option value="w_flange">W, M, S, HP or cut tee — flange bolted (≥3 fasteners/line) — Case 7</option>
+        <option value="w_web">W, M, S, HP — web bolted (≥4 fasteners/line) — Case 7</option>
+        <option value="angle">Single angle — bolted — Case 8</option>
+        <option value="plate_long">Plate — longitudinal welds only — Case 4</option>
+        <option value="hss_round">Round HSS, single concentric gusset — Case 5</option>
+        <option value="hss_rect_single">Rectangular HSS, single concentric gusset — Case 6</option>
+        <option value="hss_rect_two">Rectangular HSS, two side gusset plates — Case 6</option>
+        <option value="general">Channel / general shape (not plate or HSS) — Case 2</option>
+      </select>
+
+      <div id="fields"></div>
+    </div>
+
+    <div class="card">
+      <h2>02 &middot; Result</h2>
+      <div id="resultBox" class="result">
+        <div class="u-label">Shear lag factor</div>
+        <div class="u-value" id="uOut">—</div>
+        <div id="caseTag"></div>
+        <div class="formula" id="formulaOut"></div>
+        <div class="note" id="noteOut"></div>
+        <div class="err" id="errOut"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card wide">
+    <h2>03 &middot; Net area &amp; tension capacity</h2>
+    <div class="capgrid">
+      <div>
+        <label>Gross area, A<sub>g</sub> (in&sup2;)</label>
+        <input type="number" id="Ag" step="0.01" value="4.75">
+
+        <label>Net area, A<sub>n</sub> (in&sup2;)</label>
+        <input type="number" id="An" step="0.01" value="4.25">
+        <div class="hint">A<sub>n</sub> = A<sub>g</sub> minus hole deductions along the controlling (usually staggered) path — work that out first, e.g. with the net-area / staggered-hole rules on the previous slide, then enter the result here.</div>
+
+        <label style="margin-top:16px;">Shear lag factor, U</label>
+        <div class="uread">
+          <span>From section 01–02 above</span>
+          <b id="uReadout">—</b>
+        </div>
+        <label style="margin-top:10px;">
+          <input type="checkbox" id="uOverrideChk" style="width:auto;vertical-align:middle;margin-right:6px;">
+          Override U manually
+        </label>
+        <input type="number" id="uOverride" step="0.001" placeholder="e.g. 0.93" class="hidden" style="margin-top:6px;">
+      </div>
+
+      <div>
+        <label>Yield stress, F<sub>y</sub> (ksi)</label>
+        <input type="number" id="Fy" step="0.1" value="50">
+        <label>Tensile strength, F<sub>u</sub> (ksi)</label>
+        <input type="number" id="Fu" step="0.1" value="65">
+
+        <label style="margin-top:16px;">Optional — service load ratio (for ASD back-check)</label>
+        <div class="field-row">
+          <div><label>Live / Dead ratio</label><input type="number" id="ldRatio" step="0.1" placeholder="e.g. 3"></div>
+        </div>
+        <div class="hint">If given, back-solves D and L from D + L = allowable service capacity.</div>
+      </div>
+    </div>
+
+    <div id="capOut"></div>
+  </div>
+
+  <div class="card wide">
+    <h2>04 &middot; Full design — step by step</h2>
+    <button type="button" id="loadExampleBtn" style="width:100%;margin-bottom:16px;background:var(--amber-dim);color:var(--text);border:1px solid var(--amber);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:9px 0;cursor:pointer;">
+      Load slide example — D=35k, L=70k, A36, 8 bolts (¾&Prime;) → checks L6x4x5/8
+    </button>
+    <div class="capgrid">
+      <div>
+        <label>Design method</label>
+        <div class="method-toggle">
+          <button type="button" id="btnLRFD" class="active">LRFD</button>
+          <button type="button" id="btnASD">ASD</button>
+        </div>
+
+        <label style="margin-top:16px;">Service dead load, D (kip)</label>
+        <input type="number" id="dLoad" step="0.1" value="35">
+        <label>Service live load, L (kip)</label>
+        <input type="number" id="lLoad" step="0.1" value="70">
+
+        <label style="margin-top:16px;">Yield stress, F<sub>y</sub> (ksi)</label>
+        <input type="number" id="dFy" step="0.1" value="36">
+        <label>Tensile strength, F<sub>u</sub> (ksi)</label>
+        <input type="number" id="dFu" step="0.1" value="58">
+      </div>
+
+      <div>
+        <label>Member length (ft) — for slenderness check</label>
+        <input type="number" id="dLen" step="0.5" value="15">
+
+        <label style="margin-top:16px;">Bolt diameter (in)</label>
+        <input type="number" id="dBoltDia" step="0.01" value="0.75">
+        <div class="row4" style="margin-top:6px;">
+          <div><label>Fasteners per line</label>
+            <select id="dFastCount">
+              <option value="4" selected>4 or more</option>
+              <option value="23">2 or 3</option>
+            </select>
+          </div>
+          <div><label>Holes on critical line</label><input type="number" id="dHoles" step="1" value="2"></div>
+        </div>
+        <div class="hint">Fastener count sets the assumed shear lag U per Case 8 (single angle: U=0.80 for 4+, U=0.60 for 2–3). Change U below if the member isn't a bolted single angle.</div>
+
+        <label style="margin-top:16px;">Assumed shear lag factor, U</label>
+        <input type="number" id="dU" step="0.01" value="0.80">
+        <div class="hint">Prefilled from the fastener count above — override for other member/connection types (see sections 01–02).</div>
+
+        <label style="margin-top:16px;">Trial thickness, t (in) — first estimate only</label>
+        <input type="number" id="dThk" step="0.01" value="0.75">
+        <div class="hint">This is only a guess used to get a rough Ag,req(net) for picking a starting size — it is <b>not</b> a required/governing thickness. Once you pick a real angle in section 05, its actual thickness is used to compute the real net area and capacity, which is the true check.</div>
+      </div>
+    </div>
+
+    <div id="designOut" class="steps"></div>
+  </div>
+
+  <div class="card wide">
+    <h2>05 &middot; Check a trial angle — AISC Manual Table 1-7</h2>
+    <div class="hint" style="margin-bottom:12px;">Properties (A<sub>g</sub>, t, r<sub>z</sub>) are read from AISC Manual, 14th Ed., Table 1-7 (single angles). No thickness is "required" in isolation — pick a size below and the code uses <b>its own actual thickness</b> to compute the real net area and capacity, then checks that against the actual demand load from section 04. That's the governing check, not the trial t you typed in section 04.</div>
+    <div class="checkgrid">
+      <div>
+        <label>Angle</label>
+        <select id="angleSelect"></select>
+        <div id="angleProps" style="margin-top:10px;"></div>
+      </div>
+      <div>
+        <div class="hint">Demand, from section 04:</div>
+        <div class="propline"><span>Design load</span><span id="reqLoadOut">—</span></div>
+        <div class="propline"><span>Method</span><span id="reqMethodOut">—</span></div>
+        <div class="propline"><span>U assumed (fastener count)</span><span id="reqUOut">—</span></div>
+        <div class="propline"><span>Required r<sub>min</sub> (L/300)</span><span id="reqRzOut">—</span></div>
+        <button type="button" id="useInSec03" style="margin-top:12px;width:100%;">Use this angle's A<sub>g</sub> &amp; U=0.80/0.60 in section 03 &rarr;</button>
+      </div>
+    </div>
+
+    <div id="angleCapOut" style="margin-top:16px;"></div>
+
+    <div id="checkRows" style="margin-top:8px;"></div>
+    <div id="verdictOut"></div>
+  </div>
+
+</div>
+
+<script>
+const ANGLES = [
+["L8x8x1-1/8",16.8,56.9,1.125,1.56],["L8x8x1",15.1,51.0,1.0,1.56],["L8x8x7/8",13.3,45.0,0.875,1.57],
+["L8x8x3/4",11.5,38.9,0.75,1.57],["L8x8x5/8",9.69,32.7,0.625,1.58],["L8x8x9/16",8.77,29.6,0.5625,1.58],
+["L8x8x1/2",7.84,26.4,0.5,1.59],
+["L8x6x1",13.1,44.2,1.0,1.28],["L8x6x7/8",11.5,39.1,0.875,1.28],["L8x6x3/4",9.99,33.8,0.75,1.29],
+["L8x6x5/8",8.41,28.5,0.625,1.29],["L8x6x9/16",7.61,25.7,0.5625,1.30],["L8x6x1/2",6.80,23.0,0.5,1.30],
+["L8x6x7/16",5.99,20.2,0.4375,1.31],
+["L8x4x1",11.1,37.4,1.0,0.844],["L8x4x7/8",9.79,33.1,0.875,0.846],["L8x4x3/4",8.49,28.7,0.75,0.850],
+["L8x4x5/8",7.16,24.2,0.625,0.856],["L8x4x9/16",6.49,21.9,0.5625,0.859],["L8x4x1/2",5.80,19.6,0.5,0.863],
+["L8x4x7/16",5.11,17.2,0.4375,0.867],
+["L7x4x3/4",7.74,26.2,0.75,0.855],["L7x4x5/8",6.50,22.1,0.625,0.860],["L7x4x1/2",5.26,17.9,0.5,0.866],
+["L7x4x7/16",4.63,15.7,0.4375,0.869],["L7x4x3/8",4.00,13.6,0.375,0.873],
+["L6x6x1",11.0,37.4,1.0,1.17],["L6x6x7/8",9.75,33.1,0.875,1.17],["L6x6x3/4",8.46,28.7,0.75,1.17],
+["L6x6x5/8",7.13,24.2,0.625,1.17],["L6x6x9/16",6.45,21.9,0.5625,1.18],["L6x6x1/2",5.77,19.6,0.5,1.18],
+["L6x6x7/16",5.08,17.2,0.4375,1.18],["L6x6x3/8",4.38,14.9,0.375,1.19],["L6x6x5/16",3.67,12.4,0.3125,1.19],
+["L6x4x7/8",8.00,27.2,0.875,0.854],["L6x4x3/4",6.94,23.6,0.75,0.856],["L6x4x5/8",5.86,20.0,0.625,0.859],
+["L6x4x9/16",5.31,18.1,0.5625,0.861],["L6x4x1/2",4.75,16.2,0.5,0.864],["L6x4x7/16",4.18,14.3,0.4375,0.867],
+["L6x4x3/8",3.61,12.3,0.375,0.870],["L6x4x5/16",3.03,10.3,0.3125,0.874],
+["L6x3-1/2x1/2",4.50,15.3,0.5,0.756],["L6x3-1/2x3/8",3.44,11.7,0.375,0.763],["L6x3-1/2x5/16",2.89,9.80,0.3125,0.767],
+["L5x5x7/8",8.00,27.2,0.875,0.971],["L5x5x3/4",6.98,23.6,0.75,0.972],["L5x5x5/8",5.90,20.0,0.625,0.975],
+["L5x5x1/2",4.79,16.2,0.5,0.980],["L5x5x7/16",4.22,14.3,0.4375,0.983],["L5x5x3/8",3.65,12.3,0.375,0.986],
+["L5x5x5/16",3.07,10.3,0.3125,0.990],
+["L5x3-1/2x3/4",5.85,19.8,0.75,0.744],["L5x3-1/2x5/8",4.93,16.8,0.625,0.746],["L5x3-1/2x1/2",4.00,13.6,0.5,0.750],
+["L5x3-1/2x3/8",3.05,10.4,0.375,0.755],["L5x3-1/2x5/16",2.56,8.70,0.3125,0.758],["L5x3-1/2x1/4",2.07,7.00,0.25,0.761],
+["L5x3x1/2",3.75,12.8,0.5,0.642],["L5x3x7/16",3.31,11.3,0.4375,0.644],["L5x3x3/8",2.86,9.80,0.375,0.646],
+["L5x3x5/16",2.41,8.20,0.3125,0.649],["L5x3x1/4",1.94,6.60,0.25,0.652],
+["L4x4x3/4",5.44,18.5,0.75,0.774],["L4x4x5/8",4.61,15.7,0.625,0.774],["L4x4x1/2",3.75,12.8,0.5,0.776],
+["L4x4x7/16",3.30,11.3,0.4375,0.777],["L4x4x3/8",2.86,9.80,0.375,0.779],["L4x4x5/16",2.40,8.20,0.3125,0.781],
+["L4x4x1/4",1.93,6.60,0.25,0.783],
+["L4x3-1/2x1/2",3.50,11.9,0.5,0.716],["L4x3-1/2x3/8",2.68,9.10,0.375,0.719],["L4x3-1/2x5/16",2.25,7.70,0.3125,0.721],
+["L4x3-1/2x1/4",1.82,6.20,0.25,0.723],
+["L4x3x5/8",3.99,13.6,0.625,0.631],["L4x3x1/2",3.25,11.1,0.5,0.633],["L4x3x3/8",2.49,8.50,0.375,0.636],
+["L4x3x5/16",2.09,7.20,0.3125,0.638],["L4x3x1/4",1.69,5.80,0.25,0.639],
+["L3-1/2x3-1/2x1/2",3.25,11.1,0.5,0.679],["L3-1/2x3-1/2x7/16",2.89,9.80,0.4375,0.681],["L3-1/2x3-1/2x3/8",2.50,8.50,0.375,0.683],
+["L3-1/2x3-1/2x5/16",2.10,7.20,0.3125,0.685],["L3-1/2x3-1/2x1/4",1.70,5.80,0.25,0.688],
+["L3-1/2x3x1/2",3.02,10.2,0.5,0.618],["L3-1/2x3x7/16",2.67,9.10,0.4375,0.620],["L3-1/2x3x3/8",2.32,7.90,0.375,0.622],
+["L3-1/2x3x5/16",1.95,6.60,0.3125,0.624],["L3-1/2x3x1/4",1.58,5.40,0.25,0.628],
+["L3-1/2x2-1/2x1/2",2.77,9.40,0.5,0.532],["L3-1/2x2-1/2x3/8",2.12,7.20,0.375,0.535],["L3-1/2x2-1/2x5/16",1.79,6.10,0.3125,0.538],
+["L3-1/2x2-1/2x1/4",1.45,4.90,0.25,0.541],
+["L3x3x1/2",2.76,9.40,0.5,0.580],["L3x3x7/16",2.43,8.30,0.4375,0.580],["L3x3x3/8",2.11,7.20,0.375,0.581],
+["L3x3x5/16",1.78,6.10,0.3125,0.583],["L3x3x1/4",1.44,4.90,0.25,0.585],["L3x3x3/16",1.09,3.71,0.1875,0.586],
+["L3x2-1/2x1/2",2.50,8.50,0.5,0.516],["L3x2-1/2x7/16",2.22,7.60,0.4375,0.516],["L3x2-1/2x3/8",1.93,6.60,0.375,0.517],
+["L3x2-1/2x5/16",1.63,5.60,0.3125,0.518],["L3x2-1/2x1/4",1.32,4.50,0.25,0.520],["L3x2-1/2x3/16",1.00,3.39,0.1875,0.521],
+["L3x2x1/2",2.26,7.70,0.5,0.425],["L3x2x3/8",1.75,5.90,0.375,0.426],["L3x2x5/16",1.48,5.00,0.3125,0.428],
+["L3x2x1/4",1.20,4.10,0.25,0.431],["L3x2x3/16",0.917,3.07,0.1875,0.435],
+["L2-1/2x2-1/2x3/4",2.26,7.70,0.75,0.481],["L2-1/2x2-1/2x5/8",1.73,5.90,0.625,0.481],["L2-1/2x2-1/2x9/16",1.46,5.00,0.5625,0.481],
+["L2-1/2x2-1/2x1/2",1.19,4.10,0.5,0.482],["L2-1/2x2-1/2x7/16",0.901,3.07,0.4375,0.482],
+["L2-1/2x2x5/8",1.55,5.30,0.625,0.419],["L2-1/2x2x9/16",1.32,4.50,0.5625,0.420],["L2-1/2x2x1/2",1.07,3.62,0.5,0.423],
+["L2-1/2x2x7/16",0.818,2.75,0.4375,0.426],
+["L2-1/2x1-1/2x1/2",0.947,3.19,0.5,0.321],["L2-1/2x1-1/2x7/16",0.724,2.44,0.4375,0.324],
+["L2x2x3/8",1.37,4.70,0.375,0.386],["L2x2x5/16",1.16,3.92,0.3125,0.386],["L2x2x1/4",0.944,3.19,0.25,0.387]
+].map(a => ({name:a[0], Ag:a[1], Wt:a[2], t:a[3], rz:a[4]}));
+
+const angleSelect = document.getElementById('angleSelect');
+angleSelect.innerHTML = ANGLES.map((a,i) => `<option value="${i}">${a.name} — Ag=${a.Ag} in²</option>`).join('');
+
+const fieldsEl = document.getElementById('fields');
+const memberType = document.getElementById('memberType');
+
+const layouts = {
+  case1: ``,
+  case3: ``,
+  w_flange: `
+    <label>Flange width, b<sub>f</sub> (in)</label><input type="number" id="bf" step="0.01" value="10.13">
+    <label>Section depth, d (in)</label><input type="number" id="d" step="0.01" value="14.31">
+    <div class="hint">Requires at least 3 fasteners per line in the direction of loading.</div>
+    <label style="margin-top:16px;">Optional — compare with Case 2 (x&#772;/L)</label>
+    <div class="field-row">
+      <div><label>x&#772; (in)</label><input type="number" id="xbar_opt" step="0.01" placeholder="e.g. 1.39"></div>
+      <div><label>L (in)</label><input type="number" id="L_opt" step="0.01" placeholder="e.g. 6"></div>
+    </div>
+  `,
+  w_web: `
+    <div class="hint">Web connected with 4 or more fasteners per line in the direction of loading gives U = 0.70 directly.</div>
+    <label style="margin-top:16px;">Optional — compare with Case 2 (x&#772;/L)</label>
+    <div class="field-row">
+      <div><label>x&#772; (in)</label><input type="number" id="xbar_opt" step="0.01" placeholder="optional"></div>
+      <div><label>L (in)</label><input type="number" id="L_opt" step="0.01" placeholder="optional"></div>
+    </div>
+  `,
+  angle: `
+    <label>Fasteners per line in direction of loading</label>
+    <select id="angleFasteners">
+      <option value="4">4 or more</option>
+      <option value="23">2 or 3</option>
+    </select>
+    <label style="margin-top:16px;">Optional — compare with Case 2 (x&#772;/L)</label>
+    <div class="field-row">
+      <div><label>x&#772; (in)</label><input type="number" id="xbar_opt" step="0.01" placeholder="optional"></div>
+      <div><label>L (in)</label><input type="number" id="L_opt" step="0.01" placeholder="optional"></div>
+    </div>
+  `,
+  plate_long: `
+    <label>Weld length, l (in)</label><input type="number" id="l_len" step="0.01" value="8">
+    <label>Plate width, w (in)</label><input type="number" id="w_wid" step="0.01" value="4">
+    <div class="hint">l must be &ge; w. Welds run along both edges of the plate.</div>
+  `,
+  hss_round: `
+    <label>Connection length, l (in)</label><input type="number" id="l_len" step="0.01" value="6">
+    <label>Outside diameter, D (in)</label><input type="number" id="D" step="0.01" value="4">
+  `,
+  hss_rect_single: `
+    <label>Connection length, l (in)</label><input type="number" id="l_len" step="0.01" value="8">
+    <div class="field-row">
+      <div><label>Width, B (in)</label><input type="number" id="B" step="0.01" value="4"></div>
+      <div><label>Height, H (in)</label><input type="number" id="H" step="0.01" value="6"></div>
+    </div>
+  `,
+  hss_rect_two: `
+    <label>Connection length, l (in)</label><input type="number" id="l_len" step="0.01" value="8">
+    <div class="field-row">
+      <div><label>Width, B (in)</label><input type="number" id="B" step="0.01" value="4"></div>
+      <div><label>Height, H (in)</label><input type="number" id="H" step="0.01" value="6"></div>
+    </div>
+  `,
+  general: `
+    <label>x&#772; — distance from connection plane to c.g. of the member (in)</label>
+    <input type="number" id="xbar" step="0.01" value="1.0">
+    <label>L — connection length (distance between extreme fasteners, or weld length) (in)</label>
+    <input type="number" id="Lg" step="0.01" value="6">
+  `
+};
+
+function render(){
+  fieldsEl.innerHTML = layouts[memberType.value] || '';
+  compute();
+  fieldsEl.querySelectorAll('input, select').forEach(el=>{
+    el.addEventListener('input', compute);
+    el.addEventListener('change', compute);
+  });
+}
+
+function num(id){
+  const el = document.getElementById(id);
+  if(!el) return null;
+  const v = parseFloat(el.value);
+  return isNaN(v) ? null : v;
+}
+
+let currentU = null;
+
+function setResult(u, caseLabel, formula, note, err){
+  const uOut = document.getElementById('uOut');
+  const caseTag = document.getElementById('caseTag');
+  const formulaOut = document.getElementById('formulaOut');
+  const noteOut = document.getElementById('noteOut');
+  const errOut = document.getElementById('errOut');
+
+  errOut.textContent = err || '';
+
+  if(u === null){
+    uOut.innerHTML = '—';
+    caseTag.innerHTML = '';
+    formulaOut.textContent = '';
+    noteOut.innerHTML = '';
+    currentU = null;
+    updateUReadout();
+    computeCapacity();
+    return;
+  }
+  uOut.innerHTML = u.toFixed(3) + ' <span>(use U ≤ 1.0)</span>';
+  caseTag.innerHTML = `<div class="case-tag">${caseLabel}</div>`;
+  formulaOut.textContent = formula;
+  noteOut.innerHTML = note || '';
+  currentU = Math.min(u, 1.0);
+  updateUReadout();
+  computeCapacity();
+}
+
+function updateUReadout(){
+  const el = document.getElementById('uReadout');
+  if(!el) return;
+  el.textContent = currentU===null ? '—' : currentU.toFixed(3);
+}
+
+function activeU(){
+  const chk = document.getElementById('uOverrideChk');
+  if(chk && chk.checked){
+    const v = num('uOverride');
+    return v;
+  }
+  return currentU;
+}
+
+function computeCapacity(){
+  const out = document.getElementById('capOut');
+  if(!out) return;
+  const Ag = num('Ag'), An = num('An'), Fy = num('Fy'), Fu = num('Fu');
+  const U = activeU();
+
+  if(Ag===null||An===null||Fy===null||Fu===null){
+    out.innerHTML = '<div class="err">Enter A_g, A_n, F_y and F_u to compute capacity.</div>';
+    return;
+  }
+  if(U===null){
+    out.innerHTML = '<div class="err">Set a shear lag factor above (from section 01–02, or check the manual override) to compute capacity.</div>';
+    return;
+  }
+
+  const Ae = U * An;
+  const TnYield = Fy * Ag;
+  const TnFracture = Fu * Ae;
+
+  const phiY = 0.90, phiF = 0.75;
+  const omegaY = 1.67, omegaF = 2.00;
+
+  const lrfdY = phiY * TnYield;
+  const lrfdF = phiF * TnFracture;
+  const lrfdGov = Math.min(lrfdY, lrfdF);
+  const lrfdGovLabel = lrfdY <= lrfdF ? 'Yielding' : 'Fracture';
+
+  const asdY = TnYield / omegaY;
+  const asdF = TnFracture / omegaF;
+  const asdGov = Math.min(asdY, asdF);
+  const asdGovLabel = asdY <= asdF ? 'Yielding' : 'Fracture';
+
+  let ratioHtml = '';
+  const ratio = num('ldRatio');
+  if(ratio!==null && ratio>=0){
+    const D = asdGov / (1 + ratio);
+    const L = asdGov - D;
+    ratioHtml = `
+      <div class="final">
+        <div class="flabel">Service load split (ASD) — D + ${ratio}D = ${asdGov.toFixed(1)} kips</div>
+        <div class="fval">D = ${D.toFixed(2)} kip &nbsp;|&nbsp; L = ${L.toFixed(2)} kip</div>
+      </div>`;
+  }
+
+  out.innerHTML = `
+    <table class="cap">
+      <tr><th>Limit state</th><th>Nominal T<sub>n</sub></th><th>LRFD (&phi;T<sub>n</sub>)</th><th>ASD (T<sub>n</sub>/&Omega;)</th></tr>
+      <tr class="${lrfdGovLabel==='Yielding'?'gov':''}">
+        <td>Yielding, F<sub>y</sub>A<sub>g</sub></td>
+        <td>${TnYield.toFixed(2)} kip</td>
+        <td>0.90 &times; ${TnYield.toFixed(2)} = ${lrfdY.toFixed(1)} kip</td>
+        <td>${TnYield.toFixed(2)} / 1.67 = ${asdY.toFixed(1)} kip</td>
+      </tr>
+      <tr class="${lrfdGovLabel==='Fracture'?'gov':''}">
+        <td>Fracture, F<sub>u</sub>A<sub>e</sub> (A<sub>e</sub>=U&middot;A<sub>n</sub>=${Ae.toFixed(2)} in&sup2;)</td>
+        <td>${TnFracture.toFixed(2)} kip</td>
+        <td>0.75 &times; ${TnFracture.toFixed(2)} = ${lrfdF.toFixed(1)} kip</td>
+        <td>${TnFracture.toFixed(2)} / 2.00 = ${asdF.toFixed(1)} kip</td>
+      </tr>
+    </table>
+    <div class="final">
+      <div class="flabel">Governs</div>
+      <div class="fval">LRFD: ${lrfdGov.toFixed(1)} kip <span style="font-size:14px;color:var(--text-dim)">(${lrfdGovLabel})</span></div>
+      <div class="fval" style="margin-top:6px;">ASD: ${asdGov.toFixed(1)} kip <span style="font-size:14px;color:var(--text-dim)">(${asdGovLabel})</span></div>
+    </div>
+    ${ratioHtml}
+    <div class="hint" style="margin-top:10px;">Block shear is not checked here — verify it separately per AISC J4.3.</div>
+  `;
+}
+
+function maybeCompareCase2(uBase, label, formulaBase){
+  const x = num('xbar_opt'), L = num('L_opt');
+  if(x!==null && L!==null && L>0){
+    const u2 = 1 - x/L;
+    const uFinal = Math.max(uBase, u2);
+    const winner = uFinal===u2 && u2>uBase ? 'Case 2' : label;
+    return {
+      u: Math.min(uFinal,1.0),
+      note: `Case 2 check: U = 1 &minus; x&#772;/L = 1 &minus; ${x}/${L} = ${u2.toFixed(3)}.<br>The <b>larger</b> of the table value and the Case 2 value governs (per AISC Table D3.1 note) &rarr; governs by <b>${winner}</b>.`
+    };
+  }
+  return {u: Math.min(uBase,1.0), note: `Enter x&#772; and L above to also check against the general Case 2 value (the larger of the two is permitted to govern).`};
+}
+
+function compute(){
+  const t = memberType.value;
+  let err = '';
+
+  if(t==='case1'){
+    setResult(1.0, 'Case 1', 'U = 1.0', 'Load is transmitted directly to every cross-sectional element by fasteners or welds — no shear lag reduction.');
+    return;
+  }
+
+  if(t==='case3'){
+    setResult(1.0, 'Case 3', 'U = 1.0\nAn = area of the directly connected elements only', 'Because only some elements receive the transverse weld, An itself is reduced to the connected elements — U stays 1.0, but do not use the full gross/net area.');
+    return;
+  }
+
+  if(t==='w_flange'){
+    const bf = num('bf'), d = num('d');
+    if(bf===null || d===null || d<=0){ setResult(null,'','', '', 'Enter b_f and d.'); return; }
+    const ratio = bf/d;
+    let uBase = ratio >= 2/3 ? 0.90 : 0.85;
+    const label = ratio>=2/3 ? 'Case 7 (b_f/d ≥ 2/3)' : 'Case 7 (b_f/d < 2/3)';
+    const {u, note} = maybeCompareCase2(uBase, label, '');
+    setResult(u, label, `b_f/d = ${bf}/${d} = ${ratio.toFixed(3)}\n${ratio>=2/3?'b_f/d ≥ 2/3':'b_f/d < 2/3'}  →  U = ${uBase.toFixed(2)} (table value)`, note);
+    return;
+  }
+
+  if(t==='w_web'){
+    const uBase = 0.70;
+    const {u, note} = maybeCompareCase2(uBase, 'Case 7 (web connected)', '');
+    setResult(u, 'Case 7 — web connected', 'U = 0.70 (web connected, ≥4 fasteners/line)', note);
+    return;
+  }
+
+  if(t==='angle'){
+    const uBase = document.getElementById('angleFasteners').value === '4' ? 0.80 : 0.60;
+    const label = uBase===0.80 ? 'Case 8 (≥4 fasteners/line)' : 'Case 8 (2–3 fasteners/line)';
+    const {u, note} = maybeCompareCase2(uBase, label, '');
+    setResult(u, label, `U = ${uBase.toFixed(2)} (table value for single angles)`, note);
+    return;
+  }
+
+  if(t==='plate_long'){
+    const l = num('l_len'), w = num('w_wid');
+    if(l===null||w===null||w<=0){ setResult(null,'','', '', 'Enter l and w.'); return; }
+    if(l < w){ setResult(null,'','', '', 'l must be ≥ w — this configuration is outside Case 4 (weld length too short).'); return; }
+    let u, band;
+    if(l >= 2*w){ u=1.0; band='l ≥ 2w'; }
+    else if(l >= 1.5*w){ u=0.87; band='1.5w ≤ l < 2w'; }
+    else { u=0.75; band='w ≤ l < 1.5w'; }
+    setResult(u, `Case 4 (${band})`, `l/w = ${l}/${w} = ${(l/w).toFixed(2)}\n${band}  →  U = ${u.toFixed(2)}`, 'Plates connected by longitudinal welds along both edges only.');
+    return;
+  }
+
+  if(t==='hss_round'){
+    const l = num('l_len'), D = num('D');
+    if(l===null||D===null||D<=0){ setResult(null,'','', '', 'Enter l and D.'); return; }
+    if(l < D){ setResult(null,'','', '', 'l must be ≥ D for Case 5 to apply.'); return; }
+    if(l >= 1.3*D){
+      setResult(1.0, 'Case 5 (l ≥ 1.3D)', `l/D = ${(l/D).toFixed(2)} ≥ 1.3  →  U = 1.0`, 'Round HSS with a single concentric gusset plate.');
+    } else {
+      const xbar = D/Math.PI;
+      const u = 1 - xbar/l;
+      setResult(u, 'Case 5 (D ≤ l < 1.3D)', `x&#772; = D/π = ${D}/π = ${xbar.toFixed(3)}\nU = 1 − x&#772;/l = 1 − ${xbar.toFixed(3)}/${l} = ${u.toFixed(3)}`, 'Round HSS with a single concentric gusset plate.');
+    }
+    return;
+  }
+
+  if(t==='hss_rect_single' || t==='hss_rect_two'){
+    const l = num('l_len'), B = num('B'), H = num('H');
+    if(l===null||B===null||H===null||B<=0||H<=0){ setResult(null,'','', '', 'Enter l, B and H.'); return; }
+    if(l < H){ setResult(null,'','', '', 'l must be ≥ H for Case 6 to apply.'); return; }
+    let xbar, label;
+    if(t==='hss_rect_single'){
+      xbar = (B*B + 2*B*H) / (4*(B+H));
+      label = 'Case 6 — single concentric gusset';
+    } else {
+      xbar = (B*B) / (4*(B+H));
+      label = 'Case 6 — two side gusset plates';
+    }
+    const u = 1 - xbar/l;
+    setResult(u, label, `x&#772; = ${t==='hss_rect_single' ? '(B² + 2BH)' : 'B²'} / [4(B+H)]\nx&#772; = ${xbar.toFixed(3)} in\nU = 1 − x&#772;/l = 1 − ${xbar.toFixed(3)}/${l} = ${u.toFixed(3)}`, 'Rectangular HSS, l ≥ H required.');
+    return;
+  }
+
+  if(t==='general'){
+    const xbar = num('xbar'), L = num('Lg');
+    if(xbar===null||L===null||L<=0){ setResult(null,'','', '', 'Enter x̄ and L.'); return; }
+    const u = 1 - xbar/L;
+    setResult(u, 'Case 2 (general)', `U = 1 − x&#772;/L = 1 − ${xbar}/${L} = ${u.toFixed(3)}`, 'Applies to channels and other shapes (not plates or HSS) where load is transmitted to some but not all cross-sectional elements. x̄ is measured from the connection plane to the centroid of the member; L is the connection length (distance between extreme fasteners, or weld length).');
+    return;
+  }
+}
+
+memberType.addEventListener('change', render);
+
+['Ag','An','Fy','Fu','ldRatio','uOverride'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('input', computeCapacity);
+});
+const uOverrideChk = document.getElementById('uOverrideChk');
+uOverrideChk.addEventListener('change', ()=>{
+  document.getElementById('uOverride').classList.toggle('hidden', !uOverrideChk.checked);
+  computeCapacity();
+});
+
+let designMethod = 'LRFD';
+const btnLRFD = document.getElementById('btnLRFD');
+const btnASD = document.getElementById('btnASD');
+btnLRFD.addEventListener('click', ()=>{ designMethod='LRFD'; btnLRFD.classList.add('active'); btnASD.classList.remove('active'); computeDesign(); });
+btnASD.addEventListener('click', ()=>{ designMethod='ASD'; btnASD.classList.add('active'); btnLRFD.classList.remove('active'); computeDesign(); });
+
+const dFastCount = document.getElementById('dFastCount');
+const dU = document.getElementById('dU');
+dFastCount.addEventListener('change', ()=>{
+  dU.value = dFastCount.value==='4' ? '0.80' : '0.60';
+  computeDesign();
+});
+
+['dLoad','lLoad','dFy','dFu','dLen','dBoltDia','dHoles','dU','dThk'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('input', computeDesign);
+});
+
+function computeDesign(){
+  const out = document.getElementById('designOut');
+  const D = num('dLoad'), L = num('lLoad'), Fy = num('dFy'), Fu = num('dFu');
+  const lenFt = num('dLen'), boltDia = num('dBoltDia'), holes = num('dHoles');
+  const U = num('dU'), t = num('dThk');
+
+  if([D,L,Fy,Fu,U,t].some(v=>v===null)){
+    out.innerHTML = '<div class="err">Fill in loads, Fy, Fu, U and t to run the design.</div>';
+    return;
+  }
+
+  const isLRFD = designMethod==='LRFD';
+  let steps = [];
+
+  let designLoad, loadFormula, loadLabel;
+  if(isLRFD){
+    designLoad = 1.2*D + 1.6*L;
+    loadFormula = `Pu = 1.2D + 1.6L = 1.2(${D}) + 1.6(${L}) = ${designLoad.toFixed(2)} kip`;
+    loadLabel = 'Factored load, Pu';
+  } else {
+    designLoad = D + L;
+    loadFormula = `Ta = D + L = ${D} + ${L} = ${designLoad.toFixed(2)} kip`;
+    loadLabel = 'Service load, Ta';
+  }
+  steps.push({title:'1 &middot; Design load', formula:loadFormula, val:`${designLoad.toFixed(2)} kip`});
+
+  let AgReqYield, ygFormula;
+  if(isLRFD){
+    AgReqYield = designLoad/(0.9*Fy);
+    ygFormula = `Pu ≤ φTn = φFyAg  →  Ag,req = Pu / (0.9Fy) = ${designLoad.toFixed(2)} / (0.9×${Fy}) = ${AgReqYield.toFixed(3)} in²`;
+  } else {
+    AgReqYield = designLoad*1.67/Fy;
+    ygFormula = `Ta ≤ Tn/Ω = FyAg/1.67  →  Ag,req = Ta×1.67 / Fy = ${designLoad.toFixed(2)}×1.67 / ${Fy} = ${AgReqYield.toFixed(3)} in²`;
+  }
+  steps.push({title:'2 &middot; Required gross area — yielding', formula:ygFormula, val:`Ag,req = ${AgReqYield.toFixed(3)} in²`});
+
+  let AeReq, aeFormula;
+  if(isLRFD){
+    AeReq = designLoad/(0.75*Fu);
+    aeFormula = `Pu ≤ φTn = φFuAe  →  Ae,req = Pu / (0.75Fu) = ${designLoad.toFixed(2)} / (0.75×${Fu}) = ${AeReq.toFixed(3)} in²`;
+  } else {
+    AeReq = designLoad*2.00/Fu;
+    aeFormula = `Ta ≤ Tn/Ω = FuAe/2.00  →  Ae,req = Ta×2.00 / Fu = ${designLoad.toFixed(2)}×2.00 / ${Fu} = ${AeReq.toFixed(3)} in²`;
+  }
+  steps.push({title:'3 &middot; Required effective net area — fracture', formula:aeFormula, val:`Ae,req = ${AeReq.toFixed(3)} in²`});
+
+  const AnReq = AeReq/U;
+  steps.push({title:'4 &middot; Required net area (assumed U)', formula:`An,req = Ae,req / U = ${AeReq.toFixed(3)} / ${U} = ${AnReq.toFixed(3)} in²`, val:`An,req = ${AnReq.toFixed(3)} in²`});
+
+  const holeWidth = boltDia!==null ? boltDia + 0.125 : null;
+  let AgReqNet = null, netFormula = 'Enter bolt diameter, holes on the critical line, and t to include this check.';
+  if(holeWidth!==null && holes!==null){
+    AgReqNet = AnReq + holes*holeWidth*t;
+    netFormula = `hole width = d_bolt + 1/8 = ${boltDia} + 0.125 = ${holeWidth.toFixed(3)} in\nAg,req(net) = An,req + n_holes × hole width × t\n= ${AnReq.toFixed(3)} + ${holes}×${holeWidth.toFixed(3)}×${t} = ${AgReqNet.toFixed(3)} in²`;
+  }
+  steps.push({title:'5 &middot; Required gross area accounting for holes', formula:netFormula, val: AgReqNet!==null ? `Ag,req(net) = ${AgReqNet.toFixed(3)} in²` : ''});
+
+  const AgGoverns = AgReqNet!==null ? Math.max(AgReqYield, AgReqNet) : AgReqYield;
+  const govBy = AgReqNet!==null && AgReqNet>AgReqYield ? 'net-section / fracture path' : 'yielding';
+  steps.push({title:'6 &middot; Governing required gross area', formula:`Ag,req = max(${AgReqYield.toFixed(3)}, ${AgReqNet!==null?AgReqNet.toFixed(3):'—'}) → governs by ${govBy}`, val:`Ag,req = ${AgGoverns.toFixed(3)} in²  (t ≥ ${t} in assumed)`});
+
+  let rminFormula = 'Enter member length to include this check.';
+  let rminVal = '';
+  let rminReq = null;
+  if(lenFt!==null){
+    rminReq = lenFt*12/300;
+    rminFormula = `AISC D1 preferred limit: L/r ≤ 300  →  r_min,req = L(in) / 300 = ${(lenFt*12).toFixed(1)} / 300 = ${rminReq.toFixed(3)} in`;
+    rminVal = `r_min,req ≈ ${rminReq.toFixed(3)} in`;
+  }
+  steps.push({title:'7 &middot; Minimum radius of gyration (stiffness)', formula:rminFormula, val:rminVal});
+
+  steps.push({title:'8 &middot; Select a trial section', formula:`Pick a section from the AISC manual with:\n  Ag ≥ ${AgGoverns.toFixed(3)} in²,  t ≥ ${t} in,  r_min ≥ ${rminReq!==null ? rminReq.toFixed(3) : '—'} in.\nThen take its actual Ag, compute An from its actual hole layout, refine U for the actual b_f/d or fastener pattern (sections 01–02), and verify final capacity in section 03.`, val:''});
+
+  out.innerHTML = steps.map(s => `
+    <div class="step">
+      <div class="num">${s.title.split('&middot;')[0].trim()}</div>
+      <div class="body">
+        <div class="stitle">${s.title.split('&middot;')[1] ? s.title.split('&middot;')[1].trim() : ''}</div>
+        <div class="sform">${s.formula}</div>
+        ${s.val ? `<div class="sval">${s.val}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  designReq.AgReqYield = AgReqYield; // rough first-pass estimate only
+  designReq.t = t;                   // trial guess only, NOT governing
+  designReq.rz = rminReq;
+  designReq.demandLoad = designLoad;
+  designReq.method = designMethod;
+  designReq.Fy = Fy;
+  designReq.Fu = Fu;
+  designReq.U = U;
+  designReq.boltDia = boltDia;
+  designReq.holes = holes;
+  renderAngleCheck();
+}
+
+/* ---------- 05 · trial angle check ---------- */
+const designReq = { AgReqYield:null, t:null, rz:null, demandLoad:null, method:null, Fy:null, Fu:null, U:null, boltDia:null, holes:null };
+
+function fmtReq(v, unit){
+  return v===null ? '—' : v.toFixed(3) + ' ' + unit;
+}
+
+function renderAngleCheck(){
+  document.getElementById('reqLoadOut').textContent  = designReq.demandLoad===null ? '—' : `${designReq.demandLoad.toFixed(2)} kip`;
+  document.getElementById('reqMethodOut').textContent = designReq.method || '—';
+  document.getElementById('reqUOut').textContent = designReq.U===null ? '—' : designReq.U.toFixed(2);
+  document.getElementById('reqRzOut').textContent = fmtReq(designReq.rz, 'in');
+
+  const idx = angleSelect.value;
+  const propsEl = document.getElementById('angleProps');
+  const capEl = document.getElementById('angleCapOut');
+  const rowsEl  = document.getElementById('checkRows');
+  const verdictEl = document.getElementById('verdictOut');
+
+  if(idx === '' || idx === undefined){
+    propsEl.innerHTML = '';
+    capEl.innerHTML = '';
+    rowsEl.innerHTML = '';
+    verdictEl.innerHTML = '';
+    return;
+  }
+
+  const a = ANGLES[parseInt(idx,10)];
+
+  propsEl.innerHTML = `
+    <div class="propline"><span>A<sub>g</sub> (actual)</span><span>${a.Ag.toFixed(3)} in²</span></div>
+    <div class="propline"><span>t (actual)</span><span>${a.t.toFixed(4)} in</span></div>
+    <div class="propline"><span>r<sub>z</sub> (min. r, actual)</span><span>${a.rz.toFixed(3)} in</span></div>
+    <div class="propline"><span>Weight</span><span>${a.Wt.toFixed(1)} lb/ft</span></div>
+  `;
+
+  // If section 04 hasn't been run yet, just show the raw section properties.
+  if(designReq.demandLoad === null){
+    capEl.innerHTML = '';
+    rowsEl.innerHTML = '<div class="hint">Fill in section 04 above to check this angle against the actual demand load and slenderness limit.</div>';
+    verdictEl.innerHTML = '';
+    return;
+  }
+
+  // --- Real net area, using THIS angle's actual thickness (not the section-04 guess) ---
+  const holeWidth = (designReq.boltDia!==null) ? designReq.boltDia + 0.125 : null;
+  let AnActual = a.Ag;
+  let anFormula = 'Bolt diameter / hole count not set in section 04 — using An = Ag (no deduction).';
+  if(holeWidth!==null && designReq.holes!==null){
+    AnActual = a.Ag - designReq.holes*holeWidth*a.t;
+    anFormula = `A<sub>n</sub> = A<sub>g</sub> − n×(d<sub>bolt</sub>+1/8)×t(actual)\n= ${a.Ag.toFixed(3)} − ${designReq.holes}×${holeWidth.toFixed(3)}×${a.t.toFixed(4)}\n= ${AnActual.toFixed(3)} in²`;
+  }
+
+  const U = designReq.U;
+  const Ae = U!==null ? U*AnActual : null;
+  const TnYield = designReq.Fy * a.Ag;
+  const TnFracture = Ae!==null ? designReq.Fu * Ae : null;
+
+  const isLRFD = designReq.method === 'LRFD';
+  let capYield, capFracture, capLabel;
+  if(isLRFD){
+    capYield = 0.90*TnYield;
+    capFracture = TnFracture!==null ? 0.75*TnFracture : null;
+    capLabel = 'φTn';
+  } else {
+    capYield = TnYield/1.67;
+    capFracture = TnFracture!==null ? TnFracture/2.00 : null;
+    capLabel = 'Tn/Ω';
+  }
+  const govCap = capFracture!==null ? Math.min(capYield, capFracture) : capYield;
+  const govLabel = (capFracture!==null && capFracture < capYield) ? 'Fracture (net section)' : 'Yielding (gross section)';
+
+  capEl.innerHTML = `
+    <div class="stitle" style="font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Real capacity check — using ${a.name}'s actual t = ${a.t.toFixed(4)} in</div>
+    <div class="formula">${anFormula}${U!==null ? `\nA_e = U × A_n = ${U.toFixed(2)} × ${AnActual.toFixed(3)} = ${Ae.toFixed(3)} in²` : ''}</div>
+    <table class="cap">
+      <tr><th>Limit state</th><th>Nominal T<sub>n</sub></th><th>${designReq.method} (${capLabel})</th></tr>
+      <tr class="${govLabel.startsWith('Yielding')?'gov':''}">
+        <td>Yielding, F<sub>y</sub>A<sub>g</sub></td>
+        <td>${TnYield.toFixed(2)} kip</td>
+        <td>${capYield.toFixed(2)} kip</td>
+      </tr>
+      <tr class="${govLabel.startsWith('Fracture')?'gov':''}">
+        <td>Fracture, F<sub>u</sub>A<sub>e</sub></td>
+        <td>${TnFracture!==null ? TnFracture.toFixed(2)+' kip' : '—'}</td>
+        <td>${capFracture!==null ? capFracture.toFixed(2)+' kip' : '—'}</td>
+      </tr>
+    </table>
+  `;
+
+  const checks = [];
+  checks.push({
+    label: `Capacity (${govLabel}) ≥ demand ${designReq.demandLoad.toFixed(2)} kip`,
+    have: `${govCap.toFixed(2)} kip`,
+    pass: govCap >= designReq.demandLoad
+  });
+  if(designReq.rz !== null){
+    checks.push({
+      label: `r_z ≥ ${designReq.rz.toFixed(3)} in (slenderness, L/300)`,
+      have: `${a.rz.toFixed(3)} in`,
+      pass: a.rz >= designReq.rz
+    });
+  }
+
+  rowsEl.innerHTML = checks.map(c => `
+    <div class="checkrow">
+      <span>${c.label}</span>
+      <span class="have">have ${c.have}</span>
+      <span class="${c.pass ? 'pass' : 'fail'}">${c.pass ? 'OK' : 'NG'}</span>
+    </div>
+  `).join('');
+
+  const allPass = checks.every(c => c.pass);
+  verdictEl.innerHTML = `<div class="verdict ${allPass ? 'pass' : 'fail'}">${a.name} — ${allPass ? 'OK, ADEQUATE' : 'NOT ADEQUATE'}</div>`;
+}
+
+angleSelect.addEventListener('change', renderAngleCheck);
+
+document.getElementById('useInSec03').addEventListener('click', ()=>{
+  const idx = angleSelect.value;
+  if(idx === '' || idx === undefined) return;
+  const a = ANGLES[parseInt(idx,10)];
+
+  document.getElementById('Ag').value = a.Ag.toFixed(3);
+
+  const uFromDesign = dFastCount.value === '4' ? 0.80 : 0.60;
+  const chk = document.getElementById('uOverrideChk');
+  chk.checked = true;
+  document.getElementById('uOverride').classList.remove('hidden');
+  document.getElementById('uOverride').value = uFromDesign.toFixed(2);
+
+  computeCapacity();
+
+  document.getElementById('capOut').scrollIntoView({behavior:'smooth', block:'center'});
+});
+
+document.getElementById('loadExampleBtn').addEventListener('click', ()=>{
+  // Force LRFD, per the slide's worked example
+  designMethod = 'LRFD';
+  btnLRFD.classList.add('active');
+  btnASD.classList.remove('active');
+
+  document.getElementById('dLoad').value = '35';
+  document.getElementById('lLoad').value = '70';
+  document.getElementById('dFy').value = '36';
+  document.getElementById('dFu').value = '58';
+  document.getElementById('dLen').value = '15';
+  document.getElementById('dBoltDia').value = '0.75';
+  document.getElementById('dFastCount').value = '4';
+  document.getElementById('dHoles').value = '2';
+  document.getElementById('dU').value = '0.80';
+  document.getElementById('dThk').value = '0.75';
+
+  computeDesign();
+
+  // Auto-select L6x4x5/8 in section 05 to match the slide's chosen section
+  const targetIdx = ANGLES.findIndex(a => a.name === 'L6x4x5/8');
+  if(targetIdx >= 0){
+    angleSelect.value = String(targetIdx);
+    renderAngleCheck();
+    document.getElementById('angleCapOut').scrollIntoView({behavior:'smooth', block:'center'});
+  }
+});
+
+render();
+computeDesign();
+renderAngleCheck();
+</script>
+</body>
+</html>

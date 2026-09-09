@@ -1,0 +1,92 @@
+/* Custom Styles */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+}
+.navbar-brand{
+    text-align: left;
+    font-style: normal;
+    color:white;
+
+}
+.nav-item{
+    width: 100px;
+    text-align: center;
+    align-items: center;
+    color: #c7ad3a;
+    background-color: #45476e;
+    margin: 0.5%;
+
+    
+}
+.nav-item :hover{
+    color: #0c0c0b;
+    background-color: #fca625;
+    
+}
+.navbar {
+    box-shadow: 0 2px 4px rgba(180, 62, 72, 0.836);
+}
+
+.navbar-nav{
+    color: red ;
+
+}
+
+.hero-section {
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    color: white;
+    padding: 100px 0;
+    text-align: center;
+}
+
+.hero-section h1 {
+    font-size: 3.5rem;
+    font-weight: bold;
+    animation: fadeIn 2s ease-in-out;
+}
+
+.hero-section p {
+    font-size: 1.25rem;
+    animation: fadeIn 3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-primary {
+    background-color: #2575fc;
+    border: none;
+    padding: 10px 20px;
+    transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #6a11cb;
+}
+
+footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #302229;
+    color: white;
+    padding: 15px 0;
+}
+footer p {
+    margin: 0;
+    text-align:center;
+}
