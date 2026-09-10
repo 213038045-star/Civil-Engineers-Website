@@ -1,22 +1,17 @@
 from flask import Flask, render_template, request, redirect, url_for
 import csv
 import os
+import resend
 from routes.projects import projects_bp
-from flask_mail import Mail, Message
 
 app = Flask(__name__)
 
 # Register the new Blueprint
 app.register_blueprint(projects_bp)
 
-# Mail configuration
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-
-mail = Mail(app)
+# Resend configuration
+resend.api_key = os.environ.get('RESEND_API_KEY')
+NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')  # the Gmail address you want notified
 
 # Ensure the 'data' directory exists
 if not os.path.exists('data'):
@@ -68,15 +63,14 @@ def contact():
         # Save the form data to CSV (kept as backup)
         save_to_csv(name, email, message)
 
-        # Send an email notification to yourself
+        # Send an email notification via Resend
         try:
-            msg = Message(
-                subject=f'New Contact Message from {name}',
-                sender=app.config['MAIL_USERNAME'],
-                recipients=[app.config['MAIL_USERNAME']],
-                body=f'Name: {name}\nEmail: {email}\nMessage: {message}'
-            )
-            mail.send(msg)
+            resend.Emails.send({
+                "from": "Website Contact <onboarding@resend.dev>",
+                "to": [NOTIFY_EMAIL],
+                "subject": f"New Contact Message from {name}",
+                "html": f"<p><strong>Name:</strong> {name}</p><p><strong>Email:</strong> {email}</p><p><strong>Message:</strong> {message}</p>"
+            })
         except Exception as e:
             print(f'Email failed to send: {e}')
         
