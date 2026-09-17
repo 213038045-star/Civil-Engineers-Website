@@ -426,6 +426,7 @@ label{
 <button id="addImage">Add Image</button>
 <button id="addSignature">Add Signature</button>
 <button id="crop" title="Crop selected picture or signature">Crop</button>
+<button id="rotateGraphic" title="Rotate selected picture or signature 90° clockwise">Rotate Picture ↻</button>
 <button id="cancelCrop" style="display:none">Cancel Crop</button>
 <input id="imageFile" type="file" accept="image/png,image/jpeg,image/jpg" hidden>
 <input id="signatureFile" type="file" accept="image/png,image/jpeg,image/jpg" hidden>
@@ -1888,6 +1889,8 @@ function setButtons(){
     mode==='signature'
   );
 
+  $('rotateGraphic').disabled = !(selected && selected.kind==='graphic');
+
   $('move').classList.toggle(
     'active',
     mode==='move'
@@ -2441,6 +2444,7 @@ function selectGraphic(index,el){
   hideGraphicHandles();
   document.querySelectorAll('.resize-handle[data-graphic-index="'+index+'"]').forEach(h=>h.classList.add('show'));
   updateGraphicHandles(el);
+  setButtons();
 }
 
 function createGraphicHandles(index,el){
@@ -2623,6 +2627,95 @@ function finishGraphicResize(){
 
   resizeDrag=null;
 }
+
+/* =========================================================
+   ROTATE IMAGE / SIGNATURE
+
+   Rotates the actual picture/signature bitmap 90° clockwise.
+   The graphic is rotated in its own image data, so the normal
+   move and resize handles continue to work correctly after
+   rotation. The graphic center is preserved.
+========================================================= */
+async function rotateSelectedGraphic(){
+
+  if(cropSession){
+    msg('Finish or cancel Crop mode before rotating the picture.');
+    return;
+  }
+
+  if(!selected || selected.kind!=='graphic'){
+    msg('Please click a picture or signature first.');
+    return;
+  }
+
+  const index=selected.index;
+  const c=changes[n] && changes[n][index];
+  const el=selected.el;
+
+  if(!c || (!c.image && !c.signature) || !el){
+    msg('Please select a picture or signature first.');
+    return;
+  }
+
+  const oldW=parseFloat(c.w)||el.offsetWidth||180;
+  const oldH=parseFloat(c.h)||el.offsetHeight||120;
+  const centerX=(parseFloat(c.x)||0)+oldW/2;
+  const centerY=(parseFloat(c.y)||0)+oldH/2;
+
+  try{
+    const img=new Image();
+    img.src=c.data;
+
+    await new Promise((resolve,reject)=>{
+      if(img.complete && img.naturalWidth>0) resolve();
+      else{
+        img.onload=resolve;
+        img.onerror=()=>reject(new Error('Could not load the picture for rotation.'));
+      }
+    });
+
+    const canvas=document.createElement('canvas');
+    canvas.width=img.naturalHeight;
+    canvas.height=img.naturalWidth;
+
+    const ctx=canvas.getContext('2d');
+    ctx.translate(canvas.width/2,canvas.height/2);
+    ctx.rotate(Math.PI/2);
+    ctx.drawImage(img,-img.naturalWidth/2,-img.naturalHeight/2);
+
+    const isJpg=/^data:image\/(jpeg|jpg)/i.test(c.data);
+    c.data=canvas.toDataURL(
+      isJpg ? 'image/jpeg' : 'image/png',
+      isJpg ? .92 : undefined
+    );
+
+    // 90° rotation swaps width and height while keeping center fixed.
+    const newW=oldH;
+    const newH=oldW;
+
+    c.w=newW;
+    c.h=newH;
+    c.x=Math.max(0,centerX-newW/2);
+    c.y=Math.max(0,centerY-newH/2);
+    c.manualPos=true;
+    c.manualSize=true;
+
+    pushHistory();
+    render();
+
+    msg(
+      (c.signature?'Signature':'Picture')+
+      ' rotated 90° clockwise. Click Rotate Picture again for another 90°.'
+    );
+
+  }catch(err){
+    console.error(err);
+    msg('ROTATE ERROR: '+err.message);
+  }
+}
+
+$('rotateGraphic').onclick=rotateSelectedGraphic;
+
 
 /* =========================================================
    IMAGE / SIGNATURE CROP
@@ -4049,6 +4142,7 @@ $('del').onclick=()=>{
   pushHistory();
 
   selected=null;
+  setButtons();
 
   render();
 
@@ -4653,30 +4747,20 @@ $('save').onclick=async()=>{
           */
 
           const padX=
-            Math.max(0.5,it.w*0.02);
+            Math.min(
+              1.5,
+              Math.max(0.5,it.w*0.015)
+            );
 
           const padY=
-            Math.max(0.5,it.h*0.08);
+            Math.min(
+              1.5,
+              Math.max(0.5,it.h*0.06)
+            );
 
-          /*
-             No upper cap here on purpose:
-             a fixed pixel cap (the old code
-             used Math.min(6, ...)) works
-             fine for small body text but
-             stops covering enough of the
-             descender once the font gets
-             larger — e.g. headline-sized
-             text — which is exactly what
-             let the tail of the old glyph
-             (p, g, y, q, j) poke out past
-             the cover rectangle in the
-             saved PDF. Scaling purely off
-             it.h keeps it proportional at
-             any size.
-          */
           const descentPad=
             (Math.abs(it.angle)<2) ?
-            it.h*0.35 :
+            Math.min(6,it.h*0.35) :
             0;
 
 
