@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PDF → Editable PowerPoint Pro</title>
+
+<!-- Browser libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#f4f1e9;--card:#fff;--text:#202722;--muted:#69726b;
+  --border:#d8d4c9;--accent:#3f604d;--accent2:#304a3b;--danger:#b04d36;
+}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:Arial,Helvetica,sans-serif;
+}
+.app{width:min(1180px,94vw);margin:30px auto 60px}
+.header{
+  display:flex;justify-content:space-between;align-items:flex-end;
+  border-bottom:2px solid #202722;padding-bottom:15px;margin-bottom:20px;
+}
+.header h1{margin:0;font-size:28px;font-weight:700}
+.header span{font-size:12px;color:var(--muted)}
+.card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:20px;margin-bottom:16px;
+}
+.drop{
+  border:2px dashed #bdb8aa;border-radius:10px;padding:45px 20px;
+  text-align:center;cursor:pointer;transition:.2s;background:#fcfbf7;
+}
+.drop:hover,.drop.drag{border-color:var(--accent);background:#f0f4ef}
+.drop .big{font-size:20px;font-weight:700;margin-bottom:8px}
+.drop .small{font-size:13px;color:var(--muted)}
+#fileInput{display:none}
+
+.fileinfo{
+  display:none;grid-template-columns:1fr auto;gap:12px;align-items:center;
+}
+.fileinfo.show{display:grid}
+.filename{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meta{font-size:12px;color:var(--muted);margin-top:4px}
+.remove{
+  border:0;background:none;color:var(--danger);cursor:pointer;
+  text-decoration:underline;font-size:12px;
+}
+
+.grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;
+}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+
+.section-title{
+  font-size:12px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted);font-weight:700;margin-bottom:12px;
+}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:9px 0}
+label{font-size:13px;display:flex;gap:7px;align-items:center}
+input[type=text],select{
+  padding:8px 9px;border:1px solid var(--border);border-radius:6px;
+  background:white;font-size:13px;min-width:130px;
+}
+input[type=number]{width:80px;padding:7px;border:1px solid var(--border);border-radius:6px}
+input[type=color]{width:42px;height:32px;padding:2px;border:1px solid var(--border)}
+input[type=checkbox]{accent-color:var(--accent)}
+
+.help{font-size:12px;color:var(--muted);line-height:1.5;margin-top:7px}
+
+.primary{
+  width:100%;padding:14px 18px;border:0;border-radius:7px;
+  background:var(--accent);color:white;font-size:15px;font-weight:700;
+  cursor:pointer;margin-top:8px;
+}
+.primary:hover{background:var(--accent2)}
+.primary:disabled{opacity:.55;cursor:wait}
+
+.status{
+  min-height:20px;font:13px Consolas,"Courier New",monospace;
+  color:var(--muted);white-space:pre-line;margin-top:12px;
+}
+.status.error{color:var(--danger)}
+
+.progress{height:9px;background:#dedbd2;border-radius:10px;overflow:hidden;margin-top:10px}
+.bar{height:100%;width:0;background:var(--accent);transition:width .2s}
+
+.stats{
+  display:none;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:15px;
+}
+.stats.show{display:grid}
+.stat{border:1px solid var(--border);border-radius:7px;padding:10px;background:#fcfbf7}
+.stat b{display:block;font-size:18px}.stat span{font-size:11px;color:var(--muted)}
+
+.preview{
+  display:none;background:#e8e5dc;border:1px solid var(--border);
+  border-radius:8px;padding:14px;max-height:540px;overflow:auto;
+}
+.preview.show{display:block}
+.thumb{
+  display:inline-block;vertical-align:top;margin:7px;width:190px;
+  background:white;border-radius:4px;box-shadow:0 1px 5px rgba(0,0,0,.15);
+}
+.thumb img{display:block;width:100%;height:auto;border-radius:4px 4px 0 0}
+.thumb div{font-size:11px;padding:6px;color:var(--muted)}
+
+.downloadBox{
+  display:none;border:2px solid var(--accent);background:#f5f8f4;
+  border-radius:9px;padding:17px;margin-top:16px;
+}
+.downloadBox.show{display:block}
+.downloadTitle{font-weight:700;margin-bottom:5px}
+.downloadName{font:12px Consolas,"Courier New",monospace;color:var(--muted);word-break:break-all}
+.downloadButtons{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.downloadBtn{
+  display:inline-block;text-decoration:none;border-radius:6px;
+  padding:10px 15px;font-size:13px;font-weight:700;cursor:pointer;
+  border:1px solid var(--accent);background:var(--accent);color:#fff;
+}
+.downloadBtn.secondary{background:white;color:var(--accent)}
+.downloadBtn.disabled{opacity:.5;pointer-events:none}
+
+.warning{
+  margin-top:15px;padding:12px;border-left:3px solid #b5623a;
+  background:#fffaf5;color:#68645d;font-size:12px;line-height:1.55;
+}
+.footer{font-size:11px;color:var(--muted);text-align:center;margin-top:20px}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+  <div class="header">
+    <h1>PDF → Editable PowerPoint Pro</h1>
+    <span>Browser-based converter</span>
+  </div>
+
+  <div class="card">
+    <div class="drop" id="drop">
+      <div class="big">Drop your PDF here</div>
+      <div class="small">or click to select a PDF file</div>
+      <input id="fileInput" type="file" accept=".pdf,application/pdf">
+    </div>
+
+    <div class="fileinfo" id="fileInfo">
+      <div>
+        <div class="filename" id="fileName"></div>
+        <div class="meta" id="fileMeta"></div>
+      </div>
+      <button class="remove" id="removeBtn">Remove</button>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="section-title">Page & output</div>
+
+      <div class="row">
+        <label>Pages
+          <input id="pages" type="text" placeholder="All pages">
+        </label>
+      </div>
+      <div class="help">Examples: <b>1-5</b>, <b>1,3,7</b>, or <b>2-4,8,10</b>.</div>
+
+      <div class="row">
+        <label>Quality
+          <select id="quality">
+            <option value="1.5">Standard</option>
+            <option value="2" selected>High</option>
+            <option value="2.5">Very High</option>
+            <option value="3">Maximum</option>
+          </select>
+        </label>
+
+        <label>Slide
+          <select id="slideMode">
+            <option value="auto" selected>Auto 4:3 / 16:9</option>
+            <option value="wide">16:9 Widescreen</option>
+            <option value="standard">4:3 Standard</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="row">
+        <label>Output name
+          <input id="outputName" type="text" placeholder="converted">
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Editable text</div>
+
+      <div class="row">
+        <label>Mode
+          <select id="mode">
+            <option value="hybrid" selected>Hybrid — image + editable text</option>
+            <option value="editable">Editable text only</option>
+            <option value="image">Image only</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="row">
+        <label>
+          <input id="groupLines" type="checkbox" checked>
+          Combine PDF text items into lines
+        </label>
+      </div>
+
+      <div class="row">
+        <label>Font
+          <select id="font">
+            <option>Arial</option>
+            <option>Calibri</option>
+            <option>Times New Roman</option>
+            <option>Georgia</option>
+            <option>Verdana</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="row">
+        <label>Text color
+          <input id="textColor" type="color" value="#000000">
+        </label>
+
+        <label>
+          <input id="inferBold" type="checkbox" checked>
+          Detect bold
+        </label>
+
+        <label>
+          <input id="inferItalic" type="checkbox" checked>
+          Detect italic
+        </label>
+      </div>
+
+      <div class="help">
+        Normal PDF text can become editable PowerPoint text boxes. The original
+        PDF does not contain PowerPoint objects, so positions and formatting are
+        reconstructed approximately.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <div class="section-title">Convert</div>
+
+    <button class="primary" id="convertBtn" disabled>
+      Convert PDF to PowerPoint
+    </button>
+
+    <div class="progress"><div class="bar" id="bar"></div></div>
+    <div class="status" id="status"></div>
+
+    <div class="stats" id="stats">
+      <div class="stat"><b id="statPages">0</b><span>slides</span></div>
+      <div class="stat"><b id="statLines">0</b><span>editable text lines</span></div>
+      <div class="stat"><b id="statImages">0</b><span>background images</span></div>
+      <div class="stat"><b id="statTime">0s</b><span>conversion time</span></div>
+    </div>
+
+    <div class="downloadBox" id="downloadBox">
+      <div class="downloadTitle">PowerPoint is ready</div>
+      <div class="downloadName" id="downloadName"></div>
+
+      <div class="downloadButtons">
+        <a id="downloadBtn" class="downloadBtn" href="#" download>
+          ↓ Download PowerPoint (.pptx)
+        </a>
+        <button id="newBtn" class="downloadBtn secondary">
+          Convert another PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Preview</div>
+    <div class="preview" id="preview"></div>
+
+    <div class="warning">
+      <b>Important:</b> Hybrid mode keeps a rendered PDF page as the background
+      and places extracted text over it. This preserves photographs, drawings,
+      tables, charts and unusual PDF artwork. Because the original text is still
+      present in the background, some PDFs can show slightly duplicated text.
+      Use <b>Editable text only</b> when you want the cleanest editable result.
+      Scanned PDFs without a text layer cannot be converted into editable text
+      without OCR.
+    </div>
+  </div>
+
+  <div class="footer">
+    PDF processing and PowerPoint generation are performed in your browser.
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const $ = id => document.getElementById(id);
+
+let pdfData = null;
+let sourceName = 'converted';
+let currentBlobUrl = null;
+
+const drop = $('drop');
+const fileInput = $('fileInput');
+const fileInfo = $('fileInfo');
+const fileName = $('fileName');
+const fileMeta = $('fileMeta');
+const removeBtn = $('removeBtn');
+const convertBtn = $('convertBtn');
+const statusEl = $('status');
+const bar = $('bar');
+const preview = $('preview');
+const downloadBox = $('downloadBox');
+const downloadBtn = $('downloadBtn');
+const downloadName = $('downloadName');
+const newBtn = $('newBtn');
+const stats = $('stats');
+
+function setStatus(text, error=false){
+  statusEl.textContent = text || '';
+  statusEl.className = 'status' + (error ? ' error' : '');
+}
+
+function setProgress(n){
+  bar.style.width = Math.max(0,Math.min(100,n)) + '%';
+}
+
+function formatBytes(bytes){
+  if(bytes < 1024) return bytes + ' B';
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1024/1024).toFixed(2) + ' MB';
+}
+
+function resetUI(){
+  pdfData = null;
+  fileInput.value = '';
+  fileInfo.classList.remove('show');
+  convertBtn.disabled = true;
+  preview.classList.remove('show');
+  preview.innerHTML = '';
+  downloadBox.classList.remove('show');
+  stats.classList.remove('show');
+  setProgress(0);
+  setStatus('');
+
+  if(currentBlobUrl){
+    URL.revokeObjectURL(currentBlobUrl);
+    currentBlobUrl = null;
+  }
+}
+
+async function loadFile(file){
+  resetUI();
+
+  if(!file || (file.type !== 'application/pdf' &&
+     !file.name.toLowerCase().endsWith('.pdf'))){
+    setStatus('Please select a PDF file.',true);
+    return;
+  }
+
+  try{
+    pdfData = await file.arrayBuffer();
+    sourceName = file.name.replace(/\.pdf$/i,'') || 'converted';
+
+    fileName.textContent = file.name;
+    fileMeta.textContent = formatBytes(file.size);
+    fileInfo.classList.add('show');
+
+    $('outputName').value = sourceName + '_editable';
+    convertBtn.disabled = false;
+
+    setStatus('PDF loaded. Ready to convert.');
+  }catch(err){
+    setStatus('Could not read the PDF: ' + err.message,true);
+  }
+}
+
+drop.addEventListener('click',() => fileInput.click());
+
+fileInput.addEventListener('change',e=>{
+  if(e.target.files && e.target.files[0]) loadFile(e.target.files[0]);
+});
+
+drop.addEventListener('dragover',e=>{
+  e.preventDefault();
+  drop.classList.add('drag');
+});
+
+drop.addEventListener('dragleave',()=>{
+  drop.classList.remove('drag');
+});
+
+drop.addEventListener('drop',e=>{
+  e.preventDefault();
+  drop.classList.remove('drag');
+
+  if(e.dataTransfer.files && e.dataTransfer.files[0]){
+    loadFile(e.dataTransfer.files[0]);
+  }
+});
+
+removeBtn.addEventListener('click',resetUI);
+newBtn.addEventListener('click',resetUI);
+
+function parsePages(value,total){
+  if(!value.trim()){
+    return Array.from({length:total},(_,i)=>i+1);
+  }
+
+  const set = new Set();
+
+  for(const raw of value.split(',')){
+    const part = raw.trim();
+    if(!part) continue;
+
+    const range = part.match(/^(\d+)\s*-\s*(\d+)$/);
+
+    if(range){
+      let a = parseInt(range[1],10);
+      let b = parseInt(range[2],10);
+
+      if(a>b) [a,b] = [b,a];
+
+      a = Math.max(1,a);
+      b = Math.min(total,b);
+
+      for(let p=a;p<=b;p++) set.add(p);
+    }else{
+      const p = parseInt(part,10);
+      if(p>=1 && p<=total) set.add(p);
+    }
+  }
+
+  return [...set].sort((a,b)=>a-b);
+}
+
+function getPptSize(firstPage){
+  const vp = firstPage.getViewport({scale:1});
+  const ratio = vp.width/vp.height;
+  const requested = $('slideMode').value;
+
+  if(requested === 'wide') return {w:13.333333,h:7.5};
+  if(requested === 'standard') return {w:10,h:7.5};
+
+  return Math.abs(ratio-4/3)<0.10
+    ? {w:10,h:7.5}
+    : {w:13.333333,h:7.5};
+}
+
+function cleanText(s){
+  return String(s || '')
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'')
+    .replace(/\u00a0/g,' ');
+}
+
+function fontLooksBold(name){
+  return /(bold|black|heavy|semibold|demi)/i.test(name || '');
+}
+
+function fontLooksItalic(name){
+  return /(italic|oblique|slant)/i.test(name || '');
+}
+
+/*
+  Extract PDF text. Every returned line retains approximate x/y/width/height.
+*/
+function extractLines(textContent, group){
+  const items = (textContent.items || [])
+    .filter(x => x.str && x.str.trim());
+
+  if(!group){
+    return items.map(item => {
+      const t = item.transform || [1,0,0,1,0,0];
+      const size = Math.max(
+        1,
+        Math.sqrt((t[2]||0)*(t[2]||0)+(t[3]||1)*(t[3]||1))
+      );
+
+      return {
+        text:cleanText(item.str),
+        x:t[4] || 0,
+        y:t[5] || 0,
+        width:Math.max(item.width || 0,size*.3),
+        fontSize:size,
+        fontName:item.fontName || ''
+      };
+    });
+  }
+
+  const lines = [];
+
+  for(const item of items){
+    const t = item.transform || [1,0,0,1,0,0];
+
+    const x = t[4] || 0;
+    const y = t[5] || 0;
+    const size = Math.max(
+      1,
+      Math.sqrt((t[2]||0)*(t[2]||0)+(t[3]||1)*(t[3]||1))
+    );
+    const width = Math.max(item.width || 0,size*.3);
+
+    let best = null;
+    let score = Infinity;
+
+    for(const line of lines){
+      const dy = Math.abs(y-line.y);
+      const tolerance = Math.max(2.5,size*.5,line.fontSize*.5);
+
+      if(dy <= tolerance){
+        const gap = x-(line.x+line.width);
+        const scoreHere =
+          dy*5 + (gap>=-3 ? Math.min(Math.abs(gap),60) : 80);
+
+        if(scoreHere < score){
+          score = scoreHere;
+          best = line;
+        }
+      }
+    }
+
+    if(!best){
+      best = {
+        items:[],
+        x:x,
+        y:y,
+        width:0,
+        fontSize:size,
+        fontName:item.fontName || ''
+      };
+      lines.push(best);
+    }
+
+    best.items.push({
+      str:cleanText(item.str),
+      x:x,
+      width:width,
+      fontSize:size,
+      fontName:item.fontName || ''
+    });
+
+    best.x = Math.min(best.x,x);
+    best.y = (best.y+y)/2;
+    best.width = Math.max(best.width,x+width-best.x);
+    best.fontSize = Math.max(best.fontSize,size);
+  }
+
+  lines.sort((a,b)=>{
+    if(Math.abs(a.y-b.y)>3) return b.y-a.y;
+    return a.x-b.x;
+  });
+
+  return lines.map(line=>{
+    line.items.sort((a,b)=>a.x-b.x);
+
+    let text = '';
+
+    line.items.forEach((item,i)=>{
+      if(i>0){
+        const prev = line.items[i-1];
+        const gap = item.x-(prev.x+prev.width);
+
+        if(gap > Math.max(1.5,item.fontSize*.10)){
+          text += ' ';
+        }
+      }
+      text += item.str;
+    });
+
+    return {
+      text:cleanText(text).trim(),
+      x:line.x,
+      y:line.y,
+      width:line.width,
+      fontSize:line.fontSize,
+      fontName:line.items[0]?.fontName || line.fontName || ''
+    };
+  }).filter(x=>x.text);
+}
+
+async function renderPage(page,scale){
+  const viewport = page.getViewport({scale});
+
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+
+  const ctx = canvas.getContext('2d',{alpha:false});
+
+  ctx.fillStyle='#FFFFFF';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  await page.render({
+    canvasContext:ctx,
+    viewport:viewport,
+    background:'white'
+  }).promise;
+
+  return {canvas,viewport};
+}
+
+function mapBox(item,pageW,pageH,slideW,slideH){
+  const sx = slideW/pageW;
+  const sy = slideH/pageH;
+
+  /*
+    PDF.js viewport at scale=1 is in PDF points (CSS px).
+    Text transform y is baseline-like, so move upward by font height.
+  */
+  let x = item.x*sx;
+  let y = (pageH-item.y-item.fontSize*1.05)*sy;
+
+  let w = Math.max(item.width*sx,.05);
+  let h = Math.max(item.fontSize*1.35*sy,.10);
+
+  x=Math.max(0,Math.min(slideW,x));
+  y=Math.max(0,Math.min(slideH,y));
+
+  w=Math.min(w,slideW-x);
+  h=Math.min(h,slideH-y);
+
+  return {x,y,w,h,fontSize:Math.max(4,Math.min(96,item.fontSize))};
+}
+
+function addTextBoxes(slide,lines,pageW,pageH,slideW,slideH){
+  const fontFace = $('font').value;
+  const textColor = $('textColor').value.replace('#','').toUpperCase();
+  const detectBold = $('inferBold').checked;
+  const detectItalic = $('inferItalic').checked;
+
+  let count=0;
+
+  for(const line of lines){
+    if(!line.text) continue;
+
+    const b = mapBox(
+      line,pageW,pageH,slideW,slideH
+    );
+
+    const bold =
+      detectBold && fontLooksBold(line.fontName);
+
+    const italic =
+      detectItalic && fontLooksItalic(line.fontName);
+
+    /*
+      Use transparent fill so the editable text behaves like an overlay.
+    */
+    slide.addText(line.text,{
+      x:b.x,
+      y:b.y,
+      w:Math.max(.08,b.w),
+      h:Math.max(.10,b.h),
+      fontFace:fontFace,
+      fontSize:b.fontSize,
+      color:textColor,
+      bold:bold,
+      italic:italic,
+      margin:0,
+      breakLine:false,
+      fit:'shrink',
+      valign:'mid',
+      align:'left',
+      fill:{color:'FFFFFF',transparency:100},
+      line:{color:'FFFFFF',transparency:100},
+      transparency:0
+    });
+
+    count++;
+  }
+
+  return count;
+}
+
+async function convert(){
+  if(!pdfData) return;
+
+  convertBtn.disabled=true;
+  downloadBox.classList.remove('show');
+  preview.innerHTML='';
+  preview.classList.add('show');
+  stats.classList.remove('show');
+  setProgress(0);
+
+  const started = performance.now();
+
+  try{
+    if(typeof pdfjsLib === 'undefined'){
+      throw new Error('PDF.js failed to load. Check your internet connection and reload the page.');
+    }
+
+    const PptxConstructor =
+      window.pptxgen || window.PptxGenJS;
+
+    if(typeof PptxConstructor !== 'function'){
+      throw new Error(
+        'PptxGenJS failed to load. Check your internet connection/CDN access and reload the page.'
+      );
+    }
+
+    setStatus('Opening PDF…');
+
+    const pdf = await pdfjsLib.getDocument({
+      data:pdfData
+    }).promise;
+
+    const total=pdf.numPages;
+    const pages=parsePages($('pages').value,total);
+
+    if(!pages.length){
+      throw new Error('No valid pages were selected.');
+    }
+
+    const first=await pdf.getPage(pages[0]);
+    const slideSize=getPptSize(first);
+
+    const pptx=new PptxConstructor();
+
+    pptx.layout =
+      (slideSize.w===10)
+      ? 'LAYOUT_4:3'
+      : 'LAYOUT_WIDE';
+
+    pptx.author='PDF to Editable PowerPoint Pro';
+    pptx.subject='PDF converted to PowerPoint';
+    pptx.title=sourceName;
+    pptx.company='Browser Converter';
+    pptx.lang='en-US';
+
+    const mode=$('mode').value;
+    const quality=parseFloat($('quality').value);
+    const group=$('groupLines').checked;
+
+    let totalLines=0;
+    let imageCount=0;
+
+    for(let index=0;index<pages.length;index++){
+      const pageNo=pages[index];
+
+      setStatus(
+        'Processing page '+pageNo+' of '+total+
+        '  •  '+(index+1)+' / '+pages.length
+      );
+
+      const page=await pdf.getPage(pageNo);
+      const base=page.getViewport({scale:1});
+
+      let rendered=null;
+
+      if(mode==='hybrid' || mode==='image'){
+        rendered=await renderPage(page,quality);
+
+        const thumb=document.createElement('div');
+        thumb.className='thumb';
+
+        const img=document.createElement('img');
+        img.src=rendered.canvas.toDataURL('image/jpeg',.88);
+
+        const label=document.createElement('div');
+        label.textContent='Page '+pageNo;
+
+        thumb.appendChild(img);
+        thumb.appendChild(label);
+        preview.appendChild(thumb);
+      }
+
+      let lines=[];
+
+      if(mode==='hybrid' || mode==='editable'){
+        const text=await page.getTextContent({
+          normalizeWhitespace:true,
+          disableCombineTextItems:false
+        });
+
+        lines=extractLines(text,group);
+        totalLines+=lines.length;
+      }
+
+      const slide=pptx.addSlide();
+      slide.background={color:'FFFFFF'};
+
+      if(mode==='hybrid' || mode==='image'){
+        const imageData=
+          rendered.canvas.toDataURL('image/jpeg',.94);
+
+        slide.addImage({
+          data:imageData,
+          x:0,
+          y:0,
+          w:slideSize.w,
+          h:slideSize.h
+        });
+
+        imageCount++;
+      }
+
+      if(mode==='hybrid' || mode==='editable'){
+        addTextBoxes(
+          slide,
+          lines,
+          base.width,
+          base.height,
+          slideSize.w,
+          slideSize.h
+        );
+      }
+
+      setProgress((index+1)/pages.length*100);
+
+      await new Promise(resolve=>setTimeout(resolve,8));
+    }
+
+    setStatus('Creating .pptx file…');
+
+    const blob=await pptx.write({
+      outputType:'blob'
+    });
+
+    const outputBase =
+      ($('outputName').value.trim() || sourceName+'_editable')
+      .replace(/[<>:"/\\|?*]+/g,'_')
+      .replace(/\.pptx$/i,'');
+
+    const filename=outputBase+'.pptx';
+
+    if(currentBlobUrl){
+      URL.revokeObjectURL(currentBlobUrl);
+    }
+
+    currentBlobUrl=URL.createObjectURL(blob);
+
+    downloadBtn.href=currentBlobUrl;
+    downloadBtn.download=filename;
+    downloadName.textContent=filename;
+
+    downloadBox.classList.add('show');
+    stats.classList.add('show');
+
+    $('statPages').textContent=pages.length;
+    $('statLines').textContent=totalLines;
+    $('statImages').textContent=imageCount;
+
+    const seconds=(performance.now()-started)/1000;
+    $('statTime').textContent=seconds.toFixed(1)+'s';
+
+    setStatus(
+      'Conversion complete. Click "Download PowerPoint (.pptx)" below.'
+    );
+
+    /*
+      Automatic download attempt. The visible download button remains
+      available even if the browser blocks automatic downloads.
+    */
+    try{
+      const a=document.createElement('a');
+      a.href=currentBlobUrl;
+      a.download=filename;
+      a.style.display='none';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }catch(e){
+      console.log('Automatic download was blocked; use the visible button.');
+    }
+
+  }catch(err){
+    console.error(err);
+    setStatus(
+      'Conversion failed: '+
+      (err && err.message ? err.message : String(err)),
+      true
+    );
+  }finally{
+    convertBtn.disabled=false;
+  }
+}
+
+convertBtn.addEventListener('click',convert);
+
+window.addEventListener('load',()=>{
+  const pdfOK=typeof window.pdfjsLib!=='undefined';
+  const pptOK=
+    typeof window.pptxgen==='function' ||
+    typeof window.PptxGenJS==='function';
+
+  if(!pdfOK || !pptOK){
+    setStatus(
+      (!pdfOK?'PDF.js did not load. ':'')+
+      (!pptOK?'PptxGenJS did not load. ':'')+
+      'Check internet/CDN access and reload the page.',
+      true
+    );
+  }
+});
+</script>
+</body>
+</html>

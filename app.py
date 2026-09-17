@@ -1,17 +1,12 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, send_from_directory, url_for
 import csv
 import os
-import resend
-from routes.projects import projects_bp
+from routes.projects import projects_bp 
 
 app = Flask(__name__)
 
 # Register the new Blueprint
 app.register_blueprint(projects_bp)
-
-# Resend configuration
-resend.api_key = os.environ.get('RESEND_API_KEY')
-NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')  # the Gmail address you want notified
 
 # Ensure the 'data' directory exists
 if not os.path.exists('data'):
@@ -60,19 +55,8 @@ def contact():
         email = request.form['email']
         message = request.form['message']
         
-        # Save the form data to CSV (kept as backup)
+        # Save the form data to CSV
         save_to_csv(name, email, message)
-
-        # Send an email notification via Resend
-        try:
-            resend.Emails.send({
-                "from": "Website Contact <onboarding@resend.dev>",
-                "to": [NOTIFY_EMAIL],
-                "subject": f"New Contact Message from {name}",
-                "html": f"<p><strong>Name:</strong> {name}</p><p><strong>Email:</strong> {email}</p><p><strong>Message:</strong> {message}</p>"
-            })
-        except Exception as e:
-            print(f'Email failed to send: {e}')
         
         # Redirect to the homepage after submission
         return redirect(url_for('home'))
@@ -93,6 +77,41 @@ def design():
 @app.route('/estimate')
 def estimate():
     return render_template('estimate/estimate.html')
+@app.route('/others')
+def others():
+    return render_template('others/others.html')
+
+@app.route('/scientific_calculator')
+def scientific_calculator():
+    return render_template('others/scientific_calculator.html')
+
+@app.route('/speed_calculator')
+def speed_calculator():
+    return render_template('others/speed_converter.html')
+
+@app.route('/mass_unit')
+def mass_unit():
+    return render_template('others/mass_unit.html')
+
+@app.route('/pressure_converter')
+def pressure_converter():
+    return render_template('others/pressure_convert.html')
+
+@app.route('/unit_weight')
+def unit_weight():
+    return render_template('others/unit_weight.html')
+
+@app.route('/marge_pdf_tool')
+def marge_pdf_tool():
+    return render_template('others/marge_pdf_tool.html')
+
+@app.route('/split_pdf_tool')
+def split_pdf_tool():
+    return render_template('others/split_pdf_tool.html')
+
+@app.route('/compress_pdf_tool')
+def compress_pdf_tool():
+    return render_template('others/compress_pdf_tool.html')
 
 @app.route('/beam_column_estimator')
 def beam_column_estimator():
@@ -113,6 +132,61 @@ def projects():
 @app.route("/beam_design")
 def beam_design():
     return render_template("design/projects/beam_design/beam_design.html")
+
+@app.route("/converter")
+def converter():
+    return render_template("others/converter/converter.html")
+
+@app.route("/pdf_converter")
+def pdf_converter():
+    return send_from_directory("templates/others/converter", "pdf_converter.html")
+
+@app.route("/pdf_editor")
+def pdf_editor():
+    return send_from_directory("templates/others/converter", "pdf_editor.html")
+
+@app.route("/word_to_pdf")
+def word_to_pdf():
+    return send_from_directory("templates/others/converter", "word_to_pdf.html")
+
+@app.route("/extract_remove_pages")
+def extract_remove_pages():
+    return send_from_directory("templates/others/converter", "extract_remove.html")
+
+@app.route("/add_pdf_page")
+def add_pdf_page():
+    return send_from_directory("templates/others/converter", "add_pages.html")
+
+@app.route("/add_page_number")
+def add_pdf_number():
+    return send_from_directory("templates/others/converter", "add_page_number.html")
+
+@app.route("/image_to_pdf")
+def image_to_pdf():
+    return send_from_directory("templates/others/converter", "image_to_pdf.html")
+
+@app.route("/excel_to_pdf")
+def excel_to_pdf():
+    return send_from_directory("templates/others/converter", "excel_to_pdf.html")
+
+@app.route("/pdf_to_excel")
+def pdf_to_excel():
+    return send_from_directory("templates/others/converter", "pdf_to_excel.html")
+
+@app.route("/powerpoint_to_pdf")
+def powerpoint_to_pdf():
+    return send_from_directory("templates/others/converter", "powerpoint_to_pdf.html")
+
+@app.route("/pdf_to_powerpoint")
+def pdf_to_powerpoint():
+    return send_from_directory("templates/others/converter", "pdf_to_powerpoint.html")
+
+@app.route("/powerpoint_page")
+def powerpoint_page():
+    return send_from_directory("templates/others/converter", "powerpoint_page.html")
+
+
+
 
 @app.route("/two_beam_design")
 def two_beam_design():

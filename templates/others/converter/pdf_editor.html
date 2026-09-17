@@ -1,0 +1,5167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Working PDF Editor</title>
+
+<style>
+*{box-sizing:border-box}
+
+:root{
+  --bg:#0a0e17;
+  --panel:#0d1420;
+  --panel-2:#0f1826;
+  --border:#1e2a3a;
+  --border-soft:#22344a;
+  --text:#c7d3e0;
+  --text-dim:#7d90a8;
+  --cyan:#4fd1e5;
+  --green:#22e5a0;
+  --green-dark:#0fae7c;
+  --blue:#2f6fed;
+  --red:#ef4a5f;
+  --grid:#111a28;
+}
+
+body{
+  margin:0;
+  background:
+    linear-gradient(var(--grid) 1px,transparent 1px) 0 0/28px 28px,
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/28px 28px,
+    var(--bg);
+  font:14px "Segoe UI",Arial,sans-serif;
+  color:var(--text)
+}
+
+.bar{
+  position:sticky;
+  top:0;
+  z-index:10;
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+  padding:10px;
+  display:flex;
+  gap:7px;
+  align-items:center;
+  flex-wrap:wrap;
+  box-shadow:0 2px 12px #0008
+}
+
+.bar button,
+.bar input,
+.bar select{
+  height:34px;
+  border:1px solid var(--border-soft);
+  border-radius:6px;
+  background:var(--panel-2);
+  color:var(--text);
+  padding:0 10px;
+  font:13px "Segoe UI",Arial,sans-serif;
+}
+
+.bar input[type="file"]{
+  color:var(--text-dim);
+  height:44px;
+  padding:0 14px 0 4px;
+  font-size:14px;
+  border:1px solid var(--border-soft);
+  border-radius:8px;
+  background:var(--panel-2);
+  display:flex;
+  align-items:center;
+  cursor:pointer;
+  transition:border-color .18s ease,box-shadow .18s ease,transform .12s ease;
+}
+
+/* Keep the Image/Signature file pickers hidden; Add Image/Add Signature open them. */
+.bar input[type="file"][hidden]{
+  display:none !important;
+}
+
+.bar input[type="file"]:hover{
+  border-color:var(--cyan);
+  box-shadow:0 0 0 3px #4fd1e526,0 4px 14px #0006;
+  transform:translateY(-1px);
+}
+
+.bar input[type="file"]::file-selector-button{
+  height:32px;
+  margin-right:12px;
+  padding:0 16px;
+  border:1px solid var(--green-dark);
+  border-radius:6px;
+  background:linear-gradient(180deg,#2be3a8,var(--green-dark));
+  color:#04140e;
+  font-weight:700;
+  font-size:13px;
+  cursor:pointer;
+  transition:filter .15s ease,box-shadow .15s ease,transform .12s ease;
+}
+
+.bar input[type="file"]::file-selector-button:hover{
+  filter:brightness(1.12);
+  box-shadow:0 0 12px #22e5a066;
+  transform:translateY(-1px);
+}
+
+.bar input[type="file"]::file-selector-button:active{
+  transform:translateY(0);
+  filter:brightness(.95);
+}
+
+.bar input[type="file"]::-webkit-file-upload-button{
+  height:32px;
+  margin-right:12px;
+  padding:0 16px;
+  border:1px solid var(--green-dark);
+  border-radius:6px;
+  background:linear-gradient(180deg,#2be3a8,var(--green-dark));
+  color:#04140e;
+  font-weight:700;
+  font-size:13px;
+  cursor:pointer;
+  transition:filter .15s ease,box-shadow .15s ease,transform .12s ease;
+}
+
+.bar input[type="file"]::-webkit-file-upload-button:hover{
+  filter:brightness(1.12);
+  box-shadow:0 0 12px #22e5a066;
+}
+
+.bar input[type="color"]{
+  padding:2px;
+  width:44px
+}
+
+.bar button{
+  cursor:pointer;
+  transition:border-color .18s ease,box-shadow .18s ease,transform .12s ease,background .15s ease
+}
+
+.bar button:hover{
+  border-color:var(--cyan);
+  box-shadow:0 0 0 3px #4fd1e526,0 4px 14px #0006;
+  transform:translateY(-1px);
+}
+
+.bar button:active{
+  transform:translateY(0);
+}
+
+.primary{
+  background:linear-gradient(180deg,#2be3a8,var(--green-dark))!important;
+  color:#04140e;
+  font-weight:700;
+  border-color:var(--green-dark)!important
+}
+
+.danger{
+  background:linear-gradient(180deg,#ff6b7a,var(--red))!important;
+  color:#210007;
+  font-weight:700;
+  border-color:var(--red)!important
+}
+
+.active{
+  background:linear-gradient(180deg,#5b8dff,var(--blue))!important;
+  color:#fff!important;
+  border-color:var(--blue)!important;
+  box-shadow:0 0 0 1px var(--blue),0 0 10px #2f6fed66
+}
+
+.info{
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+  padding:8px 14px;
+  color:var(--text-dim);
+  letter-spacing:.2px
+}
+
+.stage{
+  padding:25px;
+  text-align:center
+}
+
+.page{
+  position:relative;
+  display:inline-block;
+  background:white;
+  box-shadow:0 0 0 1px var(--border-soft),0 10px 40px #000a
+}
+
+.page canvas{
+  display:block
+}
+
+.layer{
+  position:absolute;
+  inset:0
+}
+
+.textitem{
+  position:absolute;
+  white-space:pre;
+  cursor:pointer;
+  border:1px solid transparent;
+  line-height:1;
+  transform-origin:left top;
+  transform-box:border-box;
+  color:transparent;
+  background:transparent;
+  overflow:visible;
+}
+
+.textitem:hover{
+  border-color:var(--cyan)
+}
+
+.textitem.sel{
+  border:1px dashed var(--blue);
+  background:#2f6fed1a
+}
+
+.coveritem{
+  position:absolute;
+  background:#fff;
+  pointer-events:none;
+  z-index:1
+}
+
+.textitem{
+  z-index:2
+}
+
+.addedtext{
+  user-select:none;
+  z-index:2
+}
+
+.lineitem{
+  position:absolute;
+  cursor:pointer;
+  z-index:3
+}
+
+.lineitem.sel{
+  box-shadow:0 0 0 3px #2f6fed66
+}
+
+.whiteitem{
+  position:absolute;
+  background:#fff;
+  cursor:pointer;
+  z-index:2;
+  border:1px dashed #b9c3d0;
+}
+
+.whiteitem.sel{
+  box-shadow:0 0 0 3px #2f6fed66;
+  border-color:var(--blue);
+}
+
+/* Movable images and signatures */
+.imageitem,
+.signatureitem{
+  position:absolute;
+  display:block;
+  max-width:none;
+  height:auto;
+  cursor:pointer;
+  user-select:none;
+  -webkit-user-drag:none;
+  touch-action:none;
+  z-index:4;
+  box-sizing:border-box;
+}
+
+.imageitem:hover,
+.signatureitem:hover{
+  outline:1px dashed var(--cyan);
+}
+
+.imageitem.sel,
+.signatureitem.sel{
+  outline:2px dashed var(--blue);
+  outline-offset:1px;
+}
+
+
+/* Graphic resize handles */
+.resize-handle{
+  position:absolute;
+  width:14px;
+  height:14px;
+  margin-left:-5px;
+  margin-top:-5px;
+  border:2px solid #fff;
+  background:#2f6fed;
+  border-radius:2px;
+  z-index:9999;
+  display:none;
+  pointer-events:auto;
+  box-shadow:0 1px 4px #0008;
+  touch-action:none;
+}
+.resize-handle.show{display:block}
+.resize-handle.nw,.resize-handle.se{cursor:nwse-resize}
+.resize-handle.ne,.resize-handle.sw{cursor:nesw-resize}
+.resize-handle.n,.resize-handle.s{cursor:ns-resize}
+.resize-handle.e,.resize-handle.w{cursor:ew-resize}
+
+/* Interactive crop overlay for images/signatures */
+.crop-frame{
+  position:absolute;
+  border:2px dashed #fff;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.42);
+  z-index:10000;
+  pointer-events:none;
+}
+.crop-handle{
+  position:absolute;
+  width:16px;
+  height:16px;
+  margin-left:-8px;
+  margin-top:-8px;
+  border:2px solid #fff;
+  background:#ffb300;
+  border-radius:2px;
+  box-shadow:0 1px 5px #000a;
+  pointer-events:auto;
+  touch-action:none;
+  z-index:10001;
+}
+.crop-handle.nw,.crop-handle.se{cursor:nwse-resize}
+.crop-handle.ne,.crop-handle.sw{cursor:nesw-resize}
+.crop-handle.n,.crop-handle.s{cursor:ns-resize}
+.crop-handle.e,.crop-handle.w{cursor:ew-resize}
+.whitepreview{
+  position:absolute;
+  background:rgba(255,255,255,.55);
+  border:1px dashed var(--cyan);
+  pointer-events:none;
+  z-index:6;
+}
+
+.editbox{
+  position:absolute;
+  z-index:20;
+  background:var(--panel);
+  border:1px solid var(--cyan);
+  padding:6px;
+  box-shadow:0 6px 24px #000a,0 0 0 1px #4fd1e533;
+  transform:none!important;
+  white-space:nowrap;
+  border-radius:6px;
+}
+
+.editbox input,
+.editbox textarea{
+  width:260px;
+  padding:6px;
+  background:var(--panel-2);
+  border:1px solid var(--border-soft);
+  color:var(--text);
+  border-radius:4px;
+}
+
+.editbox button{
+  margin-top:5px;
+  background:var(--panel-2);
+  border:1px solid var(--border-soft);
+  color:var(--text);
+  border-radius:4px;
+  height:30px;
+  cursor:pointer;
+}
+
+.editbox button:hover{
+  border-color:var(--cyan)
+}
+
+.editbox .eb-ok,
+.editbox .nt-apply{
+  background:linear-gradient(180deg,#2be3a8,var(--green-dark));
+  color:#04140e;
+  font-weight:700;
+  border-color:var(--green-dark);
+}
+
+.hidden{
+  display:none
+}
+
+#pages{
+  color:var(--text-dim);
+  padding:0 4px;
+  font-weight:600;
+}
+
+label{
+  color:var(--text-dim);
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:13px;
+}
+
+::selection{
+  background:#4fd1e555;
+}
+</style>
+</head>
+
+<body>
+
+<div class="bar">
+
+<input id="pdf" type="file" accept="application/pdf">
+
+<button id="prev">◀</button>
+<span id="pages">0 / 0</span>
+<button id="next">▶</button>
+
+<button id="select" class="active">Select/Edit Text</button>
+<button id="add">Add Text</button>
+<button id="addImage">Add Image</button>
+<button id="addSignature">Add Signature</button>
+<button id="crop" title="Crop selected picture or signature">Crop</button>
+<button id="cancelCrop" style="display:none">Cancel Crop</button>
+<input id="imageFile" type="file" accept="image/png,image/jpeg,image/jpg" hidden>
+<input id="signatureFile" type="file" accept="image/png,image/jpeg,image/jpg" hidden>
+<button id="white">Whiteout</button>
+
+<label>
+Size
+<input id="size"
+       type="number"
+       value="12"
+       min="4"
+       max="100"
+       step="1"
+       style="width:65px">
+</label>
+
+<label>
+Color
+<input id="color" type="color" value="#000000">
+</label>
+
+<button id="bold" title="Toggle bold text"><b>B</b></button>
+<button id="italic" title="Toggle italic text"><i>I</i></button>
+
+<label>
+Font
+<select id="font">
+  <option value="arial">Arial / Helvetica</option>
+  <option value="verdana">Verdana</option>
+  <option value="calibri">Calibri</option>
+  <option value="times">Times New Roman</option>
+  <option value="georgia">Georgia</option>
+  <option value="courier">Courier New</option>
+</select>
+</label>
+
+<button id="move">Move Text</button>
+<button id="newbox">New Text Box</button>
+<button id="line">Draw Line</button>
+<button id="erase">Erase Text</button>
+
+<button id="del" class="danger">Delete Edit</button>
+<button id="undo">↶ Undo</button>
+<button id="redo">↷ Redo</button>
+
+<button id="save" class="primary">Save PDF</button>
+
+<a id="download"
+   class="primary"
+   href="#"
+   download="edited.pdf"
+   style="display:none;
+          text-decoration:none;
+          height:34px;
+          line-height:34px;
+          padding:0 12px;
+          border-radius:6px">
+Download PDF
+</a>
+
+</div>
+
+<div id="status" class="info">
+Open a PDF. Select/Edit Text edits existing text.
+Add Text creates a new editable text box.
+Move Text lets you drag text.
+Draw Line lets you click-drag a straight line.
+Whiteout lets you click-drag a rectangle to cover an area.
+Crop lets you crop a selected picture or signature.
+Erase Text lets you click existing text to remove it instantly.
+</div>
+
+<div class="stage">
+
+<div id="page" class="page hidden">
+
+<canvas id="canvas"></canvas>
+
+<div id="layer" class="layer"></div>
+
+</div>
+
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+
+
+<script>
+
+const worker=
+'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc=worker;
+
+
+/* =========================================================
+   GLOBAL VARIABLES
+========================================================= */
+
+let doc=null;
+let bytes=null;
+let n=1;
+let scale=1.5;
+
+let mode='select';
+
+let items=[];
+let selected=null;
+
+let changes={};
+let pageItems={};
+
+let history=[];
+let historyPos=-1;
+
+let bold=false;
+let italic=false;
+
+/*
+   Tracks whether the user manually typed
+   into the Size field during the CURRENT
+   edit session. When they haven't, we know
+   the shown size is just our own guess and
+   it's safe to auto-shrink it to prevent
+   overflow. When they HAVE typed a size
+   themselves, we trust their judgement
+   (e.g. "there's plenty of blank space
+   here, I want it at its normal size")
+   and skip the auto-shrink safety net.
+*/
+let sizeTouchedByUser=false;
+
+let drag=null;
+let resizeDrag=null;
+let cropDrag=null;
+let cropSession=null;
+let pageCtx=null;
+let lineDraw=null;
+let whiteDraw=null;
+
+/* Image / signature placement */
+let pendingGraphic=null;
+
+/*
+   Set true for a brief moment right after a
+   real drag-move completes (pointer actually
+   travelled), so the trailing native "click"
+   event on the just-moved element (browsers
+   fire one whenever pointerdown/pointerup end
+   up on the same element, even mid-drag) does
+   not also pop open the edit box for that item.
+   A plain click (no movement) still opens it.
+*/
+let suppressNextClick=false;
+
+
+/* =========================================================
+   SHORTCUT
+========================================================= */
+
+const $=id=>document.getElementById(id);
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+function msg(x){
+  $('status').textContent=x;
+}
+
+
+/* =========================================================
+   FONT FAMILY
+========================================================= */
+
+/*
+   Font choices shown on screen.
+   'base' is which of the 3 PDF-embeddable
+   families (sans/serif/mono) this maps to
+   when the file is saved — PDFs can only
+   reliably embed standard font families
+   without loading external font data.
+*/
+
+const FONT_MAP={
+
+  arial:{css:'Arial, Helvetica, sans-serif',base:'sans'},
+  verdana:{css:'Verdana, Geneva, sans-serif',base:'sans'},
+  calibri:{css:'Calibri, Candara, "Segoe UI", sans-serif',base:'sans'},
+
+  times:{css:'"Times New Roman", Times, serif',base:'serif'},
+  georgia:{css:'Georgia, serif',base:'serif'},
+
+  courier:{css:'"Courier New", Courier, monospace',base:'mono'},
+
+  /* legacy values auto-detected from the original PDF */
+  sans:{css:'Arial, Helvetica, sans-serif',base:'sans'},
+  serif:{css:'Georgia, "Times New Roman", Times, serif',base:'serif'},
+  mono:{css:'"Courier New", Courier, monospace',base:'mono'}
+
+};
+
+
+function familyCss(fam){
+
+  return(
+    FONT_MAP[fam]||
+    FONT_MAP.arial
+  ).css;
+
+}
+
+
+function familyBase(fam){
+
+  return(
+    FONT_MAP[fam]||
+    FONT_MAP.arial
+  ).base;
+
+}
+
+
+function normalizeFamily(fam){
+
+  if(fam==='serif')
+    return 'times';
+
+  if(fam==='mono')
+    return 'courier';
+
+  if(fam==='sans')
+    return 'arial';
+
+  if(FONT_MAP[fam])
+    return fam;
+
+  return 'arial';
+
+}
+
+
+/* =========================================================
+   HEX COLOR
+========================================================= */
+
+function hex(h){
+
+  h=h.replace('#','');
+
+  return{
+    r:parseInt(h.slice(0,2),16)/255,
+    g:parseInt(h.slice(2,4),16)/255,
+    b:parseInt(h.slice(4,6),16)/255
+  };
+}
+
+
+/* =========================================================
+   MEASURE TEXT WIDTH (screen px)
+========================================================= */
+
+const measureCanvas=
+  document.createElement('canvas');
+
+const measureCtx=
+  measureCanvas.getContext('2d');
+
+
+function measureTextWidthPx(text,sizePx,family,isBold,isItalic){
+
+  measureCtx.font=
+    (isItalic?'italic ':'')+
+    (isBold?'700 ':'400 ')+
+    sizePx+'px '+
+    familyCss(family);
+
+
+  return measureCtx.measureText(text||'').width;
+
+}
+
+
+/* =========================================================
+   KEEP EDITED TEXT CENTERED
+   ON THE ORIGINAL TEXT'S POSITION
+
+   Rotation is respected: the new text's
+   left-top is shifted along the original
+   text's own reading direction so the
+   visual CENTER stays put, instead of
+   the left edge staying put (which makes
+   edited text drift off to one side).
+========================================================= */
+
+function centeredPos(base,newWidthPx){
+
+  const angleRad=
+    (base.angle||0)*Math.PI/180;
+
+
+  const dxLocal=
+    (base.w-newWidthPx)/2;
+
+
+  return{
+
+    x:
+      base.x+
+      dxLocal*Math.cos(angleRad),
+
+    y:
+      base.y+
+      dxLocal*Math.sin(angleRad)
+
+  };
+
+}
+
+
+/* =========================================================
+   CLONE HISTORY
+========================================================= */
+
+function cloneChanges(obj){
+
+  return JSON.parse(JSON.stringify(obj));
+
+}
+
+
+/* =========================================================
+   HISTORY
+========================================================= */
+
+function pushHistory(){
+
+  history=history.slice(0,historyPos+1);
+
+  history.push(cloneChanges(changes));
+
+  if(history.length>100)
+    history.shift();
+
+  historyPos=history.length-1;
+
+  updateHistoryButtons();
+
+}
+
+
+function restoreHistory(pos){
+
+  if(pos<0 || pos>=history.length)
+    return;
+
+  changes=cloneChanges(history[pos]);
+
+  historyPos=pos;
+
+  selected=null;
+
+  render();
+
+  updateHistoryButtons();
+
+}
+
+
+function updateHistoryButtons(){
+
+  $('undo').disabled=historyPos<=0;
+
+  $('redo').disabled=
+    historyPos>=history.length-1;
+
+}
+
+
+/* =========================================================
+   PDF OPEN
+========================================================= */
+
+$('pdf').onchange=async e=>{
+
+  let f=e.target.files[0];
+
+  if(!f)
+    return;
+
+  try{
+
+    msg('Loading...');
+
+    const fileBuffer=await f.arrayBuffer();
+
+    bytes=new Uint8Array(
+      fileBuffer.slice(0)
+    );
+
+    if(
+      bytes.length<5 ||
+      String.fromCharCode(
+        ...bytes.slice(0,5)
+      )!=='%PDF-'
+    ){
+
+      throw new Error(
+        'This file does not appear to be a valid PDF.'
+      );
+
+    }
+
+
+    /*
+      Give PDF.js its own copy.
+      This prevents PDF.js from detaching
+      our original PDF bytes.
+    */
+
+    const pdfJsBytes=bytes.slice();
+
+    doc=
+      await pdfjsLib
+      .getDocument({
+        data:pdfJsBytes
+      })
+      .promise;
+
+
+    n=1;
+
+    changes={};
+
+    history=[];
+    historyPos=-1;
+
+    pushHistory();
+
+    $('download').style.display='none';
+    $('download').removeAttribute('href');
+
+    $('page').classList.remove('hidden');
+
+    await render();
+
+    msg(
+      'Loaded '+f.name+
+      ' — click an existing text item to edit it.'
+    );
+
+  }
+  catch(x){
+
+    console.error(x);
+
+    msg(
+      'ERROR: '+x.message
+    );
+
+  }
+
+};
+
+
+/* =========================================================
+   RENDER PAGE
+========================================================= */
+
+async function render(){
+  if(cropSession) clearCropUI();
+
+  if(!doc)
+    return;
+
+
+  let p=await doc.getPage(n);
+
+  let vp=p.getViewport({
+    scale
+  });
+
+
+  let c=$('canvas');
+
+  c.width=Math.ceil(vp.width);
+  c.height=Math.ceil(vp.height);
+
+  c.style.width=vp.width+'px';
+  c.style.height=vp.height+'px';
+
+
+  $('page').style.width=vp.width+'px';
+  $('page').style.height=vp.height+'px';
+
+
+  let ctx=c.getContext('2d');
+
+
+  await p.render({
+    canvasContext:ctx,
+    viewport:vp
+  }).promise;
+
+
+  pageCtx=ctx;
+
+
+  let layer=$('layer');
+
+  layer.innerHTML='';
+
+  selected=null;
+
+  items=[];
+
+
+  /*
+     Read PDF text
+  */
+
+  let tc=await p.getTextContent();
+
+  const styles=tc.styles||{};
+
+
+  tc.items.forEach((it,i)=>{
+
+
+    /*
+       Transform PDF text coordinates
+       into screen/canvas coordinates.
+    */
+
+    let tx=
+      pdfjsLib.Util.transform(
+        vp.transform,
+        it.transform
+      );
+
+
+    const x=tx[4];
+
+    const baselineY=tx[5];
+
+
+    /*
+       Correct font size even for
+       rotated text.
+    */
+
+    const font=Math.max(
+      Math.hypot(tx[0],tx[1]),
+      Math.hypot(tx[2],tx[3]),
+      1
+    );
+
+
+    const w=Math.max(
+      it.width*scale,
+      4
+    );
+
+
+    const h=Math.max(
+      font,
+      7
+    );
+
+
+    /*
+       Detect rotation.
+
+       This is the important part for
+       90-degree text.
+
+       IMPORTANT: this is the SCREEN
+       rotation (includes the page's
+       own /Rotate value baked in via
+       vp.transform). It is correct for
+       the CSS overlay, but must NOT be
+       used when drawing into the saved
+       PDF — pdf-lib draws rotation in
+       the page's raw, un-rotated content
+       space. Using the screen angle there
+       double-counts the page rotation and
+       is what turns edited horizontal text
+       vertical/garbled on save. A separate
+       contentAngle (below) is used for that.
+    */
+
+    let angle=
+      Math.atan2(
+        tx[1],
+        tx[0]
+      )*180/Math.PI;
+
+
+    /*
+       Normalize common PDF rotations.
+    */
+
+    if(Math.abs(angle-90)<2)
+      angle=90;
+
+    else if(Math.abs(angle+90)<2)
+      angle=-90;
+
+    else if(Math.abs(Math.abs(angle)-180)<2)
+      angle=180;
+
+    else if(Math.abs(angle)<2)
+      angle=0;
+
+
+    /*
+       CONTENT-SPACE rotation, taken
+       directly from the raw PDF text
+       transform (it.transform), with
+       no viewport/page-rotation mixed
+       in. This is what must be handed
+       to pdf-lib's drawText later.
+    */
+
+    let contentAngle=
+      Math.atan2(
+        it.transform[1],
+        it.transform[0]
+      )*180/Math.PI;
+
+
+    if(Math.abs(contentAngle-90)<2)
+      contentAngle=90;
+
+    else if(Math.abs(contentAngle+90)<2)
+      contentAngle=-90;
+
+    else if(Math.abs(Math.abs(contentAngle)-180)<2)
+      contentAngle=180;
+
+    else if(Math.abs(contentAngle)<2)
+      contentAngle=0;
+
+
+    const topY=
+      baselineY-font;
+
+
+    /*
+       Detect original font.
+    */
+
+    const styleInfo=
+      styles[it.fontName]||{};
+
+
+    const famRaw=
+      (styleInfo.fontFamily||
+       'sans-serif')
+      .toLowerCase();
+
+
+    let family='sans';
+
+
+    if(famRaw.includes('monospace'))
+      family='mono';
+
+    else if(
+      famRaw.includes('serif') &&
+      !famRaw.includes('sans')
+    )
+      family='serif';
+
+
+    const nameBlob=
+      famRaw+' '+
+      (it.fontName||'')
+      .toLowerCase();
+
+
+    const boldGuess=
+      /bold|black|heavy/.test(nameBlob);
+
+
+    const italicGuess=
+      /italic|oblique/.test(nameBlob);
+
+
+    /*
+       Create invisible text overlay.
+    */
+
+    let el=
+      document.createElement('div');
+
+
+    el.className='textitem';
+
+
+    el.style.left=
+      x+'px';
+
+    el.style.top=
+      topY+'px';
+
+
+    el.style.width=
+      w+'px';
+
+    el.style.height=
+      h+'px';
+
+
+    el.style.fontSize=
+      font+'px';
+
+
+    el.style.lineHeight='1';
+
+
+    /*
+       Rotate overlay.
+
+       This allows the user to select
+       and edit vertical 90-degree text.
+    */
+
+    el.style.transformOrigin=
+      'left top';
+
+    el.style.transform=
+      'rotate('+angle+'deg)';
+
+
+    el.textContent=it.str;
+
+    el.dataset.i=i;
+
+
+    el.onclick=ev=>{
+
+      ev.stopPropagation();
+
+
+      if(suppressNextClick){
+
+        suppressNextClick=false;
+
+        return;
+
+      }
+
+
+      if(mode==='erase'){
+
+        changes[n]=changes[n]||[];
+
+
+        let existing=
+          changes[n].find(
+            c=>c.i===i
+          );
+
+
+        if(existing){
+
+          existing.delete=true;
+
+        }
+        else{
+
+          changes[n].push({
+            i,
+            delete:true,
+            angle
+          });
+
+        }
+
+
+        pushHistory();
+
+        render();
+
+        msg(
+          'Text erased. Use Undo to bring it back.'
+        );
+
+        return;
+
+      }
+
+
+      editExisting(i,el);
+
+    };
+
+
+    layer.appendChild(el);
+
+
+    items.push({
+
+      str:it.str,
+
+      x,
+
+      y:topY,
+
+      baselineY,
+
+      w,
+
+      h,
+
+      font,
+
+      raw:it,
+
+      family,
+
+      boldGuess,
+
+      italicGuess,
+
+      angle,
+
+      contentAngle
+
+    });
+
+  });
+
+
+  /*
+     Save a copy of page information.
+  */
+
+  pageItems[n]=
+    items.map(it=>({...it}));
+
+
+  /* =====================================================
+     APPLY EXISTING CHANGES
+  ===================================================== */
+
+  for(
+    const c of(changes[n]||[])
+  ){
+
+    if(c.i!==undefined){
+
+      const base=
+        pageItems[n][c.i];
+
+
+      if(!base)
+        continue;
+
+
+      /*
+         White cover over original PDF text.
+      */
+
+      let cover=
+        layer.querySelector(
+          '.coveritem[data-cover-i="'+c.i+'"]'
+        );
+
+
+      if(!cover){
+
+        cover=
+          document.createElement('div');
+
+        cover.className=
+          'coveritem';
+
+        cover.dataset.coverI=c.i;
+
+        layer.appendChild(cover);
+
+      }
+
+
+      const coverPadX=0.5;
+      const coverPadY=0.15;
+
+      /*
+         Extra room below the baseline for
+         descenders (g, y, p, q, j) — the box's
+         height was originally measured from
+         the baseline UPWARD only, so anything
+         dipping below the baseline was left
+         uncovered, leaking a sliver of the old
+         glyph. Capped small so it can't reach
+         into the next line of text.
+      */
+      const descentPad=
+        (Math.abs(base.angle||0)<2) ?
+        Math.min(6,(base.font||0)*0.35) :
+        0;
+
+
+      /*
+         For 90/270-degree text,
+         width and height are visually swapped.
+      */
+
+      let coverW=base.w;
+      let coverH=base.h;
+
+
+      if(
+        Math.abs(
+          Math.abs(base.angle||0)-90
+        )<2
+      ){
+
+        coverW=base.h;
+        coverH=base.w;
+
+      }
+
+
+      cover.style.left=
+        Math.max(
+          0,
+          base.x-coverPadX
+        )+'px';
+
+
+      cover.style.top=
+        Math.max(
+          0,
+          base.y-coverPadY
+        )+'px';
+
+
+      cover.style.width=
+        (
+          coverW+
+          coverPadX*2
+        )+'px';
+
+
+      cover.style.height=
+        (
+          coverH+
+          coverPadY*2+
+          descentPad
+        )+'px';
+
+
+      const el=
+        layer.querySelector(
+          '.textitem[data-i="'+c.i+'"]'
+        );
+
+
+      if(!el)
+        continue;
+
+
+      if(c.delete){
+
+        el.remove();
+
+        continue;
+
+      }
+
+
+      el.textContent=
+        c.text;
+
+
+      el.style.left=
+        (
+          c.x!==undefined ?
+          c.x :
+          base.x
+        )+'px';
+
+
+      el.style.top=
+        (
+          c.y!==undefined ?
+          c.y :
+          base.y
+        )+'px';
+
+
+      el.style.color=
+        c.color||'#000';
+
+
+      const displaySizePt=
+        c.size!==undefined ?
+        c.size :
+        base.font/(scale||1);
+
+      el.style.fontSize=
+        (
+          displaySizePt*(scale||1)
+        )+'px';
+
+
+      el.style.fontWeight=
+        c.bold?'700':'400';
+
+
+      el.style.fontStyle=
+        c.italic?'italic':'normal';
+
+
+      el.style.fontFamily=
+        familyCss(
+          c.family||
+          base.family
+        );
+
+
+      /*
+         PRESERVE ROTATION
+      */
+
+      const rotation=
+        c.angle!==undefined ?
+        c.angle :
+        (base.angle||0);
+
+
+      el.style.transformOrigin=
+        'left top';
+
+      el.style.transform=
+        'rotate('+rotation+'deg)';
+
+
+      el.style.background=
+        'transparent';
+
+      el.style.borderColor=
+        'transparent';
+
+    }
+
+  }
+
+
+  /* =====================================================
+     ADD NEW TEXT
+  ===================================================== */
+
+  (changes[n]||[]).forEach(
+    (c,i)=>{
+
+      if(c.add && !c.deleted){
+
+        let el=
+          document.createElement('div');
+
+
+        el.className=
+          'textitem addedtext';
+
+
+        el.dataset.addIndex=i;
+
+
+        el.textContent=
+          c.text||'';
+
+
+        el.style.left=
+          (c.x||0)+'px';
+
+
+        el.style.top=
+          (c.y||0)+'px';
+
+
+        el.style.width=
+          'auto';
+
+
+        el.style.height=
+          'auto';
+
+
+        el.style.color=
+          c.color||'#000';
+
+
+        el.style.fontSize=
+          ((c.size||12)*(scale||1))+'px';
+
+
+        el.style.fontWeight=
+          c.bold?'700':'400';
+
+
+        el.style.fontStyle=
+          c.italic?'italic':'normal';
+
+
+        el.style.fontFamily=
+          familyCss(
+            c.family||'sans'
+          );
+
+
+        el.style.cursor=
+          'move';
+
+
+        el.onclick=e=>{
+
+          e.stopPropagation();
+
+
+          if(suppressNextClick){
+
+            suppressNextClick=false;
+
+            return;
+
+          }
+
+
+          if(mode==='erase'){
+
+            changes[n][i].deleted=true;
+
+            pushHistory();
+
+            render();
+
+            msg(
+              'Text erased. Use Undo to bring it back.'
+            );
+
+            return;
+
+          }
+
+
+          selected={
+            kind:'add',
+            index:i,
+            el
+          };
+
+
+          document
+          .querySelectorAll('.textitem')
+          .forEach(
+            x=>x.classList.remove('sel')
+          );
+
+
+          el.classList.add('sel');
+
+
+          if(mode!=='move')
+            editAdded(i,el);
+
+        };
+
+
+        layer.appendChild(el);
+
+      }
+
+    }
+  );
+
+
+  /* =====================================================
+     DRAW SAVED IMAGES / SIGNATURES
+  ===================================================== */
+
+  (changes[n]||[]).forEach(
+    (c,i)=>{
+      if((c.image || c.signature) && !c.deleted){
+        let el=document.createElement('img');
+        el.className=c.signature ? 'signatureitem' : 'imageitem';
+        el.dataset.graphicIndex=i;
+        el.src=c.data;
+        el.draggable=false;
+        el.style.left=(c.x||0)+'px';
+        el.style.top=(c.y||0)+'px';
+        el.style.width=(c.w||180)+'px';
+        if(c.h) el.style.height=c.h+'px';
+        el.title=c.signature ? 'Signature — use Move Text to reposition' :
+          'Image — use Move Text to reposition';
+
+        el.onclick=e=>{
+          e.stopPropagation();
+          if(cropSession) return;
+          selectGraphic(i,el);
+        };
+        layer.appendChild(el);
+        createGraphicHandles(i,el);
+      }
+    }
+  );
+
+
+  /* =====================================================
+     DRAW SAVED LINES
+  ===================================================== */
+
+  (changes[n]||[]).forEach(
+    (c,i)=>{
+
+      if(c.line && !c.deleted){
+
+        let el=
+          document.createElement('div');
+
+
+        el.className=
+          'lineitem';
+
+
+        el.dataset.lineIndex=i;
+
+
+        const dx=
+          c.x2-c.x1;
+
+        const dy=
+          c.y2-c.y1;
+
+
+        const dist=
+          Math.hypot(dx,dy);
+
+
+        const angle=
+          Math.atan2(
+            dy,
+            dx
+          )*180/Math.PI;
+
+
+        el.style.left=
+          c.x1+'px';
+
+
+        el.style.top=
+          c.y1+'px';
+
+
+        el.style.width=
+          dist+'px';
+
+
+        el.style.height=
+          (c.width||2)+'px';
+
+
+        el.style.background=
+          c.color||'#000000';
+
+
+        el.style.transformOrigin=
+          '0 0';
+
+
+        el.style.transform=
+          'rotate('+angle+'deg)';
+
+
+        el.onclick=e=>{
+
+          e.stopPropagation();
+
+
+          if(mode==='erase'){
+
+            c.deleted=true;
+
+            pushHistory();
+
+            render();
+
+            msg('Line erased.');
+
+            return;
+
+          }
+
+
+          selected={
+            kind:'line',
+            index:i,
+            el
+          };
+
+
+          document
+          .querySelectorAll(
+            '.textitem,.lineitem,.whiteitem'
+          )
+          .forEach(
+            x=>x.classList.remove('sel')
+          );
+
+
+          el.classList.add('sel');
+
+        };
+
+
+        layer.appendChild(el);
+
+      }
+
+    }
+  );
+
+
+  /* =====================================================
+     DRAW SAVED WHITEOUTS
+
+     These previously had no on-screen representation at
+     all: the change was recorded and applied correctly at
+     save time, but the editor gave zero visual feedback
+     that anything had been placed, and there was no way
+     to select or delete one from the UI. This block gives
+     each whiteout a real, clickable element (shown with a
+     faint dashed outline in the editor only — the outline
+     is never drawn into the exported PDF, which just gets
+     a plain white rectangle).
+  ===================================================== */
+
+  (changes[n]||[]).forEach(
+    (c,i)=>{
+
+      if(c.white && !c.deleted){
+
+        let el=
+          document.createElement('div');
+
+
+        el.className=
+          'whiteitem';
+
+
+        el.dataset.whiteIndex=i;
+
+
+        el.style.left=
+          c.x+'px';
+
+        el.style.top=
+          c.y+'px';
+
+        el.style.width=
+          c.w+'px';
+
+        el.style.height=
+          c.h+'px';
+
+
+        el.title=
+          'Whiteout — click to select, then Delete Edit to remove';
+
+
+        el.onclick=e=>{
+
+          e.stopPropagation();
+
+
+          if(mode==='erase'){
+
+            c.deleted=true;
+
+            pushHistory();
+
+            render();
+
+            msg('Whiteout erased.');
+
+            return;
+
+          }
+
+
+          selected={
+            kind:'white',
+            index:i,
+            el
+          };
+
+
+          document
+          .querySelectorAll(
+            '.textitem,.lineitem,.whiteitem'
+          )
+          .forEach(
+            x=>x.classList.remove('sel')
+          );
+
+
+          el.classList.add('sel');
+
+        };
+
+
+        layer.appendChild(el);
+
+      }
+
+    }
+  );
+
+
+  $('pages').textContent=
+    n+' / '+doc.numPages;
+
+}
+
+
+/* =========================================================
+   BUTTON STATES
+========================================================= */
+
+function setButtons(){
+
+  $('select').classList.toggle(
+    'active',
+    mode==='select'
+  );
+
+  $('add').classList.toggle(
+    'active',
+    mode==='add'
+  );
+
+  $('white').classList.toggle(
+    'active',
+    mode==='white'
+  );
+
+  $('addImage').classList.toggle(
+    'active',
+    mode==='image'
+  );
+
+  $('addSignature').classList.toggle(
+    'active',
+    mode==='signature'
+  );
+
+  $('move').classList.toggle(
+    'active',
+    mode==='move'
+  );
+
+  $('line').classList.toggle(
+    'active',
+    mode==='line'
+  );
+
+  $('erase').classList.toggle(
+    'active',
+    mode==='erase'
+  );
+
+  $('bold').classList.toggle(
+    'active',
+    bold
+  );
+
+  $('italic').classList.toggle(
+    'active',
+    italic
+  );
+
+}
+
+
+/* =========================================================
+   FIND EDITED TEXT
+========================================================= */
+
+function findChange(i){
+
+  return(
+    changes[n]||[]
+  ).find(
+    c=>c.i===i && !c.delete
+  );
+
+}
+
+
+/* =========================================================
+   CLOSE ANY OPEN EDIT/NEW-TEXT POPUP
+
+   Only one of these should ever exist at a time. Every
+   popup used to be built with fixed ids (id="ok",
+   id="editInput", etc.), so if the user opened a second
+   popup before finishing the first, the page ended up
+   with two elements sharing the same id — and
+   getElementById() would silently bind the new popup's
+   button handlers onto the OLD, stale element instead.
+   Removing any leftover popup up front (and scoping all
+   lookups to the popup's own container rather than the
+   document) fixes that for good.
+========================================================= */
+
+function closeOpenPopups(){
+
+  layer
+  .querySelectorAll('.editbox')
+  .forEach(b=>b.remove());
+
+}
+
+
+/* =========================================================
+   EDIT EXISTING TEXT
+========================================================= */
+
+function editExisting(i,el){
+
+  closeOpenPopups();
+
+
+  selected={
+    kind:'existing',
+    i,
+    el
+  };
+
+
+  document
+  .querySelectorAll('.textitem')
+  .forEach(
+    x=>x.classList.remove('sel')
+  );
+
+
+  el.classList.add('sel');
+
+
+  let base=
+    pageItems[n][i];
+
+
+  let c=
+    findChange(i);
+
+
+  /*
+     Popup is deliberately horizontal,
+     even if text itself is rotated.
+  */
+
+  let box=
+    document.createElement('div');
+
+
+  box.className='editbox';
+
+
+  box.style.left=
+    Math.max(
+      0,
+      el.offsetLeft+
+      Math.min(el.offsetWidth,100)+
+      10
+    )+'px';
+
+
+  box.style.top=
+    Math.max(
+      0,
+      el.offsetTop
+    )+'px';
+
+
+  box.innerHTML=
+    '<input class="eb-input" style="width:260px">'+
+    ' <button class="eb-ok">Apply</button>'+
+    ' <button class="eb-cancel">Cancel</button>';
+
+
+  layer.appendChild(box);
+
+
+  const input=
+    box.querySelector('.eb-input');
+
+  const okBtn=
+    box.querySelector('.eb-ok');
+
+  const cancelBtn=
+    box.querySelector('.eb-cancel');
+
+
+  input.value=
+    c ?
+    c.text :
+    base.str;
+
+
+  input.focus();
+
+  input.select();
+
+
+  sizeTouchedByUser=false;
+
+  $('size').oninput=()=>{
+    sizeTouchedByUser=true;
+  };
+
+
+  if(c){
+
+    $('size').value=
+      c.size||
+      base.font/(scale||1);
+
+
+    $('color').value=
+      c.color||
+      '#000000';
+
+
+    bold=
+      !!c.bold;
+
+
+    italic=
+      !!c.italic;
+
+
+    $('font').value=
+      normalizeFamily(
+        c.family||
+        base.family
+      );
+
+
+    setButtons();
+
+  }
+  else{
+
+    /*
+       Default to the original
+       font characteristics.
+    */
+
+    $('size').value=
+      base.font/(scale||1);
+
+
+    bold=
+      !!base.boldGuess;
+
+
+    italic=
+      !!base.italicGuess;
+
+
+    $('font').value=
+      normalizeFamily(
+        base.family
+      );
+
+
+    setButtons();
+
+  }
+
+
+  okBtn.onclick=()=>{
+
+    changes[n]=changes[n]||[];
+
+
+    const newText=
+      input.value;
+
+
+    const family=
+      $('font').value;
+
+
+    const sizePt=
+      +$('size').value||
+      base.font/(scale||1);
+
+
+    const angle=
+      base.angle||0;
+
+
+    let q=
+      findChange(i);
+
+
+    if(!q){
+
+      q={
+        i,
+        angle
+      };
+
+      changes[n].push(q);
+
+    }
+
+
+    q.text=newText;
+
+
+    /*
+       AUTO-FIT TO ORIGINAL WIDTH.
+
+       The real PDF font (often a narrow/condensed
+       drafting font in title blocks) is replaced on
+       save by a standard PDF font (Helvetica/Times/
+       Courier). At the SAME point size, the standard
+       font is frequently wider per character, so even
+       retyping the identical text can now overflow past
+       the original cell's border — this is what "melted"
+       into the REV/CHECKED column lines.
+
+       To guarantee the edit never grows past where the
+       original text ended, shrink the size (never enlarge)
+       just enough so the new text's rendered width fits
+       inside the original text's width.
+    */
+
+    const sizePxRequested=
+      sizePt*(scale||1);
+
+    const newWidthPxAtRequested=
+      measureTextWidthPx(
+        newText,
+        sizePxRequested,
+        family,
+        bold,
+        italic
+      );
+
+    let fittedSizePt=sizePt;
+
+    if(
+      !sizeTouchedByUser &&
+      base.w>0 &&
+      newWidthPxAtRequested>base.w
+    ){
+
+      fittedSizePt=
+        sizePt*
+        (base.w/newWidthPxAtRequested)*
+        0.97;
+
+    }
+
+
+    q.size=fittedSizePt;
+
+    q.color=
+      $('color').value;
+
+    q.bold=bold;
+
+    q.italic=italic;
+
+    q.family=family;
+
+    q.angle=
+      q.angle!==undefined ?
+      q.angle :
+      angle;
+
+    q.contentAngle=
+      q.contentAngle!==undefined ?
+      q.contentAngle :
+      (base.contentAngle||0);
+
+
+    /*
+       Keep the ORIGINAL position exactly,
+       unless the user has explicitly dragged
+       this text with Move Text (q.manualPos).
+       We deliberately do NOT re-center based on
+       measured text width any more: that measurement
+       used a substitute web font (Arial/Times/Courier)
+       which almost never matches the true width of the
+       PDF's real embedded font, so the computed offset
+       was frequently wrong — this is what dragged edited
+       text sideways into neighbouring text or table cells.
+       Anchoring to the untouched original x/y is the only
+       way to guarantee "exact same position, just new text".
+    */
+
+    if(!q.manualPos){
+
+      q.x=base.x;
+
+      q.y=base.y;
+
+    }
+
+
+    pushHistory();
+
+
+    box.remove();
+
+
+    render();
+
+
+    msg(
+      fittedSizePt<sizePt-0.01 ?
+      'Text edited. Font size auto-shrunk from '+
+      sizePt.toFixed(1)+'pt to '+
+      fittedSizePt.toFixed(1)+
+      'pt so it stays inside the original cell width.'
+      :
+      'Text edited. Position and rotation ('+
+      angle+
+      '°) unchanged.'
+    );
+
+  };
+
+
+  cancelBtn.onclick=()=>{
+    box.remove();
+  };
+
+
+  input.onkeydown=e=>{
+
+    if(e.key==='Enter')
+      okBtn.click();
+
+    if(e.key==='Escape')
+      cancelBtn.click();
+
+  };
+
+}
+
+
+/* =========================================================
+   EDIT ADDED TEXT
+========================================================= */
+
+function editAdded(i,el){
+
+  closeOpenPopups();
+
+
+  let c=
+    changes[n][i];
+
+
+  let box=
+    document.createElement('div');
+
+
+  box.className=
+    'editbox';
+
+
+  box.style.left=
+    el.offsetLeft+'px';
+
+
+  box.style.top=
+    Math.max(
+      0,
+      el.offsetTop-55
+    )+'px';
+
+
+  box.innerHTML=
+    '<input class="eb-input" style="width:260px">'+
+    ' <button class="eb-ok">Apply</button>'+
+    ' <button class="eb-cancel">Cancel</button>';
+
+
+  layer.appendChild(box);
+
+
+  const input=
+    box.querySelector('.eb-input');
+
+  const okBtn=
+    box.querySelector('.eb-ok');
+
+  const cancelBtn=
+    box.querySelector('.eb-cancel');
+
+
+  input.value=
+    c.text||'';
+
+
+  input.focus();
+
+  input.select();
+
+
+  $('size').value=
+    c.size||12;
+
+
+  $('color').value=
+    c.color||'#000000';
+
+
+  bold=!!c.bold;
+
+  italic=!!c.italic;
+
+
+  $('font').value=
+    normalizeFamily(
+      c.family||'arial'
+    );
+
+
+  setButtons();
+
+
+  okBtn.onclick=()=>{
+
+    c.text=
+      input.value;
+
+
+    c.size=
+      +$('size').value||12;
+
+
+    c.color=
+      $('color').value;
+
+
+    c.bold=
+      bold;
+
+
+    c.italic=
+      italic;
+
+
+    c.family=
+      $('font').value;
+
+
+    pushHistory();
+
+
+    box.remove();
+
+    render();
+
+  };
+
+
+  cancelBtn.onclick=()=>{
+    box.remove();
+  };
+
+
+  input.onkeydown=e=>{
+
+    if(e.key==='Enter')
+      okBtn.click();
+
+    if(e.key==='Escape')
+      cancelBtn.click();
+
+  };
+
+}
+
+
+/* =========================================================
+   GRAPHIC SELECTION / RESIZE
+========================================================= */
+
+function hideGraphicHandles(){
+  document.querySelectorAll('.resize-handle').forEach(h=>h.classList.remove('show'));
+}
+
+function selectGraphic(index,el){
+  selected={kind:'graphic',index,el};
+  document.querySelectorAll('.textitem,.lineitem,.whiteitem,.imageitem,.signatureitem')
+    .forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel');
+  hideGraphicHandles();
+  document.querySelectorAll('.resize-handle[data-graphic-index="'+index+'"]').forEach(h=>h.classList.add('show'));
+  updateGraphicHandles(el);
+}
+
+function createGraphicHandles(index,el){
+  // 8 resize points: 4 corners + 4 middle/edge points.
+  ['nw','n','ne','e','se','s','sw','w'].forEach(pos=>{
+    const h=document.createElement('div');
+    h.className='resize-handle '+pos;
+    h.dataset.graphicIndex=index;
+    h.dataset.resize=pos;
+    h.title='Drag to resize';
+    h.style.pointerEvents='auto';
+    h.addEventListener('pointerdown', ev=>{
+      const target=layer.querySelector('.imageitem[data-graphic-index=\"'+index+'\"],.signatureitem[data-graphic-index=\"'+index+'\"]');
+      if(!target) return;
+      beginGraphicResize(ev,target,pos,index);
+    }, true);
+    layer.appendChild(h);
+  });
+}
+
+function updateGraphicHandles(el){
+  if(!el) return;
+  const x=el.offsetLeft, y=el.offsetTop, w=el.offsetWidth, h=el.offsetHeight;
+  const index=el.dataset.graphicIndex;
+  const pts={
+    nw:[x,y],
+    n:[x+w/2,y],
+    ne:[x+w,y],
+    e:[x+w,y+h/2],
+    se:[x+w,y+h],
+    s:[x+w/2,y+h],
+    sw:[x,y+h],
+    w:[x,y+h/2]
+  };
+  document.querySelectorAll('.resize-handle[data-graphic-index="'+index+'"]').forEach(handle=>{
+    const pt=pts[handle.dataset.resize];
+    if(!pt) return;
+    handle.style.left=pt[0]+'px';
+    handle.style.top=pt[1]+'px';
+  });
+}
+
+function beginGraphicResize(e,el,pos,index){
+  // Resize handles work in any mode once the graphic is selected.
+  // Moving the whole graphic still uses Move Text mode.
+  e.preventDefault();
+  e.stopPropagation();
+
+  const r=layer.getBoundingClientRect();
+  const w=Math.max(20, el.getBoundingClientRect().width);
+  const h=Math.max(20, el.getBoundingClientRect().height);
+  const aspect=h>0 ? w/h : 1;
+
+  selected={kind:'graphic',index,el};
+  document.querySelectorAll('.textitem,.lineitem,.whiteitem,.imageitem,.signatureitem')
+    .forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel');
+  hideGraphicHandles();
+  document.querySelectorAll('.resize-handle[data-graphic-index="'+index+'"]')
+    .forEach(h=>h.classList.add('show'));
+  updateGraphicHandles(el);
+
+  try{
+    e.target.setPointerCapture(e.pointerId);
+  }catch(_){}
+
+  resizeDrag={
+    el,index,pos,pointerId:e.pointerId,
+    handle:e.target,
+    startX:el.offsetLeft,
+    startY:el.offsetTop,
+    startW:w,
+    startH:h,
+    aspect,
+    startClientX:e.clientX,
+    startClientY:e.clientY,
+    layerRect:{left:r.left,top:r.top,width:r.width,height:r.height}
+  };
+
+  // Listen on the document so resizing keeps working even if the pointer
+  // leaves the small resize handle or the PDF layer during the drag.
+  document.addEventListener('pointermove', resizeGraphicMove, true);
+  document.addEventListener('pointerup', finishGraphicResize, true);
+  document.addEventListener('pointercancel', finishGraphicResize, true);
+}
+
+function resizeGraphicMove(e){
+  if(!resizeDrag) return;
+  e.preventDefault();
+
+  const d=resizeDrag;
+  const dx=e.clientX-d.startClientX;
+  const dy=e.clientY-d.startClientY;
+  const {el,pos,startX,startY,startW,startH,aspect}=d;
+  const maxW=d.layerRect.width;
+  const maxH=d.layerRect.height;
+  const minSize=20;
+
+  let x=startX, y=startY, w=startW, h=startH;
+
+  // Corner handles resize proportionally from the opposite corner.
+  if(pos==='nw' || pos==='ne' || pos==='sw' || pos==='se'){
+    let delta;
+    if(pos==='se') delta=Math.abs(dx)>=Math.abs(dy*aspect) ? dx : dy*aspect;
+    else if(pos==='sw') delta=Math.abs(dx)>=Math.abs(dy*aspect) ? -dx : dy*aspect;
+    else if(pos==='ne') delta=Math.abs(dx)>=Math.abs(dy*aspect) ? dx : -dy*aspect;
+    else delta=Math.abs(dx)>=Math.abs(dy*aspect) ? -dx : -dy*aspect;
+
+    w=Math.max(minSize,startW+delta);
+    h=Math.max(minSize,w/aspect);
+
+    if(pos==='nw'){ x=startX+startW-w; y=startY+startH-h; }
+    if(pos==='ne'){ x=startX;           y=startY+startH-h; }
+    if(pos==='sw'){ x=startX+startW-w; y=startY; }
+    if(pos==='se'){ x=startX;           y=startY; }
+  }
+  // Middle-top/bottom handles resize height only.
+  else if(pos==='n' || pos==='s'){
+    h=Math.max(minSize, pos==='n' ? startH-dy : startH+dy);
+    y=pos==='n' ? startY+startH-h : startY;
+  }
+  // Middle-left/right handles resize width only.
+  else if(pos==='w' || pos==='e'){
+    w=Math.max(minSize, pos==='w' ? startW-dx : startW+dx);
+    x=pos==='w' ? startX+startW-w : startX;
+  }
+
+  // Keep the object inside the PDF layer.
+  if(w>maxW){ w=maxW; if(pos==='nw'||pos==='sw'||pos==='w') x=startX+startW-w; }
+  if(h>maxH){ h=maxH; if(pos==='nw'||pos==='ne'||pos==='n') y=startY+startH-h; }
+
+  if(x<0){
+    if(pos==='nw'||pos==='sw'||pos==='w') w+=x;
+    x=0;
+  }
+  if(y<0){
+    if(pos==='nw'||pos==='ne'||pos==='n') h+=y;
+    y=0;
+  }
+  if(x+w>maxW){
+    if(pos==='ne'||pos==='se'||pos==='e') w=maxW-x;
+    else x=maxW-w;
+  }
+  if(y+h>maxH){
+    if(pos==='sw'||pos==='se'||pos==='s') h=maxH-y;
+    else y=maxH-h;
+  }
+
+  w=Math.max(minSize,w);
+  h=Math.max(minSize,h);
+  x=Math.max(0,Math.min(x,Math.max(0,maxW-w)));
+  y=Math.max(0,Math.min(y,Math.max(0,maxH-h)));
+
+  el.style.left=x+'px';
+  el.style.top=y+'px';
+  el.style.width=w+'px';
+  el.style.height=h+'px';
+  el.draggable=false;
+  updateGraphicHandles(el);
+}
+function finishGraphicResize(){
+  if(!resizeDrag) return;
+
+  document.removeEventListener('pointermove', resizeGraphicMove, true);
+  document.removeEventListener('pointerup', finishGraphicResize, true);
+  document.removeEventListener('pointercancel', finishGraphicResize, true);
+
+  const d=resizeDrag;
+  try{ if(d.handle && d.pointerId!=null) d.handle.releasePointerCapture(d.pointerId); }catch(_){}
+  const c=changes[n] && changes[n][d.index];
+  if(c){
+    c.x=parseFloat(d.el.style.left)||0;
+    c.y=parseFloat(d.el.style.top)||0;
+    c.w=parseFloat(d.el.style.width)||d.startW;
+    c.h=parseFloat(d.el.style.height)||d.startH;
+    c.manualPos=true;
+    c.manualSize=true;
+    pushHistory();
+  }
+
+  resizeDrag=null;
+}
+
+/* =========================================================
+   IMAGE / SIGNATURE CROP
+========================================================= */
+
+function clearCropUI(){
+  document.querySelectorAll('.crop-frame').forEach(x=>x.remove());
+  cropDrag=null;
+  cropSession=null;
+  $('crop').style.display='';
+  $('crop').textContent='Crop';
+  $('cancelCrop').style.display='none';
+}
+
+function startGraphicCrop(index,el){
+  if(!el || !changes[n] || !changes[n][index] ||
+     (!changes[n][index].image && !changes[n][index].signature)){
+    msg('Please select a picture or signature first.');
+    return;
+  }
+
+  clearCropUI();
+  hideGraphicHandles();
+
+  const w=el.offsetWidth;
+  const h=el.offsetHeight;
+  if(w<10 || h<10){ msg('Picture is too small to crop.'); return; }
+
+  const frame=document.createElement('div');
+  frame.className='crop-frame';
+  layer.appendChild(frame);
+
+  const positions=['nw','n','ne','e','se','s','sw','w'];
+  positions.forEach(pos=>{
+    const handle=document.createElement('div');
+    handle.className='crop-handle '+pos;
+    handle.dataset.crop=pos;
+    frame.appendChild(handle);
+    handle.addEventListener('pointerdown',e=>beginCropDrag(e,pos),true);
+  });
+
+  cropSession={
+    index,
+    el,
+    frame,
+    imageX:el.offsetLeft,
+    imageY:el.offsetTop,
+    imageW:w,
+    imageH:h,
+    left:0,
+    top:0,
+    right:w,
+    bottom:h
+  };
+
+  selected={kind:'graphic',index,el};
+  document.querySelectorAll('.textitem,.lineitem,.whiteitem,.imageitem,.signatureitem')
+    .forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel');
+
+  updateCropFrame();
+  $('crop').textContent='Apply Crop';
+  $('cancelCrop').style.display='';
+  msg('Crop mode: drag the yellow handles to choose the area, then click Apply Crop.');
+}
+
+function updateCropFrame(){
+  if(!cropSession) return;
+  const d=cropSession;
+  const f=d.frame;
+  f.style.left=(d.imageX+d.left)+'px';
+  f.style.top=(d.imageY+d.top)+'px';
+  f.style.width=Math.max(1,d.right-d.left)+'px';
+  f.style.height=Math.max(1,d.bottom-d.top)+'px';
+
+  const pts={
+    nw:[0,0], n:[(d.right-d.left)/2,0], ne:[d.right-d.left,0],
+    e:[d.right-d.left,(d.bottom-d.top)/2], se:[d.right-d.left,d.bottom-d.top],
+    s:[(d.right-d.left)/2,d.bottom-d.top], sw:[0,d.bottom-d.top],
+    w:[0,(d.bottom-d.top)/2]
+  };
+  f.querySelectorAll('.crop-handle').forEach(h=>{
+    const pt=pts[h.dataset.crop];
+    h.style.left=pt[0]+'px';
+    h.style.top=pt[1]+'px';
+  });
+}
+
+function beginCropDrag(e,pos){
+  if(!cropSession) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const d=cropSession;
+  cropDrag={
+    pos,
+    pointerId:e.pointerId,
+    startX:e.clientX,
+    startY:e.clientY,
+    left:d.left, top:d.top, right:d.right, bottom:d.bottom
+  };
+  try{e.target.setPointerCapture(e.pointerId)}catch(_){ }
+  document.addEventListener('pointermove',cropDragMove,true);
+  document.addEventListener('pointerup',finishCropDrag,true);
+  document.addEventListener('pointercancel',finishCropDrag,true);
+}
+
+function cropDragMove(e){
+  if(!cropDrag || !cropSession) return;
+  e.preventDefault();
+  const d=cropSession, q=cropDrag;
+  const dx=e.clientX-q.startX, dy=e.clientY-q.startY;
+  const min=20;
+  let l=q.left,t=q.top,r=q.right,b=q.bottom;
+
+  if(q.pos.includes('w')) l=Math.max(0,Math.min(q.left+dx,r-min));
+  if(q.pos.includes('e')) r=Math.min(d.imageW,Math.max(q.right+dx,l+min));
+  if(q.pos.includes('n')) t=Math.max(0,Math.min(q.top+dy,b-min));
+  if(q.pos.includes('s')) b=Math.min(d.imageH,Math.max(q.bottom+dy,t+min));
+
+  d.left=l; d.top=t; d.right=r; d.bottom=b;
+  updateCropFrame();
+}
+
+function finishCropDrag(){
+  if(!cropDrag) return;
+  document.removeEventListener('pointermove',cropDragMove,true);
+  document.removeEventListener('pointerup',finishCropDrag,true);
+  document.removeEventListener('pointercancel',finishCropDrag,true);
+  cropDrag=null;
+}
+
+async function applyGraphicCrop(){
+  if(!cropSession) return;
+  const d=cropSession;
+  const c=changes[n] && changes[n][d.index];
+  if(!c || !c.data){ clearCropUI(); return; }
+
+  const cropW=d.right-d.left;
+  const cropH=d.bottom-d.top;
+  if(cropW<10 || cropH<10){ msg('Crop area is too small.'); return; }
+
+  try{
+    const img=new Image();
+    await new Promise((resolve,reject)=>{
+      img.onload=resolve;
+      img.onerror=reject;
+      img.src=c.data;
+    });
+
+    const sx=Math.max(0,Math.round(d.left/d.imageW*img.naturalWidth));
+    const sy=Math.max(0,Math.round(d.top/d.imageH*img.naturalHeight));
+    const sw=Math.max(1,Math.min(img.naturalWidth-sx,Math.round(cropW/d.imageW*img.naturalWidth)));
+    const sh=Math.max(1,Math.min(img.naturalHeight-sy,Math.round(cropH/d.imageH*img.naturalHeight)));
+
+    const canvas=document.createElement('canvas');
+    canvas.width=sw;
+    canvas.height=sh;
+    const ctx=canvas.getContext('2d');
+    ctx.drawImage(img,sx,sy,sw,sh,0,0,sw,sh);
+
+    const mime=/^data:image\/jpe?g/i.test(c.data) ? 'image/jpeg' : 'image/png';
+    c.data=canvas.toDataURL(mime,mime==='image/jpeg' ? .92 : undefined);
+
+    // Keep the current displayed width, but update height to the new crop ratio.
+    let newW=d.imageW;
+    let newH=newW*(sh/sw);
+    const maxH=layer.clientHeight-d.imageY;
+    if(newH>maxH && maxH>20){
+      newH=maxH;
+      newW=newH*(sw/sh);
+    }
+    c.x=d.imageX;
+    c.y=d.imageY;
+    c.w=Math.max(20,newW);
+    c.h=Math.max(20,newH);
+    c.manualPos=true;
+    c.manualSize=true;
+    c.cropped=true;
+
+    clearCropUI();
+    pushHistory();
+    render();
+    msg('Crop applied. You can now move or resize the picture/signature normally.');
+  }catch(err){
+    console.error(err);
+    msg('Could not crop this image. Please try again.');
+  }
+}
+
+$('crop').onclick=()=>{
+  if(cropSession){
+    applyGraphicCrop();
+    return;
+  }
+  if(selected && selected.kind==='graphic'){
+    startGraphicCrop(selected.index,selected.el);
+  }else{
+    msg('Please click a picture or signature first, then click Crop.');
+  }
+};
+
+$('cancelCrop').onclick=()=>{
+  clearCropUI();
+  if(selected && selected.kind==='graphic') selectGraphic(selected.index,selected.el);
+  msg('Crop cancelled.');
+};
+
+/* =========================================================
+   DRAG TEXT
+========================================================= */
+
+function beginDrag(e,el){
+
+  if(mode!=='move')
+    return;
+
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  // Keep receiving pointer events even if the cursor leaves the image/signature.
+  try{ layer.setPointerCapture(e.pointerId); }catch(_){ }
+
+
+  let kind;
+  if(el.classList.contains('addedtext')) kind='add';
+  else if(el.classList.contains('imageitem') || el.classList.contains('signatureitem')) kind='graphic';
+  else kind='existing';
+
+  let index;
+  if(kind==='add') index=+el.dataset.addIndex;
+  else if(kind==='graphic') index=+el.dataset.graphicIndex;
+  else index=+el.dataset.i;
+
+
+  selected={
+    kind,
+    index,
+    el
+  };
+
+  if(kind==='graphic'){
+    selectGraphic(index,el);
+  }else{
+    document
+    .querySelectorAll('.textitem')
+    .forEach(
+      x=>x.classList.remove('sel')
+    );
+    el.classList.add('sel');
+    hideGraphicHandles();
+  }
+
+
+  let r=
+    layer.getBoundingClientRect();
+
+
+  drag={
+
+    el,
+
+    pointerId:e.pointerId,
+
+    kind,
+
+    index,
+
+    /*
+       Starting position, used at drop time to
+       tell a real drag apart from a plain click
+       (see suppressNextClick above).
+    */
+
+    startLeft:
+      el.offsetLeft,
+
+    startTop:
+      el.offsetTop,
+
+    dx:
+      e.clientX-
+      r.left-
+      el.offsetLeft,
+
+    dy:
+      e.clientY-
+      r.top-
+      el.offsetTop
+
+  };
+
+}
+
+
+/* =========================================================
+   DRAG MOVE
+========================================================= */
+
+function dragMove(e){
+
+  if(resizeDrag){
+    resizeGraphicMove(e);
+    return;
+  }
+
+  if(!drag)
+    return;
+
+
+  let r=
+    layer.getBoundingClientRect();
+
+
+  let x=
+    e.clientX-
+    r.left-
+    drag.dx;
+
+
+  let y=
+    e.clientY-
+    r.top-
+    drag.dy;
+
+
+  drag.el.style.left=
+    Math.max(0,x)+'px';
+
+
+  drag.el.style.top=
+    Math.max(0,y)+'px';
+
+  if(drag.kind==='graphic') updateGraphicHandles(drag.el);
+
+}
+
+
+/* =========================================================
+   FINISH DRAG
+========================================================= */
+
+function finishDrag(){
+
+  if(resizeDrag){
+    finishGraphicResize();
+    return;
+  }
+
+  if(!drag)
+    return;
+
+  try{
+    if(drag.pointerId!=null) layer.releasePointerCapture(drag.pointerId);
+  }catch(_){ }
+
+
+  let x=
+    parseFloat(
+      drag.el.style.left
+    )||0;
+
+
+  let y=
+    parseFloat(
+      drag.el.style.top
+    )||0;
+
+
+  /*
+     If the item actually travelled, the browser will
+     still fire one more native "click" on it right after
+     this pointerup (down and up both land on the same,
+     now-relocated element). Swallow that one click so it
+     doesn't also pop the edit box open right after moving.
+     A drop back at (basically) the same spot is treated as
+     a plain click and is allowed through as before.
+  */
+
+  const moved=
+    Math.hypot(
+      x-drag.startLeft,
+      y-drag.startTop
+    )>3;
+
+
+  if(moved)
+    suppressNextClick=true;
+
+
+  changes[n]=changes[n]||[];
+
+
+  if(drag.kind==='add'){
+
+    changes[n][drag.index].x=x;
+
+    changes[n][drag.index].y=y;
+
+  }
+  else if(drag.kind==='graphic'){
+
+    changes[n][drag.index].x=x;
+
+    changes[n][drag.index].y=y;
+
+    changes[n][drag.index].manualPos=true;
+
+  }
+  else{
+
+    let base=
+      pageItems[n][drag.index];
+
+
+    let q=
+      findChange(drag.index);
+
+
+    if(!q){
+
+      q={
+
+        i:drag.index,
+
+        text:base.str,
+
+        size:
+          base.font/(scale||1),
+
+        color:'#000000',
+
+        bold:
+          !!base.boldGuess,
+
+        italic:
+          !!base.italicGuess,
+
+        family:
+          base.family,
+
+        x:base.x,
+
+        y:base.y,
+
+        /*
+           PRESERVE ROTATION.
+        */
+
+        angle:
+          base.angle||0,
+
+        contentAngle:
+          base.contentAngle||0
+
+      };
+
+
+      changes[n].push(q);
+
+    }
+
+
+    /*
+       Store NEW visual position.
+
+       manualPos marks that the user
+       explicitly placed this text —
+       on save, this screen position
+       is honored as-is instead of
+       being auto-centered over the
+       original PDF text.
+    */
+
+    q.x=x;
+
+    q.y=y;
+
+    q.manualPos=true;
+
+  }
+
+
+  drag=null;
+
+
+  pushHistory();
+
+
+  render();
+
+
+  msg(
+    moved ?
+    'Text moved. Original text is covered.' :
+    'Original text is covered.'
+  );
+
+}
+
+
+/* =========================================================
+   MODE BUTTONS
+========================================================= */
+
+$('select').onclick=()=>{
+
+  mode='select';
+
+  setButtons();
+
+  msg(
+    'Select/Edit Text: click existing text to edit.'
+  );
+
+};
+
+
+$('add').onclick=()=>{
+
+  mode='add';
+
+  setButtons();
+
+  msg(
+    'Add Text: click anywhere on the page to create a new text box.'
+  );
+
+};
+
+
+$('newbox').onclick=()=>{
+
+  mode='add';
+
+  setButtons();
+
+  msg(
+    'New Text Box: click the page where you want the box, then type your text.'
+  );
+
+};
+
+
+$('white').onclick=()=>{
+
+  mode='white';
+
+  setButtons();
+
+  msg(
+    'Whiteout: click and drag on the page to cover an area.'
+  );
+
+};
+
+
+$('move').onclick=()=>{
+
+  mode='move';
+
+  setButtons();
+
+  msg(
+    'Move Text: drag an existing or added text.'
+  );
+
+};
+
+
+$('line').onclick=()=>{
+
+  mode='line';
+
+  setButtons();
+
+  msg(
+    'Draw Line: click and drag on the page to draw a straight line.'
+  );
+
+};
+
+
+$('erase').onclick=()=>{
+
+  mode='erase';
+
+  setButtons();
+
+  msg(
+    'Erase Text: click any existing PDF text, line, or whiteout.'
+  );
+
+};
+
+
+$('bold').onclick=()=>{
+
+  bold=!bold;
+
+  setButtons();
+
+};
+
+
+$('italic').onclick=()=>{
+
+  italic=!italic;
+
+  setButtons();
+
+};
+
+
+/* =========================================================
+   CREATE NEW TEXT BOX
+========================================================= */
+
+function createNewTextBox(x,y){
+
+  closeOpenPopups();
+
+
+  let box=
+    document.createElement('div');
+
+
+  box.className=
+    'editbox newtextbox';
+
+
+  box.style.left=
+    Math.max(0,x)+'px';
+
+
+  box.style.top=
+    Math.max(0,y)+'px';
+
+
+  box.innerHTML=
+    '<textarea class="nt-input" rows="3" '+
+    'placeholder="Type your text..." '+
+    'style="width:280px;resize:both;padding:7px;font:14px Arial"></textarea>'+
+    '<br>'+
+    '<button class="nt-apply">Add Text</button> '+
+    '<button class="nt-cancel">Cancel</button>';
+
+
+  layer.appendChild(box);
+
+
+  const input=
+    box.querySelector('.nt-input');
+
+  const applyBtn=
+    box.querySelector('.nt-apply');
+
+  const cancelBtn=
+    box.querySelector('.nt-cancel');
+
+
+  input.focus();
+
+
+  applyBtn.onclick=()=>{
+
+    let t=
+      input.value;
+
+
+    if(!t.trim()){
+
+      box.remove();
+
+      return;
+
+    }
+
+
+    changes[n]=changes[n]||[];
+
+
+    changes[n].push({
+
+      add:true,
+
+      text:t,
+
+      x,
+
+      y,
+
+      size:
+        +$('size').value||12,
+
+      color:
+        $('color').value,
+
+      bold,
+
+      italic,
+
+      family:
+        $('font').value
+
+    });
+
+
+    pushHistory();
+
+
+    box.remove();
+
+
+    render();
+
+
+    msg(
+      'New text box added. Use Move Text to reposition it.'
+    );
+
+  };
+
+
+  cancelBtn.onclick=()=>{
+    box.remove();
+  };
+
+}
+
+
+/* =========================================================
+   IMAGE / SIGNATURE
+========================================================= */
+
+function chooseGraphic(kind){
+  pendingGraphic=null;
+  mode=kind;
+  setButtons();
+  const input=kind==='image' ? $('imageFile') : $('signatureFile');
+  input.value='';
+  input.click();
+  msg(kind==='image'
+    ? 'Add Image: choose PNG/JPG, then click on the PDF to place it.'
+    : 'Add Signature: choose your signature PNG/JPG, then click on the PDF to place it.');
+}
+
+function loadGraphicFile(file,kind){
+  if(!file) return;
+  if(!/^image\/(png|jpeg|jpg)$/.test(file.type)){
+    msg('Please choose a PNG or JPG image.');
+    return;
+  }
+
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      const maxW=kind==='signature' ? 180 : 260;
+      const scaleDown=Math.min(1,maxW/img.naturalWidth);
+      pendingGraphic={
+        kind,
+        data:reader.result,
+        w:Math.max(20,img.naturalWidth*scaleDown),
+        h:Math.max(20,img.naturalHeight*scaleDown)
+      };
+      mode=kind;
+      setButtons();
+      msg((kind==='signature'?'Signature':'Image')+' loaded. Click the PDF to place it.');
+    };
+    img.src=reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+$('addImage').onclick=()=>chooseGraphic('image');
+$('addSignature').onclick=()=>chooseGraphic('signature');
+
+$('imageFile').onchange=e=>loadGraphicFile(e.target.files[0],'image');
+$('signatureFile').onchange=e=>loadGraphicFile(e.target.files[0],'signature');
+
+function placePendingGraphic(x,y){
+  if(!pendingGraphic){
+    chooseGraphic(mode==='signature'?'signature':'image');
+    return;
+  }
+
+  changes[n]=changes[n]||[];
+  changes[n].push({
+    image:pendingGraphic.kind==='image',
+    signature:pendingGraphic.kind==='signature',
+    data:pendingGraphic.data,
+    x:Math.max(0,x),
+    y:Math.max(0,y),
+    w:pendingGraphic.w,
+    h:pendingGraphic.h
+  });
+
+  const type=pendingGraphic.kind;
+  pendingGraphic=null;
+  pushHistory();
+  render();
+  msg((type==='signature'?'Signature':'Image')+' added. Click it to select, then drag any corner or middle-edge handle to resize. Use Move Text to reposition.');
+}
+
+/* =========================================================
+   DRAW LINE
+========================================================= */
+
+function beginLine(x,y){
+
+  lineDraw={
+    x1:x,
+    y1:y,
+    x2:x,
+    y2:y
+  };
+
+
+  let el=
+    document.createElement('div');
+
+
+  el.style.position=
+    'absolute';
+
+
+  el.style.left=
+    x+'px';
+
+
+  el.style.top=
+    y+'px';
+
+
+  el.style.width=
+    '0px';
+
+
+  el.style.height=
+    (
+      $('size').value ?
+      Math.min(
+        +$('size').value,
+        6
+      ) :
+      2
+    )+'px';
+
+
+  el.style.background=
+    $('color').value;
+
+
+  el.style.transformOrigin=
+    '0 0';
+
+
+  el.style.pointerEvents=
+    'none';
+
+
+  el.style.zIndex=6;
+
+
+  layer.appendChild(el);
+
+
+  lineDraw.el=el;
+
+}
+
+
+/* =========================================================
+   LINE PREVIEW
+========================================================= */
+
+function updateLinePreview(e){
+
+  if(!lineDraw)
+    return;
+
+
+  let r=
+    layer.getBoundingClientRect();
+
+
+  let x2=
+    e.clientX-r.left;
+
+
+  let y2=
+    e.clientY-r.top;
+
+
+  let dx=
+    x2-lineDraw.x1;
+
+
+  let dy=
+    y2-lineDraw.y1;
+
+
+  let dist=
+    Math.hypot(dx,dy);
+
+
+  let angle=
+    Math.atan2(
+      dy,
+      dx
+    )*180/Math.PI;
+
+
+  lineDraw.el.style.width=
+    dist+'px';
+
+
+  lineDraw.el.style.transform=
+    'rotate('+angle+'deg)';
+
+
+  lineDraw.x2=x2;
+
+  lineDraw.y2=y2;
+
+}
+
+
+/* =========================================================
+   FINISH LINE
+========================================================= */
+
+function finishLine(){
+
+  if(!lineDraw)
+    return;
+
+
+  const{
+    x1,
+    y1,
+    x2,
+    y2
+  }=lineDraw;
+
+
+  lineDraw.el.remove();
+
+  lineDraw=null;
+
+
+  if(
+    Math.hypot(
+      x2-x1,
+      y2-y1
+    )<3
+  )
+    return;
+
+
+  changes[n]=changes[n]||[];
+
+
+  changes[n].push({
+
+    line:true,
+
+    x1,
+    y1,
+    x2,
+    y2,
+
+    color:
+      $('color').value,
+
+    width:2
+
+  });
+
+
+  pushHistory();
+
+  render();
+
+
+  msg(
+    'Line added. Click it and press Delete Edit to remove.'
+  );
+
+}
+
+
+/* =========================================================
+   DRAW WHITEOUT (click-drag rectangle, matches Draw Line)
+========================================================= */
+
+function beginWhite(x,y){
+
+  whiteDraw={
+    x1:x,
+    y1:y,
+    x2:x,
+    y2:y
+  };
+
+
+  let el=
+    document.createElement('div');
+
+
+  el.className=
+    'whitepreview';
+
+
+  el.style.left=
+    x+'px';
+
+  el.style.top=
+    y+'px';
+
+  el.style.width=
+    '0px';
+
+  el.style.height=
+    '0px';
+
+
+  layer.appendChild(el);
+
+
+  whiteDraw.el=el;
+
+}
+
+
+/* =========================================================
+   WHITEOUT PREVIEW
+========================================================= */
+
+function updateWhitePreview(e){
+
+  if(!whiteDraw)
+    return;
+
+
+  let r=
+    layer.getBoundingClientRect();
+
+
+  let x2=
+    e.clientX-r.left;
+
+
+  let y2=
+    e.clientY-r.top;
+
+
+  const left=
+    Math.min(whiteDraw.x1,x2);
+
+  const top=
+    Math.min(whiteDraw.y1,y2);
+
+  const w=
+    Math.abs(x2-whiteDraw.x1);
+
+  const h=
+    Math.abs(y2-whiteDraw.y1);
+
+
+  whiteDraw.el.style.left=
+    left+'px';
+
+  whiteDraw.el.style.top=
+    top+'px';
+
+  whiteDraw.el.style.width=
+    w+'px';
+
+  whiteDraw.el.style.height=
+    h+'px';
+
+
+  whiteDraw.x2=x2;
+
+  whiteDraw.y2=y2;
+
+}
+
+
+/* =========================================================
+   FINISH WHITEOUT
+========================================================= */
+
+function finishWhite(){
+
+  if(!whiteDraw)
+    return;
+
+
+  const{
+    x1,
+    y1,
+    x2,
+    y2
+  }=whiteDraw;
+
+
+  whiteDraw.el.remove();
+
+  whiteDraw=null;
+
+
+  const left=
+    Math.min(x1,x2);
+
+  const top=
+    Math.min(y1,y2);
+
+  const w=
+    Math.abs(x2-x1);
+
+  const h=
+    Math.abs(y2-y1);
+
+
+  if(
+    w<3 ||
+    h<3
+  )
+    return;
+
+
+  changes[n]=changes[n]||[];
+
+
+  changes[n].push({
+
+    white:true,
+
+    x:left,
+
+    y:top,
+
+    w,
+
+    h
+
+  });
+
+
+  pushHistory();
+
+  render();
+
+
+  msg(
+    'Whiteout added. Click it and press Delete Edit to remove.'
+  );
+
+}
+
+
+/* =========================================================
+   PAGE POINTER EVENTS
+========================================================= */
+
+$('layer').addEventListener(
+  'pointerdown',
+  e=>{
+
+    if(cropSession){
+      if(e.target.classList.contains('crop-handle')) return;
+      if(e.target.closest && e.target.closest('.crop-frame')) return;
+      e.preventDefault();
+      return;
+    }
+
+    if(e.target.classList.contains('resize-handle')){
+      const idx=+e.target.dataset.graphicIndex;
+      const img=layer.querySelector('.imageitem[data-graphic-index="'+idx+'"],.signatureitem[data-graphic-index="'+idx+'"]');
+      if(img) beginGraphicResize(e,img,e.target.dataset.resize,idx);
+      return;
+    }
+
+    if(
+      e.target.classList.contains('textitem') ||
+      e.target.classList.contains('imageitem') ||
+      e.target.classList.contains('signatureitem')
+    ){
+      if(mode==='move') beginDrag(e,e.target);
+      return;
+    }
+
+
+    if(
+      e.target.classList.contains(
+        'lineitem'
+      ) ||
+      e.target.classList.contains(
+        'whiteitem'
+      )
+    ){
+
+      return;
+
+    }
+
+
+    if(
+      e.target!==$('layer')
+    )
+      return;
+
+
+    let r=
+      layer.getBoundingClientRect();
+
+
+    let x=
+      e.clientX-r.left;
+
+
+    let y=
+      e.clientY-r.top;
+
+
+    if(mode==='add'){
+
+      createNewTextBox(
+        x,
+        y
+      );
+
+    }
+
+    else if(mode==='image' || mode==='signature'){
+
+      placePendingGraphic(x,y);
+
+    }
+
+    else if(mode==='white'){
+
+      beginWhite(
+        x,
+        y
+      );
+
+    }
+
+    else if(mode==='line'){
+
+      beginLine(
+        x,
+        y
+      );
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   POINTER MOVE
+========================================================= */
+
+$('layer').addEventListener(
+  'pointermove',
+  e=>{
+
+    dragMove(e);
+
+    updateLinePreview(e);
+
+    updateWhitePreview(e);
+
+  }
+);
+
+
+/* =========================================================
+   POINTER UP
+========================================================= */
+
+$('layer').addEventListener(
+  'pointerup',
+  ()=>{
+
+    finishDrag();
+
+    finishLine();
+
+    finishWhite();
+
+  }
+);
+
+
+/* =========================================================
+   POINTER CANCEL
+========================================================= */
+
+$('layer').addEventListener(
+  'pointercancel',
+  ()=>{
+
+    finishDrag();
+
+    finishLine();
+
+    finishWhite();
+
+  }
+);
+
+
+/* =========================================================
+   PREVIOUS / NEXT
+========================================================= */
+
+$('prev').onclick=async()=>{
+
+  if(
+    doc &&
+    n>1
+  ){
+
+    n--;
+
+    await render();
+
+  }
+
+};
+
+
+$('next').onclick=async()=>{
+
+  if(
+    doc &&
+    n<doc.numPages
+  ){
+
+    n++;
+
+    await render();
+
+  }
+
+};
+
+
+/* =========================================================
+   DELETE
+========================================================= */
+
+$('del').onclick=()=>{
+
+  if(!selected)
+    return;
+
+
+  changes[n]=changes[n]||[];
+
+
+  if(
+    selected.kind==='existing'
+  ){
+
+    changes[n].push({
+
+      i:selected.i,
+
+      delete:true
+
+    });
+
+  }
+
+  else if(
+    selected.kind==='add' &&
+    changes[n][selected.index]
+  ){
+
+    changes[n][selected.index]
+      .deleted=true;
+
+  }
+
+  else if(
+    selected.kind==='line' &&
+    changes[n][selected.index]
+  ){
+
+    changes[n][selected.index]
+      .deleted=true;
+
+  }
+
+  else if(
+    selected.kind==='white' &&
+    changes[n][selected.index]
+  ){
+
+    changes[n][selected.index]
+      .deleted=true;
+
+  }
+
+  else if(
+    selected.kind==='graphic' &&
+    changes[n][selected.index]
+  ){
+
+    changes[n][selected.index]
+      .deleted=true;
+
+  }
+
+
+  pushHistory();
+
+  selected=null;
+
+  render();
+
+};
+
+
+/* =========================================================
+   UNDO / REDO
+========================================================= */
+
+$('undo').onclick=()=>{
+
+  restoreHistory(
+    historyPos-1
+  );
+
+};
+
+
+$('redo').onclick=()=>{
+
+  restoreHistory(
+    historyPos+1
+  );
+
+};
+
+
+updateHistoryButtons();
+
+
+/* =========================================================
+   SAVE PDF
+========================================================= */
+
+$('save').onclick=async()=>{
+
+  if(!bytes){
+
+    alert(
+      'Open a PDF first.'
+    );
+
+    return;
+
+  }
+
+
+  try{
+
+    msg(
+      'Creating PDF...'
+    );
+
+
+    if(
+      !bytes ||
+      bytes.length<5
+    ){
+
+      throw new Error(
+        'Original PDF data is empty or unavailable. Please reload the PDF.'
+      );
+
+    }
+
+
+    const saveBytes=
+      bytes.slice();
+
+
+    const header=
+      String.fromCharCode(
+        ...saveBytes.slice(0,5)
+      );
+
+
+    if(header!=='%PDF-'){
+
+      throw new Error(
+        'Original PDF header is missing. Please reload the PDF.'
+      );
+
+    }
+
+
+    const out=
+      await PDFLib
+      .PDFDocument
+      .load(saveBytes);
+
+
+    /*
+       Embed regular/bold/italic/bold-italic
+       for each of the 3 PDF-safe families.
+       These are the only families a PDF can
+       reliably embed without loading outside
+       font files, so every on-screen font
+       choice maps to one of these three.
+    */
+
+    const fontSets={
+
+      sans:{
+        r:await out.embedFont(PDFLib.StandardFonts.Helvetica),
+        b:await out.embedFont(PDFLib.StandardFonts.HelveticaBold),
+        i:await out.embedFont(PDFLib.StandardFonts.HelveticaOblique),
+        bi:await out.embedFont(PDFLib.StandardFonts.HelveticaBoldOblique)
+      },
+
+      serif:{
+        r:await out.embedFont(PDFLib.StandardFonts.TimesRoman),
+        b:await out.embedFont(PDFLib.StandardFonts.TimesRomanBold),
+        i:await out.embedFont(PDFLib.StandardFonts.TimesRomanItalic),
+        bi:await out.embedFont(PDFLib.StandardFonts.TimesRomanBoldItalic)
+      },
+
+      mono:{
+        r:await out.embedFont(PDFLib.StandardFonts.Courier),
+        b:await out.embedFont(PDFLib.StandardFonts.CourierBold),
+        i:await out.embedFont(PDFLib.StandardFonts.CourierOblique),
+        bi:await out.embedFont(PDFLib.StandardFonts.CourierBoldOblique)
+      }
+
+    };
+
+
+    function pickFont(familyValue,isBold,isItalic){
+
+      const set=
+        fontSets[familyBase(familyValue)]||
+        fontSets.sans;
+
+
+      if(isBold&&isItalic)
+        return set.bi;
+
+      if(isBold)
+        return set.b;
+
+      if(isItalic)
+        return set.i;
+
+      return set.r;
+
+    }
+
+
+    const{
+      degrees,
+      rgb
+    }=PDFLib;
+
+
+    /* =====================================================
+       SCREEN → PDF COORDINATE
+    ===================================================== */
+
+    function inverseViewportPoint(
+      vp,
+      sx,
+      sy
+    ){
+
+      const m=
+        vp.transform;
+
+
+      const det=
+        m[0]*m[3]-
+        m[1]*m[2];
+
+
+      if(
+        Math.abs(det)<1e-10
+      ){
+
+        throw new Error(
+          'Invalid PDF page transform.'
+        );
+
+      }
+
+
+      const X=
+        sx-m[4];
+
+
+      const Y=
+        sy-m[5];
+
+
+      return{
+
+        x:
+          (
+            m[3]*X-
+            m[2]*Y
+          )/det,
+
+        y:
+          (
+            -m[1]*X+
+            m[0]*Y
+          )/det
+
+      };
+
+    }
+
+
+    /* =====================================================
+       COVER SCREEN RECTANGLE
+    ===================================================== */
+
+    function coverScreenRect(
+      pg,
+      vp,
+      x,
+      y,
+      w,
+      h
+    ){
+
+      const pad=0.3;
+
+
+      const pts=[
+
+        inverseViewportPoint(
+          vp,
+          x-pad,
+          y-pad
+        ),
+
+        inverseViewportPoint(
+          vp,
+          x+w+pad,
+          y-pad
+        ),
+
+        inverseViewportPoint(
+          vp,
+          x+w+pad,
+          y+h+pad
+        ),
+
+        inverseViewportPoint(
+          vp,
+          x-pad,
+          y+h+pad
+        )
+
+      ];
+
+
+      const xs=
+        pts.map(
+          p=>p.x
+        );
+
+
+      const ys=
+        pts.map(
+          p=>p.y
+        );
+
+
+      const minX=
+        Math.max(
+          0,
+          Math.min(...xs)
+        );
+
+
+      const maxX=
+        Math.min(
+          pg.getWidth(),
+          Math.max(...xs)
+        );
+
+
+      const minY=
+        Math.max(
+          0,
+          Math.min(...ys)
+        );
+
+
+      const maxY=
+        Math.min(
+          pg.getHeight(),
+          Math.max(...ys)
+        );
+
+
+      if(
+        maxX<=minX ||
+        maxY<=minY
+      )
+        return;
+
+
+      pg.drawRectangle({
+
+        x:minX,
+
+        y:minY,
+
+        width:
+          maxX-minX,
+
+        height:
+          maxY-minY,
+
+        color:
+          rgb(1,1,1),
+
+        opacity:1
+
+      });
+
+    }
+
+
+    const graphicCache=new Map();
+
+    async function embedGraphic(data){
+      if(graphicCache.has(data)) return graphicCache.get(data);
+      let embedded;
+      if(/^data:image\/png/i.test(data)){
+        embedded=await out.embedPng(data);
+      }else if(/^data:image\/(jpeg|jpg)/i.test(data)){
+        embedded=await out.embedJpg(data);
+      }else{
+        throw new Error('Unsupported image format. Please use PNG or JPG.');
+      }
+      graphicCache.set(data,embedded);
+      return embedded;
+    }
+
+    /* =====================================================
+       PROCESS EVERY PAGE
+    ===================================================== */
+
+    for(
+      let pn=1;
+      pn<=out.getPageCount();
+      pn++
+    ){
+
+      const pg=
+        out.getPage(pn-1);
+
+
+      const pv=
+        await doc.getPage(pn);
+
+
+      const vp=
+        pv.getViewport({
+          scale
+        });
+
+
+      /*
+         Read original PDF text.
+      */
+
+      const tc=
+        await pv.getTextContent();
+
+
+      const pageTextItems=[];
+
+
+      tc.items.forEach(
+        (it,i)=>{
+
+
+          const tx=
+            pdfjsLib.Util.transform(
+              vp.transform,
+              it.transform
+            );
+
+
+          const fontScreen=
+            Math.max(
+
+              Math.hypot(
+                tx[0],
+                tx[1]
+              ),
+
+              Math.hypot(
+                tx[2],
+                tx[3]
+              ),
+
+              1
+
+            );
+
+
+          const x=
+            tx[4];
+
+
+          const baselineY=
+            tx[5];
+
+
+          const w=
+            Math.max(
+              it.width*scale,
+              4
+            );
+
+
+          const h=
+            Math.max(
+              fontScreen,
+              7
+            );
+
+
+          /*
+             Detect original text rotation
+             — SCREEN space (includes page
+             rotation baked in via vp.transform).
+             Used only for the whiteout cover
+             box math below, which operates in
+             screen-pixel space.
+          */
+
+          let angle=
+            Math.atan2(
+              tx[1],
+              tx[0]
+            )*180/Math.PI;
+
+
+          if(
+            Math.abs(angle-90)<2
+          )
+            angle=90;
+
+          else if(
+            Math.abs(angle+90)<2
+          )
+            angle=-90;
+
+          else if(
+            Math.abs(
+              Math.abs(angle)-180
+            )<2
+          )
+            angle=180;
+
+          else if(
+            Math.abs(angle)<2
+          )
+            angle=0;
+
+
+          /*
+             CONTENT-SPACE rotation, from
+             the raw PDF text transform only
+             (no viewport/page-rotation mixed
+             in). This is what pdf-lib's
+             drawText 'rotate' option needs —
+             it draws in the page's own
+             unrotated content space, so
+             feeding it the screen angle
+             double-counts any page /Rotate
+             and is what turned edited
+             horizontal text vertical/garbled.
+          */
+
+          let contentAngle=
+            Math.atan2(
+              it.transform[1],
+              it.transform[0]
+            )*180/Math.PI;
+
+
+          if(
+            Math.abs(contentAngle-90)<2
+          )
+            contentAngle=90;
+
+          else if(
+            Math.abs(contentAngle+90)<2
+          )
+            contentAngle=-90;
+
+          else if(
+            Math.abs(
+              Math.abs(contentAngle)-180
+            )<2
+          )
+            contentAngle=180;
+
+          else if(
+            Math.abs(contentAngle)<2
+          )
+            contentAngle=0;
+
+
+          pageTextItems.push({
+
+            str:it.str,
+
+            x,
+
+            y:
+              baselineY-fontScreen,
+
+            w,
+
+            h,
+
+            font:
+              fontScreen,
+
+            raw:it,
+
+            /*
+               ORIGINAL BASELINE
+            */
+
+            baselineY,
+
+            /*
+               ORIGINAL ROTATION (screen)
+            */
+
+            angle,
+
+            /*
+               ORIGINAL ROTATION (content space)
+            */
+
+            contentAngle
+
+          });
+
+        }
+      );
+
+
+      /* ===================================================
+         APPLY CHANGES
+      =================================================== */
+
+      for(
+        const c of(changes[pn]||[])
+      ){
+
+        /* ================================================
+           EXISTING TEXT
+        ================================================= */
+
+        if(c.i!==undefined){
+
+          const it=
+            pageTextItems[c.i];
+
+
+          if(!it)
+            continue;
+
+
+          const newt=
+            c.text||'';
+
+
+          /*
+             Cover original text.
+
+             Padding is generous and
+             scales with the text size —
+             this is what was leaving
+             stray fragments of the old
+             glyphs visible at the edges
+             (serifs, descenders, AA halo).
+
+             descentPad extends the cover
+             DOWNWARD past the baseline only,
+             to also swallow descenders on
+             letters like g, y, p, q, j —
+             the box was previously measured
+             from the text's top down to the
+             baseline only (it.h = font size),
+             so anything a glyph draws below
+             the baseline was left uncovered
+             and leaked through in the saved
+             PDF after the replacement text
+             (or the whiteout-only cover) was
+             drawn on top.
+          */
+
+          const padX=
+            Math.max(0.5,it.w*0.02);
+
+          const padY=
+            Math.max(0.5,it.h*0.08);
+
+          /*
+             No upper cap here on purpose:
+             a fixed pixel cap (the old code
+             used Math.min(6, ...)) works
+             fine for small body text but
+             stops covering enough of the
+             descender once the font gets
+             larger — e.g. headline-sized
+             text — which is exactly what
+             let the tail of the old glyph
+             (p, g, y, q, j) poke out past
+             the cover rectangle in the
+             saved PDF. Scaling purely off
+             it.h keeps it proportional at
+             any size.
+          */
+          const descentPad=
+            (Math.abs(it.angle)<2) ?
+            it.h*0.35 :
+            0;
+
+
+          let coverW=it.w;
+          let coverH=it.h;
+
+
+          /*
+             90-degree text occupies
+             a visually rotated rectangle.
+          */
+
+          if(
+            Math.abs(
+              Math.abs(it.angle)-90
+            )<2
+          ){
+
+            coverW=it.h;
+            coverH=it.w;
+
+          }
+
+
+          coverScreenRect(
+
+            pg,
+
+            vp,
+
+            it.x-padX,
+
+            it.y-padY,
+
+            coverW+padX*2,
+
+            coverH+padY*2+descentPad
+
+          );
+
+
+          /*
+             If deleted, don't draw replacement.
+          */
+
+          if(
+            c.delete ||
+            !newt
+          )
+            continue;
+
+
+          /*
+             FONT SIZE — c.size is already
+             stored in PDF points (it comes
+             straight from the Size input),
+             NOT screen pixels. Dividing it
+             by `scale` again (as the old
+             code did) silently shrank every
+             edited piece of text, which is
+             also what threw off centering,
+             since the width used to center
+             it on screen no longer matched
+             the size actually drawn.
+          */
+
+          const fontSize=
+            c.size!==undefined ?
+            c.size :
+            (it.font/(scale||1));
+
+
+          const q=
+            hex(
+              c.color||
+              '#000000'
+            );
+
+
+          /*
+             Preserve original rotation.
+
+             IMPORTANT: this must be the
+             CONTENT-space angle, not the
+             screen angle — pdf-lib draws
+             rotation in the page's raw,
+             unrotated coordinate space.
+          */
+
+          const rotation=
+            c.contentAngle!==undefined ?
+            c.contentAngle :
+            (it.contentAngle||0);
+
+
+          const rotationRad=
+            rotation*Math.PI/180;
+
+
+          const drawFont=
+            pickFont(
+              c.family||'arial',
+              !!c.bold,
+              !!c.italic
+            );
+
+
+          /* ==============================================
+             NEW POSITION
+          ============================================== */
+
+          let posX,posY;
+
+
+          if(c.manualPos){
+
+            /*
+               User explicitly dragged this
+               text — honor the screen spot
+               they chose.
+            */
+
+            const dx=
+              c.x-it.x;
+
+            const dy=
+              c.y-it.y;
+
+            const baselineScreenX=
+              it.x+dx;
+
+            const baselineScreenY=
+              it.baselineY+dy;
+
+            const p=
+              inverseViewportPoint(
+                vp,
+                baselineScreenX,
+                baselineScreenY
+              );
+
+            posX=p.x;
+            posY=p.y;
+
+          }
+          else{
+
+            /* KEEP ORIGINAL VISUAL TOP POSITION */
+            posX = it.raw.transform[4];
+
+            const originalBaseline = it.raw.transform[5];
+            const originalFontPt = it.font / (scale || 1);
+            const originalTop = originalBaseline - originalFontPt;
+
+            let replacementHeight = fontSize;
+            try{
+              if(drawFont && typeof drawFont.heightAtSize === 'function'){
+                replacementHeight = drawFont.heightAtSize(fontSize);
+              }
+            }catch(_){
+              replacementHeight = fontSize;
+            }
+
+            posY = originalTop + replacementHeight;
+          }
+
+
+          /*
+             Draw replacement text.
+          */
+
+          pg.drawText(
+
+            newt,
+
+            {
+
+              x:posX,
+
+              y:posY,
+
+              size:fontSize,
+
+              font:drawFont,
+
+              color:
+                rgb(
+                  q.r,
+                  q.g,
+                  q.b
+                ),
+
+              rotate:
+                degrees(rotation)
+
+            }
+
+          );
+
+        }
+
+
+        /* ================================================
+           ADD NEW TEXT
+        ================================================= */
+
+        else if(
+          c.add &&
+          !c.deleted
+        ){
+
+          const p=
+            inverseViewportPoint(
+
+              vp,
+
+              c.x,
+
+              c.y+
+              (c.size||12)*(scale||1)
+
+            );
+
+
+          const q=
+            hex(
+              c.color||
+              '#000000'
+            );
+
+
+          pg.drawText(
+
+            c.text,
+
+            {
+
+              x:p.x,
+
+              y:p.y,
+
+              size:
+                (c.size||12),
+
+              font:
+                pickFont(
+                  c.family||'arial',
+                  !!c.bold,
+                  !!c.italic
+                ),
+
+              color:
+                rgb(
+                  q.r,
+                  q.g,
+                  q.b
+                )
+
+            }
+
+          );
+
+        }
+
+
+        /* ================================================
+           IMAGE / SIGNATURE
+        ================================================= */
+
+        else if(
+          (c.image || c.signature) &&
+          !c.deleted
+        ){
+          const image=await embedGraphic(c.data);
+
+          const p1=inverseViewportPoint(vp,c.x,c.y);
+          const p2=inverseViewportPoint(
+            vp,
+            c.x+(c.w||180),
+            c.y+(c.h||120)
+          );
+
+          pg.drawImage(image,{
+            x:Math.min(p1.x,p2.x),
+            y:Math.min(p1.y,p2.y),
+            width:Math.abs(p2.x-p1.x),
+            height:Math.abs(p2.y-p1.y)
+          });
+        }
+
+        /* ================================================
+           WHITEOUT
+        ================================================= */
+
+        else if(
+          c.white &&
+          !c.deleted
+        ){
+
+          coverScreenRect(
+
+            pg,
+
+            vp,
+
+            c.x,
+
+            c.y,
+
+            c.w,
+
+            c.h
+
+          );
+
+        }
+
+
+        /* ================================================
+           LINE
+        ================================================= */
+
+        else if(
+          c.line &&
+          !c.deleted
+        ){
+
+          const p1=
+            inverseViewportPoint(
+
+              vp,
+
+              c.x1,
+
+              c.y1
+
+            );
+
+
+          const p2=
+            inverseViewportPoint(
+
+              vp,
+
+              c.x2,
+
+              c.y2
+
+            );
+
+
+          const q=
+            hex(
+              c.color||
+              '#000000'
+            );
+
+
+          /*
+             pdf-lib drawLine is used here.
+          */
+
+          pg.drawLine({
+
+            start:{
+              x:p1.x,
+              y:p1.y
+            },
+
+            end:{
+              x:p2.x,
+              y:p2.y
+            },
+
+            thickness:
+              c.width||2,
+
+            color:
+              rgb(
+                q.r,
+                q.g,
+                q.b
+              )
+
+          });
+
+        }
+
+      }
+
+    }
+
+
+    /* =====================================================
+       CREATE OUTPUT
+    ===================================================== */
+
+    const result=
+      await out.save();
+
+
+    const blob=
+      new Blob(
+        [result],
+        {
+          type:'application/pdf'
+        }
+      );
+
+
+    const url=
+      URL.createObjectURL(blob);
+
+
+    const dl=
+      $('download');
+
+
+    if(dl.dataset.url)
+      URL.revokeObjectURL(
+        dl.dataset.url
+      );
+
+
+    dl.dataset.url=url;
+
+
+    dl.href=url;
+
+
+    dl.download=
+      'edited.pdf';
+
+
+    dl.style.display=
+      'inline-block';
+
+
+    /*
+       Automatically download.
+    */
+
+    const a=
+      document.createElement('a');
+
+
+    a.href=url;
+
+    a.download=
+      'edited.pdf';
+
+
+    document.body.appendChild(a);
+
+    a.click();
+
+    a.remove();
+
+
+    msg(
+      'Done. PDF saved successfully. Rotated text is preserved.'
+    );
+
+  }
+  catch(x){
+
+    console.error(x);
+
+    msg(
+      'SAVE ERROR: '+
+      x.message
+    );
+
+  }
+
+};
+
+
+/* =========================================================
+   INITIAL BUTTON STATE
+========================================================= */
+
+setButtons();
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Image ⇄ PDF</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root {
+    --bg: #060a14;
+    --panel: #0d1526;
+    --panel-border: #1c2942;
+    --accent: #ff8a3d;
+    --white: #f4f6fb;
+    --dim: #6b7a99;
+    --blue: #3b82f6;
+    --green: #4ade80;
+    --red: #f87171;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(59,130,246,0.06), transparent 40%),
+      radial-gradient(circle at 80% 100%, rgba(255,138,61,0.05), transparent 40%);
+  }
+  body {
+    font-family: "SF Mono", "Consolas", "Menlo", "Courier New", monospace;
+    color: var(--white);
+    padding: 48px 20px 80px;
+    font-size: 17px;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 36px 40px;
+  }
+
+  h1 { font-size: 34px; letter-spacing: 1px; margin: 0 0 14px; font-weight: 800; }
+  h1 .accent { color: var(--accent); }
+  .tagline { color: var(--blue); font-size: 14px; letter-spacing: 2px; margin: 0 0 22px; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 28px; }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 14px;
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--dim);
+  }
+  .tab.active { border-color: var(--blue); color: var(--white); background: rgba(59,130,246,0.1); }
+
+  .desc { color: #a9b4cc; font-size: 16px; line-height: 1.6; margin: 0 0 26px; }
+
+  .file-row { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
+  .file-btn {
+    background: var(--bg);
+    border: 1px solid var(--panel-border);
+    color: var(--white);
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 16px;
+    padding: 14px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .file-btn:hover { border-color: var(--dim); }
+  .file-name { color: var(--dim); font-size: 15px; }
+  input[type="file"] { display: none; }
+
+  .page-info { color: var(--dim); font-size: 15px; margin: 8px 0 26px; }
+
+  .field { margin-bottom: 24px; }
+  .field label { display: block; font-weight: 700; font-size: 16px; margin-bottom: 8px; }
+  .field .hint { color: var(--dim); font-size: 14px; margin-top: 8px; line-height: 1.5; }
+
+  select, input[type="text"], input[type="number"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--panel-border);
+    color: var(--white);
+    font-family: inherit;
+    font-size: 16px;
+    padding: 12px 14px;
+    border-radius: 8px;
+  }
+  select:focus, input:focus { outline: none; border-color: var(--blue); }
+
+  .row2 { display: flex; gap: 16px; }
+  .row2 > div { flex: 1; }
+
+  .section-divider { border: none; border-top: 1px solid var(--panel-border); margin: 30px 0; }
+
+  /* image thumbnail list */
+  .thumb-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .thumb-row {
+    display: flex; align-items: center; gap: 14px;
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: var(--bg);
+  }
+  .thumb-row img { width: 52px; height: 52px; object-fit: cover; border-radius: 6px; flex: none; }
+  .thumb-name { flex: 1; font-size: 14px; color: #cfd6e6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .thumb-btns { display: flex; gap: 6px; }
+  .thumb-btns button {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    color: var(--white);
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .thumb-btns button:hover { border-color: var(--dim); }
+  .thumb-btns button.danger:hover { border-color: var(--red); color: var(--red); }
+
+  .go-btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 16px;
+    background: var(--accent);
+    color: #1a0e05;
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+  }
+  .go-btn:hover { background: #ff9c5c; }
+  .go-btn:disabled { background: #4a3a2b; color: #8a7a68; cursor: not-allowed; }
+
+  #status { margin-top: 18px; font-size: 15px; min-height: 20px; }
+  #status.error { color: var(--red); }
+  #status.success { color: var(--green); }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel">
+    <h1>IMAGE <span class="accent">⇄</span> PDF</h1>
+    <p class="tagline">CLIENT-SIDE CONVERTER &middot; NO UPLOAD REQUIRED</p>
+
+    <div class="tabs">
+      <div class="tab active" id="tab-i2p" onclick="switchTab('i2p')">Image → PDF</div>
+      <div class="tab" id="tab-p2i" onclick="switchTab('p2i')">PDF → Image</div>
+    </div>
+
+    <!-- ============ IMAGE -> PDF ============ -->
+    <div id="panel-i2p">
+      <p class="desc">Combine one or more pictures into a single PDF, in the order you choose. Runs entirely in your browser.</p>
+
+      <div class="file-row">
+        <button class="file-btn" onclick="document.getElementById('imgInput').click()">Choose Images</button>
+        <span class="file-name" id="imgCountLabel">No images chosen</span>
+        <input type="file" id="imgInput" accept="image/*" multiple>
+      </div>
+      <div class="hint" style="margin-bottom:20px;">JPG, PNG, WEBP, GIF, BMP all work. Add more any time — new ones are appended to the end.</div>
+
+      <div class="thumb-list" id="thumbList"></div>
+
+      <div class="field">
+        <label for="pageSizeSelect">Page size</label>
+        <select id="pageSizeSelect">
+          <option value="fit" selected>Match each image's own size</option>
+          <option value="a4">A4 — fit image inside, centered</option>
+          <option value="letter">Letter — fit image inside, centered</option>
+        </select>
+        <div class="hint" id="pageSizeHint">Each PDF page will exactly match its image's pixel dimensions — no borders.</div>
+      </div>
+
+      <div class="field" id="marginField" style="display:none;">
+        <label for="marginInput">Margin (pt)</label>
+        <input type="number" id="marginInput" value="20" min="0">
+      </div>
+
+      <button class="go-btn" id="i2pGoBtn" disabled onclick="convertImagesToPdf()">Convert to PDF</button>
+      <div id="i2pStatus"></div>
+    </div>
+
+    <!-- ============ PDF -> IMAGE ============ -->
+    <div id="panel-p2i" class="hidden">
+      <p class="desc">Turn PDF pages into image files (PNG or JPEG). One page downloads directly; multiple pages download as a .zip.</p>
+
+      <div class="file-row">
+        <button class="file-btn" onclick="document.getElementById('pdfInput').click()">Choose PDF</button>
+        <span class="file-name" id="pdfFileName">No file chosen</span>
+        <input type="file" id="pdfInput" accept="application/pdf">
+      </div>
+      <div class="page-info" id="pdfPageInfo">Upload the PDF you want to turn into images.</div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="formatSelect">Output format</label>
+          <select id="formatSelect">
+            <option value="png" selected>PNG (lossless)</option>
+            <option value="jpeg">JPEG (smaller file)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="qualitySelect">Resolution</label>
+          <select id="qualitySelect">
+            <option value="1">Standard (72 DPI)</option>
+            <option value="2" selected>High (144 DPI)</option>
+            <option value="3">Very high (216 DPI)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="pdfRangeInput">Pages to export</label>
+        <input type="text" id="pdfRangeInput" placeholder="e.g. 1,3,5-8 (leave blank for all pages)">
+      </div>
+
+      <button class="go-btn" id="p2iGoBtn" disabled onclick="convertPdfToImages()">Convert to Images</button>
+      <div id="p2iStatus"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const { PDFDocument, PageSizes } = PDFLib;
+
+function switchTab(t) {
+  document.getElementById('tab-i2p').classList.toggle('active', t === 'i2p');
+  document.getElementById('tab-p2i').classList.toggle('active', t === 'p2i');
+  document.getElementById('panel-i2p').classList.toggle('hidden', t !== 'i2p');
+  document.getElementById('panel-p2i').classList.toggle('hidden', t !== 'p2i');
+}
+
+/* ============================================================
+   IMAGE -> PDF
+   ============================================================ */
+let images = []; // { file, url }
+
+const imgInput = document.getElementById('imgInput');
+const imgCountLabel = document.getElementById('imgCountLabel');
+const thumbList = document.getElementById('thumbList');
+const i2pGoBtn = document.getElementById('i2pGoBtn');
+const i2pStatus = document.getElementById('i2pStatus');
+const pageSizeSelect = document.getElementById('pageSizeSelect');
+const pageSizeHint = document.getElementById('pageSizeHint');
+const marginField = document.getElementById('marginField');
+const marginInput = document.getElementById('marginInput');
+
+pageSizeSelect.addEventListener('change', () => {
+  const fit = pageSizeSelect.value === 'fit';
+  marginField.style.display = fit ? 'none' : 'block';
+  pageSizeHint.textContent = fit
+    ? "Each PDF page will exactly match its image's pixel dimensions — no borders."
+    : 'The image is scaled to fit inside the page (keeping its proportions) and centered.';
+});
+
+imgInput.addEventListener('change', (e) => {
+  const files = Array.from(e.target.files || []);
+  files.forEach(f => images.push({ file: f, url: URL.createObjectURL(f) }));
+  imgInput.value = '';
+  renderThumbs();
+});
+
+function renderThumbs() {
+  thumbList.innerHTML = '';
+  images.forEach((img, i) => {
+    const row = document.createElement('div');
+    row.className = 'thumb-row';
+    row.innerHTML = `
+      <img src="${img.url}">
+      <div class="thumb-name">${escapeHtml(img.file.name)}</div>
+      <div class="thumb-btns">
+        <button title="Move up" ${i === 0 ? 'disabled' : ''} onclick="moveImage(${i}, -1)">↑</button>
+        <button title="Move down" ${i === images.length - 1 ? 'disabled' : ''} onclick="moveImage(${i}, 1)">↓</button>
+        <button title="Remove" class="danger" onclick="removeImage(${i})">✕</button>
+      </div>`;
+    thumbList.appendChild(row);
+  });
+  imgCountLabel.textContent = images.length === 0
+    ? 'No images chosen'
+    : `${images.length} image${images.length !== 1 ? 's' : ''} — will become a ${images.length}-page PDF`;
+  i2pGoBtn.disabled = images.length === 0;
+}
+
+function moveImage(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= images.length) return;
+  [images[i], images[j]] = [images[j], images[i]];
+  renderThumbs();
+}
+function removeImage(i) {
+  URL.revokeObjectURL(images[i].url);
+  images.splice(i, 1);
+  renderThumbs();
+}
+function escapeHtml(s) { return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+// Decode any image file to raw pixel bytes via canvas, returning
+// { bytes, width, height, isPng } — used as a universal fallback so
+// formats pdf-lib can't embed directly (webp, gif, bmp) still work.
+function decodeViaCanvas(url) {
+  return new Promise((resolve, reject) => {
+    const im = new Image();
+    im.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = im.naturalWidth;
+      canvas.height = im.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(im, 0, 0);
+      canvas.toBlob(async (blob) => {
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        resolve({ bytes, width: canvas.width, height: canvas.height });
+      }, 'image/png');
+    };
+    im.onerror = reject;
+    im.src = url;
+  });
+}
+
+function getNaturalSize(url) {
+  return new Promise((resolve, reject) => {
+    const im = new Image();
+    im.onload = () => resolve({ width: im.naturalWidth, height: im.naturalHeight });
+    im.onerror = reject;
+    im.src = url;
+  });
+}
+
+async function convertImagesToPdf() {
+  i2pStatus.textContent = '';
+  i2pStatus.className = '';
+  if (images.length === 0) return;
+
+  i2pGoBtn.disabled = true;
+  i2pGoBtn.textContent = 'Converting…';
+
+  try {
+    const doc = await PDFDocument.create();
+    const mode = pageSizeSelect.value;
+    const margin = parseFloat(marginInput.value) || 0;
+    let targetSize = null;
+    if (mode === 'a4') targetSize = PageSizes.A4;
+    if (mode === 'letter') targetSize = PageSizes.Letter;
+
+    for (const img of images) {
+      const bytes = new Uint8Array(await img.file.arrayBuffer());
+      let embedded;
+      try {
+        if (img.file.type === 'image/png') {
+          embedded = await doc.embedPng(bytes);
+        } else if (img.file.type === 'image/jpeg' || img.file.type === 'image/jpg') {
+          embedded = await doc.embedJpg(bytes);
+        } else {
+          const decoded = await decodeViaCanvas(img.url);
+          embedded = await doc.embedPng(decoded.bytes);
+        }
+      } catch (e) {
+        // fallback: force through canvas if direct embed failed (e.g. malformed jpeg)
+        const decoded = await decodeViaCanvas(img.url);
+        embedded = await doc.embedPng(decoded.bytes);
+      }
+
+      const iw = embedded.width, ih = embedded.height;
+
+      if (mode === 'fit') {
+        const page = doc.addPage([iw, ih]);
+        page.drawImage(embedded, { x: 0, y: 0, width: iw, height: ih });
+      } else {
+        const [pw, ph] = targetSize;
+        const page = doc.addPage([pw, ph]);
+        const availW = pw - margin * 2;
+        const availH = ph - margin * 2;
+        const scale = Math.min(availW / iw, availH / ih);
+        const w = iw * scale, h = ih * scale;
+        const x = (pw - w) / 2, y = (ph - h) / 2;
+        page.drawImage(embedded, { x, y, width: w, height: h });
+      }
+    }
+
+    const outBytes = await doc.save();
+    const blob = new Blob([outBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'images.pdf';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    i2pStatus.textContent = `Done — downloaded a ${images.length}-page PDF.`;
+    i2pStatus.className = 'success';
+  } catch (err) {
+    i2pStatus.textContent = 'Error: ' + err.message;
+    i2pStatus.className = 'error';
+  } finally {
+    i2pGoBtn.disabled = false;
+    i2pGoBtn.textContent = 'Convert to PDF';
+  }
+}
+
+/* ============================================================
+   PDF -> IMAGE
+   ============================================================ */
+let pdfFile = null;
+let pdfBytesForImages = null;
+let pdfTotalPages = 0;
+
+const pdfInput = document.getElementById('pdfInput');
+const pdfFileName = document.getElementById('pdfFileName');
+const pdfPageInfo = document.getElementById('pdfPageInfo');
+const p2iGoBtn = document.getElementById('p2iGoBtn');
+const p2iStatus = document.getElementById('p2iStatus');
+const formatSelect = document.getElementById('formatSelect');
+const qualitySelect = document.getElementById('qualitySelect');
+const pdfRangeInput = document.getElementById('pdfRangeInput');
+
+pdfInput.addEventListener('change', async (e) => {
+  const f = e.target.files[0];
+  p2iStatus.textContent = '';
+  p2iStatus.className = '';
+  pdfPageInfo.textContent = 'Upload the PDF you want to turn into images.';
+  pdfFile = null;
+  pdfBytesForImages = null;
+
+  if (!f) {
+    pdfFileName.textContent = 'No file chosen';
+    p2iGoBtn.disabled = true;
+    return;
+  }
+  pdfFileName.textContent = f.name;
+
+  try {
+    pdfFile = f;
+    pdfBytesForImages = await f.arrayBuffer();
+    const loadingTask = pdfjsLib.getDocument({ data: pdfBytesForImages.slice(0) });
+    const doc = await loadingTask.promise;
+    pdfTotalPages = doc.numPages;
+    pdfPageInfo.textContent = `${pdfTotalPages} page${pdfTotalPages !== 1 ? 's' : ''} loaded.`;
+    p2iGoBtn.disabled = false;
+  } catch (err) {
+    p2iStatus.textContent = 'Could not read this PDF: ' + err.message;
+    p2iStatus.className = 'error';
+    p2iGoBtn.disabled = true;
+  }
+});
+
+function parsePageRanges(input, max) {
+  const pages = [];
+  const seen = new Set();
+  const parts = input.split(',').map(s => s.trim()).filter(Boolean);
+  for (const part of parts) {
+    if (part.includes('-')) {
+      const [startStr, endStr] = part.split('-').map(s => s.trim());
+      const start = parseInt(startStr, 10);
+      const end = parseInt(endStr, 10);
+      if (isNaN(start) || isNaN(end) || start < 1 || end < 1 || start > end) {
+        throw new Error(`Invalid range: "${part}"`);
+      }
+      if (end > max) throw new Error(`Page ${end} doesn't exist — this PDF only has ${max} pages.`);
+      for (let i = start; i <= end; i++) { if (!seen.has(i)) { seen.add(i); pages.push(i); } }
+    } else {
+      const num = parseInt(part, 10);
+      if (isNaN(num) || num < 1) throw new Error(`Invalid page number: "${part}"`);
+      if (num > max) throw new Error(`Page ${num} doesn't exist — this PDF only has ${max} pages.`);
+      if (!seen.has(num)) { seen.add(num); pages.push(num); }
+    }
+  }
+  return pages;
+}
+
+async function convertPdfToImages() {
+  p2iStatus.textContent = '';
+  p2iStatus.className = '';
+  if (!pdfBytesForImages) return;
+
+  p2iGoBtn.disabled = true;
+  p2iGoBtn.textContent = 'Rendering…';
+
+  try {
+    const rangeText = pdfRangeInput.value.trim();
+    const targetPages = rangeText === ''
+      ? Array.from({ length: pdfTotalPages }, (_, i) => i + 1)
+      : parsePageRanges(rangeText, pdfTotalPages);
+
+    const scale = parseFloat(qualitySelect.value);
+    const format = formatSelect.value; // 'png' | 'jpeg'
+    const mime = format === 'png' ? 'image/png' : 'image/jpeg';
+    const ext = format === 'png' ? 'png' : 'jpg';
+
+    const loadingTask = pdfjsLib.getDocument({ data: pdfBytesForImages.slice(0) });
+    const doc = await loadingTask.promise;
+
+    const baseName = pdfFile.name.replace(/\.pdf$/i, '');
+    const blobs = [];
+
+    for (const pageNum of targetPages) {
+      const page = await doc.getPage(pageNum);
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const blob = await new Promise(res => canvas.toBlob(res, mime, 0.92));
+      blobs.push({ pageNum, blob });
+    }
+
+    if (blobs.length === 1) {
+      const url = URL.createObjectURL(blobs[0].blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${baseName}_page${blobs[0].pageNum}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } else {
+      const zip = new JSZip();
+      blobs.forEach(({ pageNum, blob }) => {
+        zip.file(`${baseName}_page${String(pageNum).padStart(3, '0')}.${ext}`, blob);
+      });
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${baseName}_images.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    p2iStatus.textContent = `Done — exported ${blobs.length} page image${blobs.length !== 1 ? 's' : ''}.`;
+    p2iStatus.className = 'success';
+  } catch (err) {
+    p2iStatus.textContent = 'Error: ' + err.message;
+    p2iStatus.className = 'error';
+  } finally {
+    p2iGoBtn.disabled = false;
+    p2iGoBtn.textContent = 'Convert to Images';
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Others — Abdur Rauf</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --red-600:#e0472f;
+            --red-700:#c33a24;
+            --amber-500:#b97a24;
+            --amber-050:#f7ede0;
+            --ink-900:#1c1f26;
+            --ink-700:#454b55;
+            --grey-500:#71767e;
+            --grey-200:#e4e1da;
+            --paper:#ffffff;
+            --wash:#f6f4ef;
+        }
+
+        html{scroll-behavior:smooth;}
+        body{
+            background:var(--paper);
+            color:var(--ink-900);
+            font-family:'Inter',system-ui,sans-serif;
+            font-weight:400;
+        }
+        a{color:var(--red-600); text-decoration:none;}
+        a:hover{color:var(--red-700);}
+        :focus-visible{outline:2px solid var(--red-600); outline-offset:3px;}
+
+        .display{font-family:'Space Grotesk',sans-serif;}
+
+        /* ---------- Navbar ---------- */
+        .navbar{
+            background:var(--paper) !important;
+            border-bottom:1px solid var(--grey-200);
+            padding-top:1rem; padding-bottom:1rem;
+        }
+        .navbar-brand{
+            font-family:'Space Grotesk',sans-serif;
+            font-weight:700;
+            font-size:1.3rem;
+            color:var(--ink-900) !important;
+            display:flex; align-items:center; gap:.4rem;
+            letter-spacing:.01em;
+        }
+        .navbar-brand .heart{ color:var(--red-600); }
+        .navbar-nav .nav-link,
+        .navbar-nav .nav-item .nav-link.dropdown-toggle{
+            background:var(--paper) !important;
+            font-family:'Inter',sans-serif;
+            font-weight:500;
+            font-size:.92rem;
+            color:var(--ink-700) !important;
+            padding:.5rem 1rem !important;
+            border-radius:6px;
+            transition:background .15s ease, color .15s ease;
+        }
+        .navbar-nav .nav-link:hover{
+            background:var(--wash) !important;
+            color:var(--ink-900) !important;
+        }
+        .navbar-nav .nav-link.active{
+            color:var(--red-600) !important;
+            font-weight:600;
+        }
+
+        /* ---------- Converter dropdown ---------- */
+        .dropdown-menu{
+            background:var(--paper);
+            border:1px solid var(--grey-200);
+            border-radius:10px;
+            box-shadow:0 16px 34px rgba(28,31,38,.12);
+            padding:.5rem;
+            margin-top:.5rem;
+            min-width:15.5rem;
+        }
+        .dropdown-menu .dropdown-header{
+            font-family:'Inter',sans-serif;
+            font-weight:600;
+            font-size:.72rem;
+            color:var(--grey-500);
+            padding:.5rem .8rem .3rem;
+        }
+        .dropdown-menu .dropdown-item{
+            font-family:'Inter',sans-serif;
+            font-weight:500;
+            font-size:.9rem;
+            color:var(--ink-700);
+            border-radius:7px;
+            padding:.5rem .8rem;
+        }
+        .dropdown-menu .dropdown-item:hover,
+        .dropdown-menu .dropdown-item:focus{
+            background:var(--wash);
+            color:var(--red-600);
+        }
+        .dropdown-menu .dropdown-divider{
+            border-color:var(--grey-200);
+            margin:.35rem .4rem;
+        }
+        .dropdown-toggle::after{
+            vertical-align:.15em;
+        }
+
+        /* ---------- Hero ---------- */
+        .hero-section{
+            background:var(--wash);
+            padding:3.75rem 0 3.25rem;
+            border-bottom:1px solid var(--grey-200);
+            text-align:center;
+        }
+        .hero-section .kicker{
+            font-family:'Inter',sans-serif;
+            font-weight:500;
+            font-size:.85rem;
+            color:var(--red-600);
+            margin-bottom:.6rem;
+        }
+        .hero-section h1{
+            font-family:'Space Grotesk',sans-serif;
+            font-weight:700;
+            font-size:clamp(2.1rem, 4.5vw, 2.85rem);
+            line-height:1.15;
+            color:var(--ink-900);
+            margin:0 0 .9rem;
+        }
+        .hero-section p.lead{
+            max-width:520px;
+            margin:0 auto;
+            color:var(--grey-500);
+            font-size:1.05rem;
+            line-height:1.65;
+        }
+
+        /* ---------- Tool directory ---------- */
+        .tools-wrap{ padding:3.5rem 0 4.5rem; }
+        .tools-wrap .container{ max-width:760px; }
+
+        .group-heading{
+            display:flex;
+            align-items:baseline;
+            gap:.6rem;
+            margin-bottom:.4rem;
+        }
+        .group-heading h2{
+            font-family:'Space Grotesk',sans-serif;
+            font-weight:600;
+            font-size:1.2rem;
+            color:var(--ink-900);
+            margin:0;
+        }
+        .group-heading .count{
+            font-size:.85rem;
+            color:var(--grey-500);
+        }
+        .group-note{
+            color:var(--grey-500);
+            font-size:.92rem;
+            margin-bottom:1.4rem;
+        }
+        .group{ margin-bottom:3rem; }
+        .group:last-child{ margin-bottom:0; }
+
+        .tool-list{
+            border-top:1px solid var(--grey-200);
+        }
+        .tool-row{
+            display:flex;
+            align-items:center;
+            gap:1.1rem;
+            padding:1.15rem 0;
+            border-bottom:1px solid var(--grey-200);
+        }
+        .tool-row .icon{
+            width:42px; height:42px;
+            flex:0 0 auto;
+            border-radius:10px;
+            display:flex; align-items:center; justify-content:center;
+            transition:background .15s ease, color .15s ease;
+        }
+        .group-pdf .tool-row .icon{ background:rgba(224,71,47,.09); color:var(--red-600); }
+        .group-util .tool-row .icon{ background:var(--amber-050); color:var(--amber-500); }
+        .tool-row .icon svg{ width:20px; height:20px; }
+
+        .tool-row .copy{ flex:1 1 auto; min-width:0; }
+        .tool-row h3{
+            font-family:'Space Grotesk',sans-serif;
+            font-weight:600;
+            font-size:1rem;
+            color:var(--ink-900);
+            margin:0 0 .2rem;
+        }
+        .tool-row p{
+            color:var(--grey-500);
+            font-size:.88rem;
+            line-height:1.5;
+            margin:0;
+        }
+        .tool-row .go{
+            flex:0 0 auto;
+            font-family:'Inter',sans-serif;
+            font-weight:600;
+            font-size:.85rem;
+            color:var(--ink-700);
+            padding:.5rem .9rem;
+            border:1px solid var(--grey-200);
+            border-radius:7px;
+            transition:border-color .15s ease, color .15s ease, background .15s ease;
+        }
+        .tool-row:hover .go{
+            border-color:var(--red-600);
+            color:var(--red-600);
+            background:rgba(224,71,47,.06);
+        }
+        .group-util .tool-row:hover .go{
+            border-color:var(--amber-500);
+            color:var(--amber-500);
+            background:var(--amber-050);
+        }
+
+        @media (max-width:576px){
+            .tool-row{ flex-wrap:wrap; }
+            .tool-row .go{ margin-left:calc(42px + 1.1rem); }
+        }
+
+        /* ---------- Footer ---------- */
+        footer{
+            border-top:1px solid var(--grey-200);
+            background:var(--wash);
+            padding:1.5rem 0;
+        }
+        footer .footer-inner{
+            display:flex; flex-wrap:wrap; justify-content:space-between; gap:.75rem;
+            font-family:'Inter',sans-serif;
+            font-size:.85rem;
+            color:var(--grey-500);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/"><span class="heart">&#9829;</span> RAUF</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/blog">Blog</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/resume">Resume</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/design">Design</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/estimate">Estimate</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="converterDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Converter
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="converterDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('pdf_converter') }}">PDF to Word Converter</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('converter') }}">All File Converters</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('pdf_editor') }}">PDF Editor</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('speed_calculator') }}">Speed Calculator,km/h to m/s</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('mass_unit') }}">Mass Unit Converter</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('pressure_converter') }}">Pressure unit Converter</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('unit_weight') }}">Unit Weight Converter</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item"><a class="nav-link active" href="/others">Others</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero-section">
+        <div class="container">
+            <p class="kicker">Free tools, no sign-up</p>
+            <h1>Handy tools, all in one place</h1>
+            <p class="lead">
+                Merge, split, compress, and convert your PDFs — plus a few other useful utilities. Simple, fast, and free to use.
+            </p>
+        </div>
+    </section>
+
+    <div class="tools-wrap">
+        <div class="container">
+
+            <div class="group group-pdf">
+                <div class="group-heading">
+                    <h2>PDF tools</h2>
+                    <span class="count">4 tools</span>
+                </div>
+                <p class="group-note">Everything you need to reshape and clean up a PDF file.</p>
+
+                <div class="tool-list">
+                    <div class="tool-row">
+                        <span class="icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h5l5 5v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M13 4v5h5"/><path d="M9 13h1.5a1.5 1.5 0 1 1 0 3H9v3"/><path d="M14 13v6h1.5a1.5 1.5 0 0 0 1.5-1.5v-3a1.5 1.5 0 0 0-1.5-1.5H14Z"/></svg>
+                        </span>
+                        <span class="copy">
+                            <h3>Scientific Calculator</h3>
+                            <p>Perform complex mathematical calculations with ease.</p>
+                        </span>
+                        <a href="{{ url_for('scientific_calculator') }}" class="go">Open</a>
+                    </div>
+                    <div class="tool-row">
+                        <span class="icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h5l5 5v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M13 4v5h5"/><path d="M9 13h1.5a1.5 1.5 0 1 1 0 3H9v3"/><path d="M14 13v6h1.5a1.5 1.5 0 0 0 1.5-1.5v-3a1.5 1.5 0 0 0-1.5-1.5H14Z"/></svg>
+                        </span>
+                        <span class="copy">
+                            <h3>Merge PDF</h3>
+                            <p>Combine multiple PDF files into a single document in seconds.</p>
+                        </span>
+                        <a href="{{ url_for('marge_pdf_tool') }}" class="go">Open</a>
+                    </div>
+
+                    <div class="tool-row">
+                        <span class="icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h5l5 5v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M13 4v5h5"/><path d="M9 15h6"/><path d="M9 18h6"/><path d="M12 12v0"/></svg>
+                        </span>
+                        <span class="copy">
+                            <h3>Split PDF</h3>
+                            <p>Break one PDF file apart into several separate documents.</p>
+                        </span>
+                        <a href="{{ url_for('split_pdf_tool') }}" class="go">Open</a>
+                    </div>
+
+                    <div class="tool-row">
+                        <span class="icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h5l5 5v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M13 4v5h5"/><path d="m9 12 2 2-2 2"/><path d="m15 12-2 2 2 2"/></svg>
+                        </span>
+                        <span class="copy">
+                            <h3>Compress PDF</h3>
+                            <p>Shrink PDF file sizes without losing readability.</p>
+                        </span>
+                        <a href="{{ url_for('compress_pdf_tool') }}" class="go">Open</a>
+                    </div>
+
+                    <div class="tool-row">
+                        <span class="icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h5l5 5v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M13 4v5h5"/><path d="M9 17.5 11 15l1.2 1.4L15 13"/></svg>
+                        </span>
+                        <span class="copy">
+                            <h3>PDF Editor</h3>
+                            <p>Edit text, images, and pages inside a PDF with ease.</p>
+                        </span>
+                        <a href="{{ url_for('pdf_editor') }}" class="go">Open</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="group group-util">
+                <div class="group-heading">
+                    <h2>Converters</h2>
+                    <span class="count">2 tools</span>
+                </div>
+                <p class="group-note">Move files between PDF, Word, Excel, PowerPoint, and image formats.</p>
+
+                <div class="tool-list">
+                    <div class="tool-row">
+                        <span class="icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/><path d="m9 10 2 2-2 2"/><path d="m15 14-2-2 2-2"/></svg>
+                        </span>
+                        <span class="copy">
+                            <h3>PDF to Word</h3>
+                            <p>Turn a PDF into an editable .docx document.</p>
+                        </span>
+                        <a href="{{ url_for('pdf_converter') }}" class="go">Open</a>
+                    </div>
+
+                    <div class="tool-row">
+                        <span class="icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="1.5"/><circle cx="8.5" cy="10" r="1.5"/><path d="m5 17 4.5-5 3 3L18 9"/></svg>
+                        </span>
+                        <span class="copy">
+                            <h3>All File Converters</h3>
+                            <p>Convert between PDF, Word, Excel, PowerPoint, and image formats.</p>
+                        </span>
+                        <a href="{{ url_for('converter') }}" class="go">Open</a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer>
+        <div class="container footer-inner">
+            <span>&copy; 2026 Abdur Rauf</span>
+            <span>Others / Tools</span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Converter — Abdur Rauf</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --ink-900:#15171b;
+            --ink-800:#20242a;
+            --paper:#faf8f3;
+            --paper-deep:#f2ede2;
+            --line:#e6e0d2;
+            --line-dark:#33373d;
+            --text-600:#5a5e63;
+            --text-400:#8b8e93;
+            --paper-soft:rgba(250,248,243,.72);
+
+            --c-pdf:#b1382c;
+            --c-pdf-wash:#f7e6e2;
+            --c-docx:#33608e;
+            --c-docx-wash:#e4ecf3;
+            --c-xlsx:#3d7a5b;
+            --c-xlsx-wash:#e5f0e9;
+            --c-pptx:#b6672c;
+            --c-pptx-wash:#f6ebe0;
+            --c-img:#6a5a92;
+            --c-img-wash:#ece8f3;
+        }
+
+        html{scroll-behavior:smooth;}
+        body{
+            background:var(--paper);
+            color:var(--ink-900);
+            font-family:'Inter',system-ui,sans-serif;
+            font-weight:400;
+        }
+        a{color:var(--ink-900); text-decoration:none;}
+        :focus-visible{outline:2px solid var(--c-pdf); outline-offset:3px;}
+        .display{font-family:'Space Grotesk',sans-serif;}
+
+        /* ---------- Navbar ---------- */
+        .navbar{
+            background:var(--paper) !important;
+            border-bottom:1px solid var(--line);
+            padding-top:1.1rem; padding-bottom:1.1rem;
+        }
+        .navbar-brand{
+            font-family:'Space Grotesk',sans-serif;
+            font-weight:700;
+            font-size:1.25rem;
+            color:var(--ink-900) !important;
+            display:flex; align-items:center; gap:.55rem;
+        }
+        .navbar-brand .mark{
+            width:26px; height:26px;
+            border-radius:5px;
+            background:var(--ink-900);
+            color:var(--paper);
+            display:inline-flex; align-items:center; justify-content:center;
+            font-size:.68rem; font-weight:700;
+        }
+        .navbar-nav .nav-link{
+            font-family:'Inter',sans-serif;
+            font-weight:500;
+            font-size:.92rem;
+            color:var(--text-600) !important;
+            padding:.5rem 1rem !important;
+        }
+        .navbar-nav .nav-link:hover{ color:var(--ink-900) !important; }
+        .navbar-nav .nav-link.active{ color:var(--ink-900) !important; position:relative; }
+        .navbar-nav .nav-link.active::after{
+            content:"";
+            position:absolute;
+            left:1rem; right:1rem; bottom:.15rem;
+            height:2px;
+            background:var(--c-pdf);
+        }
+
+        /* ---------- Hero (dark band) ---------- */
+        .hero-section{
+            background:var(--ink-900);
+            color:var(--paper);
+            padding:4.5rem 0 0;
+        }
+        .hero-grid{
+            display:grid;
+            grid-template-columns:1.05fr .95fr;
+            gap:2.5rem;
+            align-items:center;
+            padding-bottom:3rem;
+        }
+        .hero-section h1{
+            font-family:'Space Grotesk',sans-serif;
+            font-weight:700;
+            font-size:clamp(2.2rem, 3.6vw, 2.85rem);
+            line-height:1.14;
+            color:var(--paper);
+            margin:0 0 1rem;
+            max-width:15ch;
+        }
+        .hero-section p.lead{
+            max-width:46ch;
+            color:#c7c9cd;
+            font-size:1.05rem;
+            line-height:1.65;
+            margin:0;
+        }
+        .hero-visual{ display:flex; justify-content:center; }
+        .hero-visual svg{ width:100%; max-width:380px; height:auto; }
+
+        .stat-strip{
+            border-top:1px solid var(--line-dark);
+            display:grid;
+            grid-template-columns:repeat(3, 1fr);
+        }
+        .stat-strip div{
+            padding:1.4rem 0;
+            text-align:center;
+            border-left:1px solid var(--line-dark);
+        }
+        .stat-strip div:first-child{ border-left:none; }
+        .stat-strip strong{
+            display:block;
+            font-family:'Space Grotesk',sans-serif;
+            font-weight:700;
+            font-size:1.4rem;
+            color:var(--paper);
+        }
+        .stat-strip span{
+            font-size:.85rem;
+            color:var(--text-400);
+        }
+
+        /* ---------- Category sections ---------- */
+        .tools-wrap{ padding:3.75rem 0 4.75rem; }
+        .category{ margin-bottom:3.25rem; }
+        .category:last-child{ margin-bottom:0; }
+        .category-head{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:1rem;
+            border-bottom:1px solid var(--line);
+            padding-bottom:.85rem;
+            margin-bottom:1.4rem;
+            cursor:pointer;
+            user-select:none;
+        }
+        .category-head:hover h2{ color:var(--c-pdf); }
+        .category-head-text{ display:flex; align-items:baseline; gap:.7rem; flex-wrap:wrap; }
+        .category-head h2{
+            font-family:'Space Grotesk',sans-serif;
+            font-weight:600;
+            font-size:1.2rem;
+            color:var(--ink-900);
+            margin:0;
+            transition:color .15s ease;
+        }
+        .category-head span{
+            font-size:.87rem;
+            color:var(--text-400);
+        }
+        .category-head .chevron{
+            flex:none;
+            width:18px; height:18px;
+            color:var(--text-400);
+            transition:transform .2s ease;
+        }
+        .category-head.collapsed .chevron{ transform:rotate(-90deg); }
+        .tool-list.collapsing{ transition:height .2s ease; }
+
+        .tool-list{
+            display:grid;
+            grid-template-columns:repeat(2, 1fr);
+            border-top:1px solid var(--line);
+        }
+        .tool-row{
+            display:flex;
+            align-items:flex-start;
+            gap:1.1rem;
+            padding:1.3rem .25rem;
+            border-bottom:1px solid var(--line);
+            border-left:3px solid transparent;
+            transition:border-left-color .15s ease, background-color .15s ease;
+        }
+        .tool-list .tool-row:nth-child(odd){ padding-right:1.4rem; }
+        .tool-list .tool-row:nth-child(even){ padding-left:1.4rem; }
+        @media (min-width: 768px){
+            .tool-list .tool-row:nth-child(odd){ border-right:1px solid var(--line); }
+        }
+
+        .format-tag{
+            flex:none;
+            font-family:'Space Grotesk',sans-serif;
+            font-weight:600;
+            font-size:.68rem;
+            border-radius:4px;
+            padding:.32rem .55rem;
+            white-space:nowrap;
+            margin-top:.15rem;
+        }
+        .tag-pdf{ color:var(--c-pdf); background:var(--c-pdf-wash); }
+        .tag-docx{ color:var(--c-docx); background:var(--c-docx-wash); }
+        .tag-xlsx{ color:var(--c-xlsx); background:var(--c-xlsx-wash); }
+        .tag-pptx{ color:var(--c-pptx); background:var(--c-pptx-wash); }
+        .tag-img{ color:var(--c-img); background:var(--c-img-wash); }
+
+        .row-pdf:hover{ border-left-color:var(--c-pdf); background:var(--c-pdf-wash); }
+        .row-docx:hover{ border-left-color:var(--c-docx); background:var(--c-docx-wash); }
+        .row-xlsx:hover{ border-left-color:var(--c-xlsx); background:var(--c-xlsx-wash); }
+        .row-pptx:hover{ border-left-color:var(--c-pptx); background:var(--c-pptx-wash); }
+        .row-img:hover{ border-left-color:var(--c-img); background:var(--c-img-wash); }
+
+        .tool-body h3{
+            font-family:'Space Grotesk',sans-serif;
+            font-weight:600;
+            font-size:1.02rem;
+            color:var(--ink-900);
+            margin:0 0 .3rem;
+        }
+        .tool-body p{
+            color:var(--text-600);
+            font-size:.9rem;
+            line-height:1.55;
+            margin:0 0 .6rem;
+        }
+        .tool-body a.open-link{
+            font-weight:600;
+            font-size:.88rem;
+            color:var(--ink-900);
+            border-bottom:1px solid var(--ink-900);
+            padding-bottom:1px;
+        }
+
+        /* ---------- Footer (dark band, mirrors hero) ---------- */
+        footer{
+            background:var(--ink-900);
+            padding:1.75rem 0;
+        }
+        footer .footer-inner{
+            display:flex; flex-wrap:wrap; justify-content:space-between; gap:.75rem;
+            font-family:'Inter',sans-serif;
+            font-size:.85rem;
+            color:var(--text-400);
+        }
+
+        @media (max-width: 767px){
+            .hero-grid{ grid-template-columns:1fr; }
+            .hero-visual{ order:-1; }
+            .stat-strip{ grid-template-columns:1fr; }
+            .stat-strip div{ border-left:none; border-top:1px solid var(--line-dark); }
+            .stat-strip div:first-child{ border-top:none; }
+            .tool-list{ grid-template-columns:1fr; }
+            .tool-list .tool-row:nth-child(odd){ padding-right:.25rem; border-right:none; }
+            .tool-list .tool-row:nth-child(even){ padding-left:.25rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/"><span class="mark">AR</span> RAUF</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/blog">Blog</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/resume">Resume</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/design">Design</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero-section">
+        <div class="container hero-grid">
+            <div>
+                <h1>Every format, one place to change it</h1>
+                <p class="lead">
+                    PDF sits at the center of most document work, so these tools move files in and out of it — plus the editing and page tools you need once you're there.
+                </p>
+            </div>
+            <div class="hero-visual">
+                <svg viewBox="0 0 480 320" role="img" aria-label="Diagram showing PDF connected to DOCX, XLSX, PPTX and image formats">
+                    <line x1="240" y1="160" x2="96" y2="76" stroke="#33373d" stroke-width="2"/>
+                    <line x1="240" y1="160" x2="384" y2="76" stroke="#33373d" stroke-width="2"/>
+                    <line x1="240" y1="160" x2="96" y2="244" stroke="#33373d" stroke-width="2"/>
+                    <line x1="240" y1="160" x2="384" y2="244" stroke="#33373d" stroke-width="2"/>
+
+                    <circle cx="240" cy="160" r="54" fill="#faf8f3"/>
+                    <text x="240" y="167" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="20" fill="#15171b">PDF</text>
+
+                    <circle cx="96" cy="76" r="38" fill="#33608e"/>
+                    <text x="96" y="82" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-weight="600" font-size="14" fill="#faf8f3">DOCX</text>
+
+                    <circle cx="384" cy="76" r="38" fill="#3d7a5b"/>
+                    <text x="384" y="82" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-weight="600" font-size="14" fill="#faf8f3">XLSX</text>
+
+                    <circle cx="96" cy="244" r="38" fill="#b6672c"/>
+                    <text x="96" y="250" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-weight="600" font-size="14" fill="#faf8f3">PPTX</text>
+
+                    <circle cx="384" cy="244" r="38" fill="#6a5a92"/>
+                    <text x="384" y="250" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-weight="600" font-size="14" fill="#faf8f3">IMG</text>
+                </svg>
+            </div>
+        </div>
+        <div class="container">
+            <div class="stat-strip">
+                <div><strong>12</strong><span>Tools</span></div>
+                <div><strong>5</strong><span>File formats</span></div>
+                <div><strong>0</strong><span>Files stored after you leave</span></div>
+            </div>
+        </div>
+    </section>
+
+    <div class="container tools-wrap">
+
+        <div class="category">
+            <div class="category-head" data-bs-toggle="collapse" data-bs-target="#cat-to-pdf" role="button" aria-expanded="true" aria-controls="cat-to-pdf">
+                <div class="category-head-text">
+                    <h2>Convert to PDF</h2>
+                    <span>Bring a file into PDF</span>
+                </div>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="tool-list collapse show" id="cat-to-pdf">
+                <div class="tool-row row-docx">
+                    <span class="format-tag tag-docx">DOCX → PDF</span>
+                    <div class="tool-body">
+                        <h3>Word to PDF Converter</h3>
+                        <p>Convert Word documents to PDF files.</p>
+                        <a href="{{ url_for('word_to_pdf') }}" class="open-link">Open tool</a>
+                    </div>
+                </div>
+                <div class="tool-row row-xlsx">
+                    <span class="format-tag tag-xlsx">XLSX → PDF</span>
+                    <div class="tool-body">
+                        <h3>Excel to PDF Converter</h3>
+                        <p>Convert Excel files to PDF documents.</p>
+                        <a href="{{ url_for('excel_to_pdf') }}" class="open-link">Open tool</a>
+                    </div>
+                </div>
+                <div class="tool-row row-pptx">
+                    <span class="format-tag tag-pptx">PPTX → PDF</span>
+                    <div class="tool-body">
+                        <h3>PowerPoint to PDF Converter</h3>
+                        <p>Convert PowerPoint presentations to PDF documents.</p>
+                        <a href="{{ url_for('powerpoint_to_pdf') }}" class="open-link">Open tool</a>
+                    </div>
+                </div>
+                <div class="tool-row row-img">
+                    <span class="format-tag tag-img">IMG → PDF</span>
+                    <div class="tool-body">
+                        <h3>Image to PDF Converter</h3>
+                        <p>Convert images to PDF files.</p>
+                        <a href="{{ url_for('image_to_pdf') }}" class="open-link">Open tool</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <div class="category-head" data-bs-toggle="collapse" data-bs-target="#cat-from-pdf" role="button" aria-expanded="true" aria-controls="cat-from-pdf">
+                <div class="category-head-text">
+                    <h2>Convert from PDF</h2>
+                    <span>Get an editable file back out</span>
+                </div>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="tool-list collapse show" id="cat-from-pdf">
+                <div class="tool-row row-docx">
+                    <span class="format-tag tag-docx">PDF → DOCX</span>
+                    <div class="tool-body">
+                        <h3>PDF to Word Converter</h3>
+                        <p>Convert PDF files to editable Word documents.</p>
+                        <a href="{{ url_for('pdf_converter') }}" class="open-link">Open tool</a>
+                    </div>
+                </div>
+                <div class="tool-row row-xlsx">
+                    <span class="format-tag tag-xlsx">PDF → XLSX</span>
+                    <div class="tool-body">
+                        <h3>PDF to Excel Converter</h3>
+                        <p>Convert PDF documents to Excel files.</p>
+                        <a href="{{ url_for('pdf_to_excel') }}" class="open-link">Open tool</a>
+                    </div>
+                </div>
+                <div class="tool-row row-pptx">
+                    <span class="format-tag tag-pptx">PDF → PPTX</span>
+                    <div class="tool-body">
+                        <h3>PDF Converter to PowerPoint</h3>
+                        <p>Convert PDF documents to PowerPoint presentations.</p>
+                        <a href="{{ url_for('pdf_to_powerpoint') }}" class="open-link">Open tool</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <div class="category-head" data-bs-toggle="collapse" data-bs-target="#cat-edit-pdf" role="button" aria-expanded="true" aria-controls="cat-edit-pdf">
+                <div class="category-head-text">
+                    <h2>Edit &amp; organize PDFs</h2>
+                    <span>Change what's already inside</span>
+                </div>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="tool-list collapse show" id="cat-edit-pdf">
+                <div class="tool-row row-pdf">
+                    <span class="format-tag tag-pdf">PDF</span>
+                    <div class="tool-body">
+                        <h3>PDF Editor</h3>
+                        <p>Edit PDF files to fit your requirements.</p>
+                        <a href="{{ url_for('pdf_editor') }}" class="open-link">Open tool</a>
+                    </div>
+                </div>
+                <div class="tool-row row-pdf">
+                    <span class="format-tag tag-pdf">PDF</span>
+                    <div class="tool-body">
+                        <h3>Extract and Remove Pages from PDF</h3>
+                        <p>Extract specific pages or remove unwanted pages from your PDF files.</p>
+                        <a href="{{ url_for('extract_remove_pages') }}" class="open-link">Open tool</a>
+                    </div>
+                </div>
+                <div class="tool-row row-pdf">
+                    <span class="format-tag tag-pdf">PDF</span>
+                    <div class="tool-body">
+                        <h3>Add PDF or Blank Page</h3>
+                        <p>Add a PDF file or a blank page to your existing PDF documents.</p>
+                        <a href="{{ url_for('add_pdf_page') }}" class="open-link">Open tool</a>
+                    </div>
+                </div>
+                <div class="tool-row row-pdf">
+                    <span class="format-tag tag-pdf">PDF</span>
+                    <div class="tool-body">
+                        <h3>Add Page Number to PDF</h3>
+                        <p>Add page numbers to your existing PDF documents.</p>
+                        <a href="{{ url_for('add_pdf_number') }}" class="open-link">Open tool</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <div class="category-head" data-bs-toggle="collapse" data-bs-target="#cat-presentation" role="button" aria-expanded="true" aria-controls="cat-presentation">
+                <div class="category-head-text">
+                    <h2>Presentation tools</h2>
+                    <span>For PowerPoint files</span>
+                </div>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="tool-list collapse show" id="cat-presentation">
+                <div class="tool-row row-pptx">
+                    <span class="format-tag tag-pptx">PPTX</span>
+                    <div class="tool-body">
+                        <h3>PowerPoint Page Number</h3>
+                        <p>Add page numbers to your PowerPoint presentations.</p>
+                        <a href="{{ url_for('powerpoint_page') }}" class="open-link">Open tool</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <div class="container footer-inner">
+            <span>&copy; 2026 Abdur Rauf</span>
+            <span>Converter / Tools</span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

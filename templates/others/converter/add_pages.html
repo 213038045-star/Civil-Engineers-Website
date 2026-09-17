@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Add Page PDF</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<style>
+  :root {
+    --bg: #060a14;
+    --panel: #0d1526;
+    --panel-border: #1c2942;
+    --accent: #ff8a3d;
+    --white: #f4f6fb;
+    --dim: #6b7a99;
+    --blue: #3b82f6;
+    --green: #4ade80;
+    --red: #f87171;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(59,130,246,0.06), transparent 40%),
+      radial-gradient(circle at 80% 100%, rgba(255,138,61,0.05), transparent 40%);
+  }
+  body {
+    font-family: "SF Mono", "Consolas", "Menlo", "Courier New", monospace;
+    color: var(--white);
+    padding: 48px 20px 80px;
+    font-size: 17px;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  .back {
+    color: var(--blue);
+    text-decoration: none;
+    font-size: 15px;
+    display: inline-block;
+    margin-bottom: 28px;
+  }
+  .back:hover { text-decoration: underline; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 36px 40px;
+  }
+
+  h1 { font-size: 40px; letter-spacing: 1px; margin: 0 0 14px; font-weight: 800; }
+  h1 .accent { color: var(--accent); }
+
+  .tagline { color: var(--blue); font-size: 14px; letter-spacing: 2px; margin: 0 0 22px; }
+  .desc { color: #a9b4cc; font-size: 17px; line-height: 1.6; margin: 0 0 30px; }
+
+  .file-row { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
+  .file-btn {
+    background: var(--bg);
+    border: 1px solid var(--panel-border);
+    color: var(--white);
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 16px;
+    padding: 14px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .file-btn:hover { border-color: var(--dim); }
+  .file-name { color: var(--dim); font-size: 15px; }
+  input[type="file"] { display: none; }
+
+  .page-info { color: var(--dim); font-size: 15px; margin: 8px 0 26px; }
+
+  .field { margin-bottom: 24px; }
+  .field label {
+    display: block;
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  .field .hint { color: var(--dim); font-size: 14px; margin-top: 8px; line-height: 1.5; }
+
+  select, input[type="text"], input[type="number"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--panel-border);
+    color: var(--white);
+    font-family: inherit;
+    font-size: 16px;
+    padding: 12px 14px;
+    border-radius: 8px;
+  }
+  select:focus, input:focus { outline: none; border-color: var(--blue); }
+  input::placeholder { color: #4b5875; }
+
+  .row2 { display: flex; gap: 16px; }
+  .row2 > div { flex: 1; }
+
+  /* Source toggle (blank vs. from another PDF) */
+  .option {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .option:hover { border-color: #2c3e5f; }
+  .option.selected { border-color: var(--blue); background: rgba(59,130,246,0.07); }
+  .radio {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid var(--dim); flex: none; margin-top: 3px; position: relative;
+  }
+  .option.selected .radio { border-color: var(--blue); }
+  .option.selected .radio::after {
+    content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--blue);
+  }
+  .option-title { font-weight: 700; font-size: 18px; margin-bottom: 4px; }
+  .option-sub { color: var(--dim); font-size: 14px; line-height: 1.5; }
+  .option-body { margin-top: 14px; }
+  .option-body.hidden { display: none; }
+
+  .section-divider {
+    border: none;
+    border-top: 1px solid var(--panel-border);
+    margin: 30px 0;
+  }
+
+  .go-btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 16px;
+    background: var(--accent);
+    color: #1a0e05;
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+  }
+  .go-btn:hover { background: #ff9c5c; }
+  .go-btn:disabled { background: #4a3a2b; color: #8a7a68; cursor: not-allowed; }
+
+  #status { margin-top: 18px; font-size: 15px; min-height: 20px; }
+  #status.error { color: var(--red); }
+  #status.success { color: var(--green); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="#">&larr; Back to home</a>
+
+  <div class="panel">
+    <h1>ADD<span class="accent">PAGE</span></h1>
+    <p class="tagline">CLIENT-SIDE PDF EDITOR &middot; NO UPLOAD REQUIRED</p>
+    <p class="desc">Insert a blank page, or pages from another PDF, anywhere in a PDF. Files never leave your browser — nothing is uploaded to any server.</p>
+
+    <div class="file-row">
+      <button class="file-btn" onclick="document.getElementById('mainFileInput').click()">Choose File</button>
+      <span class="file-name" id="mainFileName">No file chosen</span>
+      <input type="file" id="mainFileInput" accept="application/pdf">
+    </div>
+    <div class="page-info" id="mainPageInfo">Upload the PDF you want to add a page into.</div>
+
+    <div class="field">
+      <label for="positionSelect">Where to insert</label>
+      <select id="positionSelect">
+        <option value="start">At the very start</option>
+        <option value="end" selected>At the very end</option>
+        <option value="before">Before page…</option>
+        <option value="after">After page…</option>
+      </select>
+      <div class="hint" id="positionHint">Will be added after the last page.</div>
+    </div>
+
+    <div class="field" id="pageNumberField" style="display:none">
+      <label for="pageNumberInput">Page number</label>
+      <input type="number" id="pageNumberInput" min="1" placeholder="e.g. 3">
+      <div class="hint">Type the page number in the original PDF to insert relative to.</div>
+    </div>
+
+    <hr class="section-divider">
+
+    <div class="option selected" id="opt-blank" onclick="setSource('blank')">
+      <div class="radio"></div>
+      <div style="flex:1">
+        <div class="option-title">Insert a blank page</div>
+        <div class="option-sub">Add an empty page.</div>
+        <div class="option-body" id="blankBody">
+          <div class="row2">
+            <div>
+              <select id="sizeSelect">
+                <option value="match" selected>Match surrounding page</option>
+                <option value="a4">A4 (595 × 842 pt)</option>
+                <option value="letter">Letter (612 × 792 pt)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="option" id="opt-frompdf" onclick="setSource('frompdf')">
+      <div class="radio"></div>
+      <div style="flex:1">
+        <div class="option-title">Insert pages from another PDF</div>
+        <div class="option-sub">Pull one or more pages out of a second PDF and drop them in.</div>
+        <div class="option-body hidden" id="fromPdfBody">
+          <div class="file-row">
+            <button class="file-btn" onclick="document.getElementById('sourceFileInput').click()">Choose File</button>
+            <span class="file-name" id="sourceFileName">No file chosen</span>
+            <input type="file" id="sourceFileInput" accept="application/pdf">
+          </div>
+          <div class="page-info" id="sourcePageInfo"></div>
+          <label for="sourceRangeInput" style="margin-top:6px;">Pages to insert from that PDF</label>
+          <input type="text" id="sourceRangeInput" placeholder="e.g. 1,3,5-8 (leave blank for all pages)">
+        </div>
+      </div>
+    </div>
+
+    <button class="go-btn" id="goBtn" onclick="processPdf()" disabled>Add Page</button>
+    <div id="status"></div>
+  </div>
+</div>
+
+<script>
+const { PDFDocument, PageSizes } = PDFLib;
+
+let mainFile = null;
+let mainPdfBytes = null;
+let mainTotalPages = 0;
+
+let sourceFile = null;
+let sourcePdfBytes = null;
+let sourceTotalPages = 0;
+
+let source = 'blank'; // 'blank' | 'frompdf'
+
+const mainFileInput = document.getElementById('mainFileInput');
+const mainFileName = document.getElementById('mainFileName');
+const mainPageInfo = document.getElementById('mainPageInfo');
+const goBtn = document.getElementById('goBtn');
+const statusEl = document.getElementById('status');
+
+const positionSelect = document.getElementById('positionSelect');
+const positionHint = document.getElementById('positionHint');
+const pageNumberField = document.getElementById('pageNumberField');
+const pageNumberInput = document.getElementById('pageNumberInput');
+const sizeSelect = document.getElementById('sizeSelect');
+
+const optBlank = document.getElementById('opt-blank');
+const optFromPdf = document.getElementById('opt-frompdf');
+const blankBody = document.getElementById('blankBody');
+const fromPdfBody = document.getElementById('fromPdfBody');
+
+const sourceFileInput = document.getElementById('sourceFileInput');
+const sourceFileName = document.getElementById('sourceFileName');
+const sourcePageInfo = document.getElementById('sourcePageInfo');
+const sourceRangeInput = document.getElementById('sourceRangeInput');
+
+function setSource(s) {
+  source = s;
+  optBlank.classList.toggle('selected', s === 'blank');
+  optFromPdf.classList.toggle('selected', s === 'frompdf');
+  blankBody.classList.toggle('hidden', s !== 'blank');
+  fromPdfBody.classList.toggle('hidden', s !== 'frompdf');
+  updateGoButton();
+}
+
+positionSelect.addEventListener('change', updatePositionUI);
+
+function updatePositionUI() {
+  const val = positionSelect.value;
+  pageNumberField.style.display = (val === 'before' || val === 'after') ? 'block' : 'none';
+
+  if (val === 'start') positionHint.textContent = 'The new content will become the first page(s).';
+  else if (val === 'end') positionHint.textContent = 'Will be added after the last page.';
+  else if (val === 'before') positionHint.textContent = 'Enter the page number the new content should go before.';
+  else if (val === 'after') positionHint.textContent = 'Enter the page number the new content should go after.';
+}
+updatePositionUI();
+
+mainFileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  statusEl.textContent = '';
+  statusEl.className = '';
+  mainPageInfo.textContent = 'Upload the PDF you want to add a page into.';
+  mainFile = null;
+  mainPdfBytes = null;
+
+  if (!file) {
+    mainFileName.textContent = 'No file chosen';
+    updateGoButton();
+    return;
+  }
+
+  mainFileName.textContent = file.name;
+
+  try {
+    mainFile = file;
+    mainPdfBytes = await file.arrayBuffer();
+    const pdfDoc = await PDFDocument.load(mainPdfBytes);
+    mainTotalPages = pdfDoc.getPageCount();
+    mainPageInfo.textContent = `${mainTotalPages} page${mainTotalPages !== 1 ? 's' : ''} loaded.`;
+    pageNumberInput.max = mainTotalPages;
+  } catch (err) {
+    statusEl.textContent = 'Could not read this PDF: ' + err.message;
+    statusEl.className = 'error';
+  }
+  updateGoButton();
+});
+
+sourceFileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  sourcePageInfo.textContent = '';
+  sourceFile = null;
+  sourcePdfBytes = null;
+
+  if (!file) {
+    sourceFileName.textContent = 'No file chosen';
+    updateGoButton();
+    return;
+  }
+
+  sourceFileName.textContent = file.name;
+
+  try {
+    sourceFile = file;
+    sourcePdfBytes = await file.arrayBuffer();
+    const pdfDoc = await PDFDocument.load(sourcePdfBytes);
+    sourceTotalPages = pdfDoc.getPageCount();
+    sourcePageInfo.textContent = `${sourceTotalPages} page${sourceTotalPages !== 1 ? 's' : ''} available.`;
+  } catch (err) {
+    sourcePageInfo.textContent = 'Could not read this PDF: ' + err.message;
+  }
+  updateGoButton();
+});
+
+function updateGoButton() {
+  if (source === 'blank') {
+    goBtn.disabled = !mainPdfBytes;
+  } else {
+    goBtn.disabled = !mainPdfBytes || !sourcePdfBytes;
+  }
+}
+
+function parsePageRanges(input, max) {
+  const pages = [];
+  const seen = new Set();
+  const parts = input.split(',').map(s => s.trim()).filter(Boolean);
+
+  for (const part of parts) {
+    if (part.includes('-')) {
+      const [startStr, endStr] = part.split('-').map(s => s.trim());
+      const start = parseInt(startStr, 10);
+      const end = parseInt(endStr, 10);
+      if (isNaN(start) || isNaN(end) || start < 1 || end < 1 || start > end) {
+        throw new Error(`Invalid range: "${part}"`);
+      }
+      if (end > max) throw new Error(`Page ${end} doesn't exist — that PDF only has ${max} pages.`);
+      for (let i = start; i <= end; i++) {
+        if (!seen.has(i)) { seen.add(i); pages.push(i); }
+      }
+    } else {
+      const num = parseInt(part, 10);
+      if (isNaN(num) || num < 1) throw new Error(`Invalid page number: "${part}"`);
+      if (num > max) throw new Error(`Page ${num} doesn't exist — that PDF only has ${max} pages.`);
+      if (!seen.has(num)) { seen.add(num); pages.push(num); }
+    }
+  }
+  return pages;
+}
+
+function resolveInsertIndex(position, pageNumber, max) {
+  if (position === 'start') return 0;
+  if (position === 'end') return max;
+
+  if (isNaN(pageNumber) || pageNumber < 1 || pageNumber > max) {
+    throw new Error(`Enter a page number between 1 and ${max}.`);
+  }
+  if (position === 'before') return pageNumber - 1;
+  if (position === 'after') return pageNumber;
+}
+
+async function processPdf() {
+  statusEl.textContent = '';
+  statusEl.className = '';
+
+  if (!mainPdfBytes) {
+    statusEl.textContent = 'Choose the main PDF file first.';
+    statusEl.className = 'error';
+    return;
+  }
+  if (source === 'frompdf' && !sourcePdfBytes) {
+    statusEl.textContent = 'Choose the PDF you want to insert pages from.';
+    statusEl.className = 'error';
+    return;
+  }
+
+  const position = positionSelect.value;
+  const pageNumber = parseInt(pageNumberInput.value, 10);
+
+  let insertIndex;
+  try {
+    insertIndex = resolveInsertIndex(position, pageNumber, mainTotalPages);
+  } catch (err) {
+    statusEl.textContent = err.message;
+    statusEl.className = 'error';
+    return;
+  }
+
+  goBtn.disabled = true;
+  goBtn.textContent = 'Processing…';
+
+  try {
+    const mainDoc = await PDFDocument.load(mainPdfBytes);
+    const mainPages = mainDoc.getPages();
+
+    if (source === 'blank') {
+      let width, height;
+      const sizeChoice = sizeSelect.value;
+      if (sizeChoice === 'a4') {
+        [width, height] = PageSizes.A4;
+      } else if (sizeChoice === 'letter') {
+        [width, height] = PageSizes.Letter;
+      } else {
+        const refPage = mainPages[insertIndex > 0 ? insertIndex - 1 : 0] || mainPages[0];
+        const size = refPage.getSize();
+        width = size.width;
+        height = size.height;
+      }
+      mainDoc.insertPage(insertIndex, [width, height]);
+    } else {
+      // Insert pages copied from a second PDF
+      const rangeText = sourceRangeInput.value.trim();
+      let pageNumbers;
+      if (rangeText === '') {
+        pageNumbers = Array.from({ length: sourceTotalPages }, (_, i) => i + 1);
+      } else {
+        pageNumbers = parsePageRanges(rangeText, sourceTotalPages);
+      }
+
+      const sourceDoc = await PDFDocument.load(sourcePdfBytes);
+      const indices = pageNumbers.map(n => n - 1);
+      const copiedPages = await mainDoc.copyPages(sourceDoc, indices);
+
+      copiedPages.forEach((page, i) => {
+        mainDoc.insertPage(insertIndex + i, page);
+      });
+    }
+
+    const outBytes = await mainDoc.save();
+    const blob = new Blob([outBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+
+    const baseName = mainFile.name.replace(/\.pdf$/i, '');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${baseName}_with_new_page.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    statusEl.textContent = `Done — downloaded a ${mainDoc.getPageCount()}-page PDF.`;
+    statusEl.className = 'success';
+  } catch (err) {
+    statusEl.textContent = 'Error: ' + err.message;
+    statusEl.className = 'error';
+  } finally {
+    updateGoButton();
+    goBtn.textContent = 'Add Page';
+  }
+}
+</script>
+</body>
+</html>

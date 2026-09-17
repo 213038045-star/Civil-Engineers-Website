@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PowerPoint → PDF</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#1b2420; --paper:#f6f4ee; --sheet:#ffffff; --line:#d8d3c4;
+    --moss:#3c5a48; --moss-dark:#2b4235; --clay:#b5623a; --muted:#6b7268;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Iowan Old Style','Palatino Linotype',Georgia,serif;
+    background:var(--paper); color:var(--ink); min-height:100vh;
+    display:flex; justify-content:center; padding:48px 20px;
+  }
+  .sheet{ width:100%; max-width:900px; }
+  header{
+    display:flex; align-items:baseline; justify-content:space-between;
+    border-bottom:2px solid var(--ink); padding-bottom:14px; margin-bottom:24px;
+  }
+  h1{ font-size:26px; font-weight:600; margin:0; letter-spacing:0.2px; }
+  .tag{ font-family:'Courier New',monospace; font-size:12px; color:var(--muted); }
+  .note{
+    font-size:13px; color:var(--muted); margin-bottom:20px; line-height:1.5;
+    border-left:2px solid var(--line); padding-left:12px;
+  }
+  .dropzone{
+    border:1.5px dashed var(--line); background:var(--sheet);
+    padding:40px 24px; text-align:center; cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .dropzone.drag{ border-color:var(--moss); background:#eef1ec; }
+  .dropzone p{ margin:0 0 6px; font-size:16px; }
+  .dropzone .sub{ font-size:13px; color:var(--muted); font-family:'Courier New',monospace; }
+  input[type=file]{ display:none; }
+  .filebar{
+    display:none; align-items:center; justify-content:space-between;
+    margin-top:16px; padding:12px 16px; background:var(--sheet);
+    border:1px solid var(--line); font-size:14px;
+  }
+  .filebar.show{ display:flex; }
+  .filebar .name{ font-weight:600; }
+  .filebar button{
+    border:none; background:none; color:var(--clay);
+    font-family:'Courier New',monospace; font-size:12px;
+    cursor:pointer; text-decoration:underline;
+  }
+  .opts-section{ display:flex; flex-direction:column; gap:8px; margin-top:22px; }
+  .opts-label{ font-size:12px; color:var(--muted); }
+  .opts{ font-size:13px; color:var(--muted); display:flex; gap:18px; flex-wrap:wrap; align-items:center; }
+  .opts label{ display:flex; align-items:center; gap:6px; cursor:pointer; }
+  .opts input[type=text]{
+    font-family:inherit; font-size:13px; color:var(--ink);
+    background:var(--sheet); border:1px solid var(--line); padding:4px 6px; width:110px;
+  }
+  .actions{ display:none; flex-direction:column; gap:16px; margin-top:22px; }
+  .actions.show{ display:flex; }
+  .row-go{ display:flex; justify-content:flex-end; }
+  .go{
+    background:var(--moss); color:#fff; border:none;
+    padding:12px 22px; font-size:14px; font-weight:600;
+    cursor:pointer; font-family:inherit; letter-spacing:0.2px;
+  }
+  .go:hover{ background:var(--moss-dark); }
+  .go:disabled{ background:#a9b3ac; cursor:wait; }
+  .status{
+    margin-top:14px; font-size:13px; font-family:'Courier New',monospace;
+    color:var(--muted); min-height:18px; white-space:pre-line;
+  }
+  .status.err{ color:var(--clay); }
+  .preview-wrap{
+    border:1px solid var(--line); background:#e9e6da;
+    max-height:460px; overflow:auto; display:none; padding:16px; text-align:center;
+  }
+  .preview-wrap.show{ display:block; }
+  .slide-thumb{
+    display:inline-block; background:#fff; margin:8px; box-shadow:0 1px 4px rgba(0,0,0,.15);
+    position:relative; overflow:hidden;
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <header>
+    <h1>PowerPoint → PDF</h1>
+    <div class="tag">runs in your browser, no upload</div>
+  </header>
+
+  <div class="note">Reads each slide's actual shapes, text, images and tables from the .pptx file and redraws them at their real positions, then captures that into the PDF. Approximates fonts and theme colors rather than reproducing them exactly, and shows a placeholder box for charts, SmartArt, and animations, which it can't render.</div>
+
+  <div class="dropzone" id="dropzone">
+    <p>Drop a PowerPoint file here, or click to choose one</p>
+    <div class="sub">.pptx</div>
+    <input type="file" id="fileInput" accept=".pptx">
+  </div>
+
+  <div class="filebar" id="filebar">
+    <span class="name" id="fname"></span>
+    <button id="clearBtn">remove</button>
+  </div>
+
+  <div class="actions" id="actions">
+    <div class="opts-section">
+      <div class="opts-label">Options</div>
+      <div class="opts">
+        <label>slides <input type="text" id="slideRange" placeholder="e.g. 1-3,5 (blank = all)"></label>
+        <label><input type="checkbox" id="includeNotes"> append speaker notes as text pages</label>
+      </div>
+    </div>
+    <div class="row-go">
+      <button class="go" id="goBtn">Convert to PDF</button>
+    </div>
+  </div>
+
+  <div class="preview-wrap" id="previewWrap"></div>
+  <div class="status" id="status"></div>
+  <div id="downloadLinkWrap" style="display:none;margin-top:14px;">
+    <a id="downloadLink" style="font-family:'Courier New',monospace;font-size:13px;color:var(--moss);text-decoration:underline;" href="#">↓ click here if the download didn't start automatically</a>
+  </div>
+</div>
+
+<script>
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const filebar = document.getElementById('filebar');
+const fname = document.getElementById('fname');
+const clearBtn = document.getElementById('clearBtn');
+const actionsEl = document.getElementById('actions');
+const goBtn = document.getElementById('goBtn');
+const statusEl = document.getElementById('status');
+const previewWrap = document.getElementById('previewWrap');
+const slideRangeInput = document.getElementById('slideRange');
+const includeNotesBox = document.getElementById('includeNotes');
+const downloadLinkWrap = document.getElementById('downloadLinkWrap');
+const downloadLink = document.getElementById('downloadLink');
+
+const EMU_PER_PT = 12700;
+const TARGET_WIDTH_PX = 1280; // render resolution for the wide dimension
+const SCHEME_MAP = {
+  bg1:'FFFFFF', tx1:'000000', dk1:'000000', lt1:'FFFFFF',
+  bg2:'E7E6E6', tx2:'44546A', dk2:'44546A', lt2:'E7E6E6',
+  accent1:'4472C4', accent2:'ED7D31', accent3:'A5A5A5',
+  accent4:'FFC000', accent5:'5B9BD5', accent6:'70AD47',
+  hlink:'0563C1', folHlink:'954F72'
+};
+
+let rawArrayBuffer = null;
+let originalFileName = 'converted';
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
+clearBtn.addEventListener('click', reset);
+
+function reset(){
+  rawArrayBuffer = null;
+  fileInput.value = '';
+  filebar.classList.remove('show');
+  actionsEl.classList.remove('show');
+  previewWrap.classList.remove('show');
+  previewWrap.innerHTML = '';
+  downloadLinkWrap.style.display = 'none';
+  setStatus('');
+}
+function setStatus(msg, isErr){
+  statusEl.textContent = msg;
+  statusEl.classList.toggle('err', !!isErr);
+}
+
+async function handleFile(file){
+  reset();
+  originalFileName = file.name.replace(/\.[^.]+$/, '') || 'converted';
+  fname.textContent = file.name;
+  filebar.classList.add('show');
+  try{
+    rawArrayBuffer = await file.arrayBuffer();
+    actionsEl.classList.add('show');
+    setStatus('loaded — set options and convert.');
+  }catch(err){
+    setStatus('could not read this file: ' + err.message, true);
+  }
+}
+
+function parseXml(text){ return new DOMParser().parseFromString(text, 'application/xml'); }
+function first(el, tag){ return el ? el.getElementsByTagName(tag)[0] || null : null; }
+function all(el, tag){ return el ? Array.from(el.getElementsByTagName(tag)) : []; }
+
+function parseRelsMap(xmlText){
+  const doc = parseXml(xmlText);
+  const map = {};
+  all(doc, 'Relationship').forEach(r => { map[r.getAttribute('Id')] = { target: r.getAttribute('Target'), type: r.getAttribute('Type') }; });
+  return map;
+}
+function resolvePath(baseDir, target){
+  if (!target) return null;
+  if (/^https?:\/\//.test(target)) return null; // external, skip
+  const baseParts = baseDir.split('/').filter(Boolean);
+  target.split('/').forEach(part => {
+    if (part === '..') baseParts.pop();
+    else if (part === '.' || part === '') {}
+    else baseParts.push(part);
+  });
+  return baseParts.join('/');
+}
+function parsePageRange(rangeStr, maxPage){
+  if (!rangeStr || !rangeStr.trim()) return Array.from({length:maxPage}, (_,i)=>i+1);
+  const pages = new Set();
+  rangeStr.split(',').forEach(part => {
+    part = part.trim();
+    if (!part) return;
+    const m = part.match(/^(\d+)\s*-\s*(\d+)$/);
+    if (m){
+      for (let p=Math.max(1,+m[1]); p<=Math.min(maxPage,+m[2]); p++) pages.add(p);
+    } else {
+      const n = parseInt(part,10);
+      if (n>=1 && n<=maxPage) pages.add(n);
+    }
+  });
+  return [...pages].sort((a,b)=>a-b);
+}
+
+function getXfrm(el, xfrmTag){
+  const xfrm = first(el, xfrmTag || 'a:xfrm');
+  if (!xfrm) return null;
+  const off = first(xfrm, 'a:off');
+  const ext = first(xfrm, 'a:ext');
+  const chOff = first(xfrm, 'a:chOff');
+  const chExt = first(xfrm, 'a:chExt');
+  if (!off || !ext) return null;
+  return {
+    x: parseInt(off.getAttribute('x'),10), y: parseInt(off.getAttribute('y'),10),
+    cx: parseInt(ext.getAttribute('cx'),10), cy: parseInt(ext.getAttribute('cy'),10),
+    chX: chOff ? parseInt(chOff.getAttribute('x'),10) : null,
+    chY: chOff ? parseInt(chOff.getAttribute('y'),10) : null,
+    chCx: chExt ? parseInt(chExt.getAttribute('cx'),10) : null,
+    chCy: chExt ? parseInt(chExt.getAttribute('cy'),10) : null
+  };
+}
+
+// Resolves a shape's position, falling back to the matching placeholder on the slide layout.
+function resolveShapePosition(spEl, layoutDoc){
+  const spPr = first(spEl, 'p:spPr');
+  let xfrm = getXfrm(spPr);
+  if (xfrm) return xfrm;
+  if (!layoutDoc) return null;
+  const nvPr = first(spEl, 'p:nvSpPr');
+  const ph = first(nvPr, 'p:ph');
+  if (!ph) return null;
+  const type = ph.getAttribute('type');
+  const idx = ph.getAttribute('idx');
+  const layoutShapes = all(layoutDoc, 'p:sp');
+  for (const ls of layoutShapes){
+    const lph = first(first(ls,'p:nvSpPr'), 'p:ph');
+    if (!lph) continue;
+    const lt = lph.getAttribute('type'), li = lph.getAttribute('idx');
+    if ((idx && li === idx) || (!idx && type && lt === type)){
+      const lxfrm = getXfrm(first(ls,'p:spPr'));
+      if (lxfrm) return lxfrm;
+    }
+  }
+  return null;
+}
+
+function resolveRunColor(rPr){
+  if (!rPr) return null;
+  const fill = first(rPr, 'a:solidFill');
+  if (!fill) return null;
+  const srgb = first(fill, 'a:srgbClr');
+  if (srgb) return '#' + srgb.getAttribute('val');
+  const scheme = first(fill, 'a:schemeClr');
+  if (scheme){
+    const hex = SCHEME_MAP[scheme.getAttribute('val')];
+    if (hex) return '#' + hex;
+  }
+  return null;
+}
+
+function extractParagraphs(txBody){
+  if (!txBody) return [];
+  return all(txBody, 'a:p').map(p => {
+    const pPr = first(p, 'a:pPr');
+    const algn = pPr ? pPr.getAttribute('algn') : null;
+    const alignMap = { l:'left', ctr:'center', r:'right', just:'justify' };
+    const runs = all(p, 'a:r').map(r => {
+      const rPr = first(r, 'a:rPr');
+      const t = first(r, 'a:t');
+      return {
+        text: t ? t.textContent : '',
+        bold: rPr && rPr.getAttribute('b') === '1',
+        italic: rPr && rPr.getAttribute('i') === '1',
+        size: rPr && rPr.getAttribute('sz') ? parseInt(rPr.getAttribute('sz'),10)/100 : null,
+        color: resolveRunColor(rPr)
+      };
+    });
+    return { align: alignMap[algn] || 'left', runs };
+  });
+}
+
+// px-per-EMU is fixed once we know slide width; returns conversion helpers.
+function makeScaler(slideWEmu){
+  const pxPerEmu = TARGET_WIDTH_PX / slideWEmu;
+  return {
+    pxPerEmu,
+    px: emu => emu * pxPerEmu,
+    ptPx: hundredthsPt => (hundredthsPt/100) * EMU_PER_PT * pxPerEmu
+  };
+}
+
+// Composes a group's off/ext/chOff/chExt into a transform function for its children.
+function composeTransform(parentT, groupXfrm){
+  if (!groupXfrm || groupXfrm.chCx === null) return parentT;
+  const scaleX = groupXfrm.cx / (groupXfrm.chCx || groupXfrm.cx);
+  const scaleY = groupXfrm.cy / (groupXfrm.chCy || groupXfrm.cy);
+  return {
+    apply(x, y, cx, cy){
+      const gx = groupXfrm.x + (x - groupXfrm.chX) * scaleX;
+      const gy = groupXfrm.y + (y - groupXfrm.chY) * scaleY;
+      const gcx = cx * scaleX, gcy = cy * scaleY;
+      return parentT.apply(gx, gy, gcx, gcy);
+    }
+  };
+}
+const IDENTITY_T = { apply:(x,y,cx,cy)=>({x,y,cx,cy}) };
+
+async function readImageDataUrl(zip, path){
+  const f = zip.file(path);
+  if (!f) return null;
+  const ext = (path.split('.').pop() || '').toLowerCase();
+  const mimeMap = { png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', gif:'image/gif', bmp:'image/bmp', svg:'image/svg+xml' };
+  const mime = mimeMap[ext] || 'image/png';
+  const b64 = await f.async('base64');
+  return 'data:' + mime + ';base64,' + b64;
+}
+
+async function renderShapeTree(container, spTreeEl, transform, ctx){
+  const children = Array.from(spTreeEl.children);
+  for (const el of children){
+    const tag = el.tagName;
+    if (tag === 'p:sp'){
+      await renderTextShape(container, el, transform, ctx);
+    } else if (tag === 'p:pic'){
+      await renderPic(container, el, transform, ctx);
+    } else if (tag === 'p:graphicFrame'){
+      await renderGraphicFrame(container, el, transform, ctx);
+    } else if (tag === 'p:grpSp'){
+      const grpPr = first(el, 'p:grpSpPr');
+      const gxfrm = getXfrm(grpPr);
+      const childTransform = composeTransform(transform, gxfrm);
+      await renderShapeTree(container, el, childTransform, ctx);
+    }
+  }
+}
+
+function placeBox(container, absPos, scaler){
+  const div = document.createElement('div');
+  div.style.position = 'absolute';
+  div.style.left = scaler.px(absPos.x) + 'px';
+  div.style.top = scaler.px(absPos.y) + 'px';
+  div.style.width = scaler.px(absPos.cx) + 'px';
+  div.style.height = scaler.px(absPos.cy) + 'px';
+  container.appendChild(div);
+  return div;
+}
+
+async function renderTextShape(container, spEl, transform, ctx){
+  const xfrmLocal = resolveShapePosition(spEl, ctx.layoutDoc);
+  if (!xfrmLocal) return;
+  const abs = transform.apply(xfrmLocal.x, xfrmLocal.y, xfrmLocal.cx, xfrmLocal.cy);
+  const txBody = first(spEl, 'p:txBody');
+  const paragraphs = extractParagraphs(txBody);
+  if (!paragraphs.some(p => p.runs.some(r => r.text))) return;
+
+  const bodyPr = first(txBody, 'a:bodyPr');
+  const anchor = bodyPr ? bodyPr.getAttribute('anchor') : null;
+  const justifyMap = { t:'flex-start', ctr:'center', b:'flex-end' };
+
+  const box = placeBox(container, abs, ctx.scaler);
+  box.style.display = 'flex';
+  box.style.flexDirection = 'column';
+  box.style.justifyContent = justifyMap[anchor] || 'flex-start';
+  box.style.overflow = 'hidden';
+  box.style.fontFamily = 'Calibri, Arial, sans-serif';
+  box.style.padding = '2px 4px';
+
+  paragraphs.forEach(p => {
+    if (!p.runs.some(r => r.text)) { const spacer=document.createElement('div'); spacer.style.height='0.6em'; box.appendChild(spacer); return; }
+    const pDiv = document.createElement('div');
+    pDiv.style.textAlign = p.align;
+    pDiv.style.wordBreak = 'break-word';
+    p.runs.forEach(r => {
+      const span = document.createElement('span');
+      span.textContent = r.text;
+      if (r.bold) span.style.fontWeight = 'bold';
+      if (r.italic) span.style.fontStyle = 'italic';
+      span.style.fontSize = ctx.scaler.ptPx((r.size || 18) * 100) + 'px';
+      if (r.color) span.style.color = r.color;
+      pDiv.appendChild(span);
+    });
+    box.appendChild(pDiv);
+  });
+}
+
+async function renderPic(container, picEl, transform, ctx){
+  const spPr = first(picEl, 'p:spPr');
+  const xfrmLocal = getXfrm(spPr);
+  if (!xfrmLocal) return;
+  const abs = transform.apply(xfrmLocal.x, xfrmLocal.y, xfrmLocal.cx, xfrmLocal.cy);
+  const blip = first(picEl, 'a:blip');
+  if (!blip) return;
+  const rId = blip.getAttribute('r:embed');
+  const rel = ctx.slideRels[rId];
+  if (!rel) return;
+  const path = resolvePath('ppt/slides', rel.target);
+  const dataUrl = await readImageDataUrl(ctx.zip, path);
+  if (!dataUrl) return;
+  const box = placeBox(container, abs, ctx.scaler);
+  const img = document.createElement('img');
+  img.src = dataUrl;
+  img.style.width = '100%';
+  img.style.height = '100%';
+  img.style.objectFit = 'fill';
+  box.appendChild(img);
+}
+
+async function renderGraphicFrame(container, gfEl, transform, ctx){
+  const xfrmLocal = getXfrm(gfEl, 'p:xfrm');
+  if (!xfrmLocal) return;
+  const abs = transform.apply(xfrmLocal.x, xfrmLocal.y, xfrmLocal.cx, xfrmLocal.cy);
+  const tbl = first(gfEl, 'a:tbl');
+  const box = placeBox(container, abs, ctx.scaler);
+  if (tbl){
+    const table = document.createElement('table');
+    table.style.width = '100%';
+    table.style.height = '100%';
+    table.style.borderCollapse = 'collapse';
+    table.style.fontFamily = 'Calibri, Arial, sans-serif';
+    all(tbl, 'a:tr').forEach(tr => {
+      const rowEl = document.createElement('tr');
+      all(tr, 'a:tc').forEach(tc => {
+        const td = document.createElement('td');
+        td.style.border = '1px solid #999';
+        td.style.padding = '3px 6px';
+        td.style.verticalAlign = 'middle';
+        const txt = all(tc, 'a:t').map(t => t.textContent).join(' ');
+        td.style.fontSize = ctx.scaler.ptPx(1400) + 'px';
+        td.textContent = txt;
+        rowEl.appendChild(td);
+      });
+      table.appendChild(rowEl);
+    });
+    box.appendChild(table);
+  } else {
+    // chart / SmartArt / unsupported graphic — show a labeled placeholder rather than dropping it silently
+    box.style.background = '#eee';
+    box.style.border = '1px dashed #999';
+    box.style.display = 'flex';
+    box.style.alignItems = 'center';
+    box.style.justifyContent = 'center';
+    box.style.color = '#777';
+    box.style.fontFamily = 'Calibri, Arial, sans-serif';
+    box.style.fontSize = '13px';
+    box.textContent = '[unsupported object: chart/diagram]';
+  }
+}
+
+async function getNotesText(zip, slideRels){
+  const notesRelEntry = Object.values(slideRels).find(r => r.type && r.type.endsWith('/notesSlide'));
+  if (!notesRelEntry) return '';
+  const path = resolvePath('ppt/slides', notesRelEntry.target);
+  const f = zip.file(path);
+  if (!f) return '';
+  const xmlText = await f.async('string');
+  const doc = parseXml(xmlText);
+  const bodyShapes = all(doc, 'p:sp').filter(sp => {
+    const ph = first(first(sp,'p:nvSpPr'),'p:ph');
+    return !ph || (ph.getAttribute('type') || 'body') === 'body';
+  });
+  const lines = [];
+  bodyShapes.forEach(sp => all(sp, 'a:t').forEach(t => { if (t.textContent.trim()) lines.push(t.textContent); }));
+  return lines.join('\n');
+}
+
+goBtn.addEventListener('click', async () => {
+  if (!rawArrayBuffer) return;
+  goBtn.disabled = true;
+  previewWrap.innerHTML = '';
+  previewWrap.classList.add('show');
+  setStatus('reading presentation…');
+  try{
+    const zip = await JSZip.loadAsync(rawArrayBuffer);
+    const presXml = parseXml(await zip.file('ppt/presentation.xml').async('string'));
+    const sldSz = first(presXml, 'p:sldSz');
+    const slideW = parseInt(sldSz.getAttribute('cx'),10);
+    const slideH = parseInt(sldSz.getAttribute('cy'),10);
+    const scaler = makeScaler(slideW);
+
+    const presRels = parseRelsMap(await zip.file('ppt/_rels/presentation.xml.rels').async('string'));
+    const sldIds = all(presXml, 'p:sldId');
+    const slidePaths = sldIds.map(node => resolvePath('ppt', presRels[node.getAttribute('r:id')].target));
+
+    const pages = parsePageRange(slideRangeInput.value, slidePaths.length);
+    const { jsPDF } = window.jspdf;
+    const widthPt = slideW / EMU_PER_PT, heightPt = slideH / EMU_PER_PT;
+    const orientation = widthPt >= heightPt ? 'landscape' : 'portrait';
+    const doc = new jsPDF({ orientation, unit: 'pt', format: [widthPt, heightPt] });
+    let pageStarted = false;
+
+    for (const slideNum of pages){
+      setStatus('rendering slide ' + slideNum + ' of ' + slidePaths.length + '…');
+      const slidePath = slidePaths[slideNum-1];
+      const slideXmlText = await zip.file(slidePath).async('string');
+      const slideDoc = parseXml(slideXmlText);
+
+      const slideDir = 'ppt/slides';
+      const relsPath = slideDir + '/_rels/' + slidePath.split('/').pop() + '.rels';
+      const relsFile = zip.file(relsPath);
+      const slideRels = relsFile ? parseRelsMap(await relsFile.async('string')) : {};
+
+      let layoutDoc = null;
+      const layoutRel = Object.values(slideRels).find(r => r.type && r.type.endsWith('/slideLayout'));
+      if (layoutRel){
+        const layoutPath = resolvePath(slideDir, layoutRel.target);
+        const lf = zip.file(layoutPath);
+        if (lf) layoutDoc = parseXml(await lf.async('string'));
+      }
+
+      const container = document.createElement('div');
+      container.style.position = 'fixed';
+      container.style.left = '-99999px';
+      container.style.top = '0';
+      container.style.width = scaler.px(slideW) + 'px';
+      container.style.height = scaler.px(slideH) + 'px';
+      container.style.background = '#ffffff';
+      container.style.overflow = 'hidden';
+      document.body.appendChild(container);
+
+      const spTree = first(first(slideDoc, 'p:cSld'), 'p:spTree');
+      const ctx = { zip, slideRels, layoutDoc, scaler };
+      await renderShapeTree(container, spTree, IDENTITY_T, ctx);
+
+      await new Promise(res => setTimeout(res, 20));
+      const canvas = await html2canvas(container, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+      document.body.removeChild(container);
+
+      const thumb = document.createElement('img');
+      thumb.src = canvas.toDataURL('image/png');
+      thumb.style.width = '200px';
+      thumb.className = 'slide-thumb';
+      previewWrap.appendChild(thumb);
+
+      if (pageStarted) doc.addPage([widthPt, heightPt], orientation);
+      pageStarted = true;
+      doc.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, widthPt, heightPt);
+
+      if (includeNotesBox.checked){
+        const notes = await getNotesText(zip, slideRels);
+        if (notes){
+          doc.addPage([widthPt, heightPt], orientation);
+          doc.setFontSize(11);
+          const lines = doc.splitTextToSize('Notes — slide ' + slideNum + '\n\n' + notes, widthPt - 48);
+          doc.text(lines, 24, 36);
+        }
+      }
+    }
+
+    setStatus('building PDF…');
+    const pdfBlob = doc.output('blob');
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    const filename = originalFileName + '.pdf';
+    downloadLink.href = blobUrl;
+    downloadLink.download = filename;
+    downloadLink.textContent = '↓ ' + filename + ' — click to download';
+    downloadLinkWrap.style.display = 'block';
+    try{
+      const a = document.createElement('a');
+      a.href = blobUrl; a.download = filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }catch(e){ /* manual link still works */ }
+    setStatus('done — use the link below if your downloads folder is empty');
+  }catch(err){
+    setStatus('conversion failed: ' + err.message, true);
+  }finally{
+    goBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

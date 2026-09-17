@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Page Tool PDF</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<style>
+  :root {
+    --bg: #060a14;
+    --panel: #0d1526;
+    --panel-border: #1c2942;
+    --accent: #ff8a3d;
+    --white: #f4f6fb;
+    --dim: #6b7a99;
+    --blue: #3b82f6;
+    --green: #4ade80;
+    --red: #f87171;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(59,130,246,0.06), transparent 40%),
+      radial-gradient(circle at 80% 100%, rgba(255,138,61,0.05), transparent 40%);
+  }
+  body {
+    font-family: "SF Mono", "Consolas", "Menlo", "Courier New", monospace;
+    color: var(--white);
+    padding: 48px 20px 80px;
+    font-size: 17px;
+    line-height: 1.5;
+  }
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .back {
+    color: var(--blue);
+    text-decoration: none;
+    font-size: 15px;
+    display: inline-block;
+    margin-bottom: 28px;
+  }
+  .back:hover { text-decoration: underline; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 36px 40px;
+  }
+
+  h1 {
+    font-size: 40px;
+    letter-spacing: 1px;
+    margin: 0 0 14px;
+    font-weight: 800;
+  }
+  h1 .accent { color: var(--accent); }
+
+  .tagline {
+    color: var(--blue);
+    font-size: 14px;
+    letter-spacing: 2px;
+    margin: 0 0 22px;
+  }
+
+  .desc {
+    color: #a9b4cc;
+    font-size: 17px;
+    line-height: 1.6;
+    margin: 0 0 30px;
+  }
+
+  .file-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 30px;
+  }
+  .file-btn {
+    background: var(--bg);
+    border: 1px solid var(--panel-border);
+    color: var(--white);
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 16px;
+    padding: 14px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .file-btn:hover { border-color: var(--dim); }
+  #fileNameLabel { color: var(--dim); font-size: 15px; }
+  input[type="file"] { display: none; }
+
+  .page-info {
+    color: var(--dim);
+    font-size: 15px;
+    margin: -18px 0 26px;
+  }
+
+  .option {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .option:hover { border-color: #2c3e5f; }
+  .option.selected {
+    border-color: var(--blue);
+    background: rgba(59,130,246,0.07);
+  }
+  .radio {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--dim);
+    flex: none;
+    margin-top: 3px;
+    position: relative;
+  }
+  .option.selected .radio {
+    border-color: var(--blue);
+  }
+  .option.selected .radio::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background: var(--blue);
+  }
+  .option-title {
+    font-weight: 700;
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+  .option-sub {
+    color: var(--dim);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .option-input {
+    margin-top: 10px;
+  }
+  .option-input input[type="text"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--panel-border);
+    color: var(--white);
+    font-family: inherit;
+    font-size: 15px;
+    padding: 10px 12px;
+    border-radius: 6px;
+  }
+  .option-input input[type="text"]:disabled {
+    opacity: 0.4;
+  }
+  .option-input input[type="text"]::placeholder { color: #4b5875; }
+
+  .go-btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 16px;
+    background: var(--accent);
+    color: #1a0e05;
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+  }
+  .go-btn:hover { background: #ff9c5c; }
+  .go-btn:disabled {
+    background: #4a3a2b;
+    color: #8a7a68;
+    cursor: not-allowed;
+  }
+
+  #status {
+    margin-top: 18px;
+    font-size: 15px;
+    min-height: 20px;
+  }
+  #status.error { color: var(--red); }
+  #status.success { color: var(--green); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="#">&larr; Back to home</a>
+
+  <div class="panel">
+    <h1>PAGE<span class="accent">TOOL</span></h1>
+    <p class="tagline">CLIENT-SIDE PDF EDITOR &middot; NO UPLOAD REQUIRED</p>
+    <p class="desc">Extract or remove pages from a PDF, your way. Files never leave your browser — nothing is uploaded to any server.</p>
+
+    <div class="file-row">
+      <button class="file-btn" onclick="document.getElementById('fileInput').click()">Choose File</button>
+      <span id="fileNameLabel">No file chosen</span>
+      <input type="file" id="fileInput" accept="application/pdf">
+    </div>
+    <div class="page-info" id="pageInfo"></div>
+
+    <div class="option selected" id="opt-extract" onclick="setMode('extract')">
+      <div class="radio"></div>
+      <div style="flex:1">
+        <div class="option-title">Extract pages</div>
+        <div class="option-sub">Pull out the pages you choose into a brand new PDF.</div>
+        <div class="option-input">
+          <input type="text" id="extractInput" placeholder="e.g. 1,3,5-8">
+        </div>
+      </div>
+    </div>
+
+    <div class="option" id="opt-remove" onclick="setMode('remove')">
+      <div class="radio"></div>
+      <div style="flex:1">
+        <div class="option-title">Remove pages</div>
+        <div class="option-sub">Delete the pages you choose, keep everything else.</div>
+        <div class="option-input">
+          <input type="text" id="removeInput" placeholder="e.g. 2,4-6" disabled>
+        </div>
+      </div>
+    </div>
+
+    <button class="go-btn" id="goBtn" onclick="processPdf()" disabled>Process PDF</button>
+    <div id="status"></div>
+  </div>
+</div>
+
+<script>
+const { PDFDocument } = PDFLib;
+
+let currentFile = null;
+let currentPdfBytes = null;
+let totalPages = 0;
+let mode = 'extract';
+
+const fileInput = document.getElementById('fileInput');
+const fileNameLabel = document.getElementById('fileNameLabel');
+const pageInfo = document.getElementById('pageInfo');
+const goBtn = document.getElementById('goBtn');
+const statusEl = document.getElementById('status');
+const extractInput = document.getElementById('extractInput');
+const removeInput = document.getElementById('removeInput');
+const optExtract = document.getElementById('opt-extract');
+const optRemove = document.getElementById('opt-remove');
+
+function setMode(m) {
+  mode = m;
+  optExtract.classList.toggle('selected', m === 'extract');
+  optRemove.classList.toggle('selected', m === 'remove');
+  extractInput.disabled = m !== 'extract';
+  removeInput.disabled = m !== 'remove';
+}
+
+fileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  statusEl.textContent = '';
+  statusEl.className = '';
+  pageInfo.textContent = '';
+  goBtn.disabled = true;
+
+  if (!file) {
+    fileNameLabel.textContent = 'No file chosen';
+    return;
+  }
+
+  fileNameLabel.textContent = file.name;
+
+  try {
+    currentFile = file;
+    currentPdfBytes = await file.arrayBuffer();
+    const pdfDoc = await PDFDocument.load(currentPdfBytes);
+    totalPages = pdfDoc.getPageCount();
+    pageInfo.textContent = `${totalPages} page${totalPages !== 1 ? 's' : ''} loaded.`;
+    goBtn.disabled = false;
+  } catch (err) {
+    statusEl.textContent = 'Could not read this PDF: ' + err.message;
+    statusEl.className = 'error';
+  }
+});
+
+function parsePageRanges(input, max) {
+  const pages = new Set();
+  const parts = input.split(',').map(s => s.trim()).filter(Boolean);
+
+  if (parts.length === 0) throw new Error('Enter at least one page number.');
+
+  for (const part of parts) {
+    if (part.includes('-')) {
+      const [startStr, endStr] = part.split('-').map(s => s.trim());
+      const start = parseInt(startStr, 10);
+      const end = parseInt(endStr, 10);
+      if (isNaN(start) || isNaN(end) || start < 1 || end < 1 || start > end) {
+        throw new Error(`Invalid range: "${part}"`);
+      }
+      if (end > max) throw new Error(`Page ${end} doesn't exist — the PDF only has ${max} pages.`);
+      for (let i = start; i <= end; i++) pages.add(i);
+    } else {
+      const num = parseInt(part, 10);
+      if (isNaN(num) || num < 1) throw new Error(`Invalid page number: "${part}"`);
+      if (num > max) throw new Error(`Page ${num} doesn't exist — the PDF only has ${max} pages.`);
+      pages.add(num);
+    }
+  }
+  return pages;
+}
+
+async function processPdf() {
+  statusEl.textContent = '';
+  statusEl.className = '';
+
+  if (!currentPdfBytes) {
+    statusEl.textContent = 'Choose a PDF file first.';
+    statusEl.className = 'error';
+    return;
+  }
+
+  const rawInput = mode === 'extract' ? extractInput.value : removeInput.value;
+
+  let selectedPages;
+  try {
+    selectedPages = parsePageRanges(rawInput, totalPages);
+  } catch (err) {
+    statusEl.textContent = err.message;
+    statusEl.className = 'error';
+    return;
+  }
+
+  goBtn.disabled = true;
+  goBtn.textContent = 'Processing…';
+
+  try {
+    const srcDoc = await PDFDocument.load(currentPdfBytes);
+    const outDoc = await PDFDocument.create();
+
+    let indicesToCopy;
+    if (mode === 'extract') {
+      indicesToCopy = [...selectedPages].sort((a, b) => a - b).map(p => p - 1);
+    } else {
+      indicesToCopy = [];
+      for (let i = 1; i <= totalPages; i++) {
+        if (!selectedPages.has(i)) indicesToCopy.push(i - 1);
+      }
+      if (indicesToCopy.length === 0) {
+        throw new Error('That would remove every page — the result needs at least one.');
+      }
+    }
+
+    const copiedPages = await outDoc.copyPages(srcDoc, indicesToCopy);
+    copiedPages.forEach(p => outDoc.addPage(p));
+
+    const outBytes = await outDoc.save();
+    const blob = new Blob([outBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+
+    const baseName = currentFile.name.replace(/\.pdf$/i, '');
+    const suffix = mode === 'extract' ? 'extracted' : 'removed';
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${baseName}_${suffix}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    statusEl.textContent = `Done — downloaded a ${outDoc.getPageCount()}-page PDF.`;
+    statusEl.className = 'success';
+  } catch (err) {
+    statusEl.textContent = 'Error: ' + err.message;
+    statusEl.className = 'error';
+  } finally {
+    goBtn.disabled = false;
+    goBtn.textContent = 'Process PDF';
+  }
+}
+</script>
+</body>
+</html>

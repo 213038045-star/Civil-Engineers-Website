@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mass Converter</title>
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: "SF Mono", "Consolas", "Monaco", monospace;
+    background-color: #0a0e1a;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 24px 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    color: #e5e9f0;
+  }
+
+  .card {
+    background: #10162a;
+    border: 1px solid #1f2740;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 460px;
+    overflow: hidden;
+  }
+
+  .header {
+    padding: 24px 28px 20px;
+    border-bottom: 1px solid #1f2740;
+  }
+
+  .header h1 {
+    font-size: 18px;
+    letter-spacing: 1px;
+    margin: 0 0 8px;
+    color: #f5f7fa;
+    font-weight: 700;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: #7ee787;
+    margin-bottom: 16px;
+  }
+
+  .subtitle .dot {
+    color: #3a4260;
+    margin: 0 6px;
+  }
+
+  .progress-line {
+    height: 3px;
+    width: 60%;
+    background: linear-gradient(90deg, #7ee787, #3a4260);
+    border-radius: 2px;
+  }
+
+  .body {
+    padding: 24px 28px 28px;
+  }
+
+  .section-label {
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    color: #6b7394;
+    font-weight: 700;
+    margin: 0 0 16px;
+    text-transform: uppercase;
+  }
+
+  .group-label {
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: #7ee787;
+    font-weight: 700;
+    margin: 0 0 10px;
+    text-transform: uppercase;
+  }
+
+  .field-row {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+
+  .field {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .field-caption {
+    font-size: 12px;
+    color: #8a92b2;
+    margin-bottom: 6px;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 12px 14px;
+    font-family: inherit;
+    font-size: 15px;
+    color: #f5f7fa;
+    background: #0d1224;
+    border: 1px solid #262f4d;
+    border-radius: 8px;
+    outline: none;
+  }
+
+  input:focus, select:focus {
+    border-color: #7ee787;
+  }
+
+  select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'><path d='M1 1l6 6 6-6' stroke='%238a92b2' stroke-width='2' fill='none' fill-rule='evenodd'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 34px;
+    cursor: pointer;
+  }
+
+  .convert-to-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+    margin-bottom: 8px;
+  }
+
+  .swap-btn {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #161d38;
+    border: 1px solid #262f4d;
+    color: #7ee787;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1px;
+  }
+
+  .swap-btn:hover {
+    background: #1c2544;
+    border-color: #7ee787;
+  }
+
+  .result-field {
+    flex: 1;
+    min-width: 0;
+  }
+
+  #result {
+    color: #7ee787;
+    font-weight: 700;
+    font-size: 16px;
+    border-color: #223324;
+    background: #0c1a10;
+  }
+
+  .divider {
+    height: 1px;
+    background: #1f2740;
+    margin: 26px 0 22px;
+  }
+
+  .unit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .unit-cell {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    background: #0d1224;
+    border: 1px solid #1c2440;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  .unit-cell .u-name {
+    color: #8a92b2;
+  }
+
+  .unit-cell .u-val {
+    color: #f5f7fa;
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  .unit-cell.active {
+    border-color: #2c4a30;
+    background: #0c1a10;
+  }
+
+  .unit-cell.active .u-val {
+    color: #7ee787;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <h1>MASS CONVERTER</h1>
+    <div class="subtitle">
+      <span>mg</span><span class="dot">&middot;</span>
+      <span>g</span><span class="dot">&middot;</span>
+      <span>kg</span><span class="dot">&middot;</span>
+      <span>oz</span><span class="dot">&middot;</span>
+      <span>lb</span>
+    </div>
+    <div class="progress-line"></div>
+  </div>
+
+  <div class="body">
+    <div class="section-label">Inputs</div>
+
+    <div class="group-label">Convert from</div>
+    <div class="field-row">
+      <div class="field">
+        <div class="field-caption">Value</div>
+        <input type="number" id="inputValue" value="1" step="any">
+      </div>
+      <div class="field">
+        <div class="field-caption">Unit</div>
+        <select id="fromUnit"></select>
+      </div>
+    </div>
+
+    <div class="group-label">Convert to</div>
+    <div class="convert-to-row">
+      <button class="swap-btn" onclick="swapUnits()" title="Swap units">&#8646;</button>
+      <div class="result-field">
+        <div class="field-caption">Result</div>
+        <input type="text" id="result" readonly>
+      </div>
+      <div class="field">
+        <div class="field-caption">Unit</div>
+        <select id="toUnit"></select>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section-label">All units</div>
+    <div class="unit-grid" id="unitGrid"></div>
+  </div>
+</div>
+
+<script>
+  // base unit: gram
+  const units = {
+    "µg": { label: "Microgram", factor: 0.000001 },
+    "mg": { label: "Milligram", factor: 0.001 },
+    "g":  { label: "Gram",       factor: 1 },
+    "kg": { label: "Kilogram",   factor: 1000 },
+    "t":  { label: "Metric Ton", factor: 1000000 },
+    "oz": { label: "Ounce",      factor: 28.3495 },
+    "lb": { label: "Pound",      factor: 453.592 },
+    "st": { label: "Stone",      factor: 6350.29 }
+  };
+
+  const fromSel = document.getElementById('fromUnit');
+  const toSel = document.getElementById('toUnit');
+  const input = document.getElementById('inputValue');
+  const result = document.getElementById('result');
+  const unitGrid = document.getElementById('unitGrid');
+
+  const fullForm = { "oz": "Ounce", "st": "Stone" };
+  function displayName(key) {
+    return fullForm[key] || key;
+  }
+
+  for (const key in units) {
+    fromSel.add(new Option(displayName(key), key));
+    toSel.add(new Option(displayName(key), key));
+  }
+  fromSel.value = "kg";
+  toSel.value = "lb";
+
+  function formatNum(n) {
+    if (Math.abs(n) >= 1e6 || (Math.abs(n) < 1e-6 && n !== 0)) {
+      return n.toExponential(4);
+    }
+    return parseFloat(n.toFixed(6)).toString();
+  }
+
+  function convert() {
+    const val = parseFloat(input.value);
+    if (isNaN(val)) {
+      result.value = "—";
+      renderGrid(NaN);
+      return;
+    }
+    const grams = val * units[fromSel.value].factor;
+    const converted = grams / units[toSel.value].factor;
+    result.value = formatNum(converted);
+    renderGrid(grams);
+  }
+
+  function renderGrid(grams) {
+    unitGrid.innerHTML = "";
+    for (const key in units) {
+      const val = isNaN(grams) ? "—" : formatNum(grams / units[key].factor);
+      const cell = document.createElement('div');
+      cell.className = "unit-cell" + (key === toSel.value ? " active" : "");
+      cell.innerHTML = `<span class="u-name">${displayName(key)}</span><span class="u-val">${val}</span>`;
+      unitGrid.appendChild(cell);
+    }
+  }
+
+  function swapUnits() {
+    const f = fromSel.value;
+    fromSel.value = toSel.value;
+    toSel.value = f;
+    convert();
+  }
+
+  [input, fromSel, toSel].forEach(el => el.addEventListener('input', convert));
+  convert();
+</script>
+
+</body>
+</html>

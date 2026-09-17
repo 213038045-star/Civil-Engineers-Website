@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Add Page Numbers to PowerPoint</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --ink:#1c1c1c;
+    --paper:#ffffff;
+    --line:#dddbd4;
+    --muted:#6b6b6b;
+    --accent:#2f5d50;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:#f0efe9;
+    font-family:-apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    padding:48px 20px;
+  }
+  .card{
+    width:100%;
+    max-width:560px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    padding:40px;
+  }
+  h1{
+    font-size:1.4rem;
+    margin:0 0 6px;
+    font-weight:600;
+  }
+  .sub{
+    color:var(--muted);
+    font-size:0.92rem;
+    margin:0 0 32px;
+    line-height:1.5;
+  }
+  .drop{
+    border:1.5px dashed var(--line);
+    padding:28px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color 0.15s;
+  }
+  .drop:hover, .drop.dragover{
+    border-color:var(--accent);
+  }
+  .drop input{
+    display:none;
+  }
+  .drop-label{
+    font-size:0.95rem;
+    color:var(--ink);
+  }
+  .drop-sub{
+    font-size:0.82rem;
+    color:var(--muted);
+    margin-top:4px;
+  }
+  .file-name{
+    margin-top:14px;
+    font-size:0.88rem;
+    color:var(--accent);
+    font-weight:600;
+    word-break:break-all;
+  }
+  .options{
+    margin-top:28px;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .field{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+  }
+  .field label{
+    font-size:0.9rem;
+  }
+  .field input[type="number"]{
+    width:72px;
+    padding:6px 8px;
+    border:1px solid var(--line);
+    font-size:0.9rem;
+    font-family:inherit;
+  }
+  .checkbox-field{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .checkbox-field input{
+    width:16px;
+    height:16px;
+  }
+  button.process{
+    margin-top:28px;
+    width:100%;
+    padding:13px;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    font-size:0.95rem;
+    font-family:inherit;
+    cursor:pointer;
+  }
+  button.process:hover{
+    background:var(--accent);
+  }
+  button.process:disabled{
+    background:#b7b7b7;
+    cursor:default;
+  }
+  .status{
+    margin-top:18px;
+    font-size:0.88rem;
+    line-height:1.5;
+    min-height:1.3em;
+  }
+  .status.error{
+    color:#a02b2b;
+  }
+  .status.ok{
+    color:var(--accent);
+  }
+  .download{
+    display:none;
+    margin-top:16px;
+    text-align:center;
+    padding:12px;
+    background:#eef4f1;
+    border:1px solid #c9dcd4;
+    text-decoration:none;
+    color:var(--accent);
+    font-weight:600;
+    font-size:0.92rem;
+  }
+  .note{
+    margin-top:24px;
+    font-size:0.78rem;
+    color:var(--muted);
+    line-height:1.5;
+    border-top:1px solid var(--line);
+    padding-top:16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>Add page numbers to a PowerPoint</h1>
+  <p class="sub">Everything runs in your browser — the file is never uploaded anywhere. Pick a .pptx file, choose your options, and download the result.</p>
+
+  <div class="drop" id="dropZone">
+    <input type="file" id="fileInput" accept=".pptx">
+    <div class="drop-label">Click to choose a file, or drag one here</div>
+    <div class="drop-sub">.pptx only</div>
+    <div class="file-name" id="fileName"></div>
+  </div>
+
+  <div class="options">
+    <div class="field">
+      <label for="startNum">Start numbering at</label>
+      <input type="number" id="startNum" value="1" min="1">
+    </div>
+    <div class="checkbox-field">
+      <input type="checkbox" id="skipTitle" checked>
+      <label for="skipTitle">Don't show a number on the first slide</label>
+    </div>
+  </div>
+
+  <button class="process" id="processBtn" disabled>Add page numbers</button>
+
+  <div class="status" id="status"></div>
+  <a class="download" id="downloadLink">Download numbered file</a>
+
+  <div class="note">
+    Numbers are inserted as live PowerPoint fields (bottom-right of each slide), so they'll stay correct if you reorder or add slides later in PowerPoint. A custom start number is written using PowerPoint's own "first slide number" setting — PowerPoint desktop honors it; some other viewers (Google Slides, LibreOffice) may still display the true slide position instead.
+  </div>
+</div>
+
+<script>
+const P_NS = "http://schemas.openxmlformats.org/presentationml/2006/main";
+const A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
+const R_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+
+const dropZone = document.getElementById("dropZone");
+const fileInput = document.getElementById("fileInput");
+const fileNameEl = document.getElementById("fileName");
+const processBtn = document.getElementById("processBtn");
+const statusEl = document.getElementById("status");
+const downloadLink = document.getElementById("downloadLink");
+
+let selectedFile = null;
+
+dropZone.addEventListener("click", () => fileInput.click());
+dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("dragover"); });
+dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+dropZone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  dropZone.classList.remove("dragover");
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener("change", (e) => {
+  if (e.target.files.length) handleFile(e.target.files[0]);
+});
+
+function handleFile(file) {
+  if (!file.name.toLowerCase().endsWith(".pptx")) {
+    setStatus("Please choose a .pptx file.", "error");
+    return;
+  }
+  selectedFile = file;
+  fileNameEl.textContent = file.name;
+  processBtn.disabled = false;
+  setStatus("", "");
+  downloadLink.style.display = "none";
+}
+
+function setStatus(msg, kind) {
+  statusEl.textContent = msg;
+  statusEl.className = "status" + (kind ? " " + kind : "");
+}
+
+processBtn.addEventListener("click", async () => {
+  if (!selectedFile) return;
+  processBtn.disabled = true;
+  downloadLink.style.display = "none";
+  setStatus("Processing…", "");
+
+  const start = parseInt(document.getElementById("startNum").value, 10) || 1;
+  const skipTitle = document.getElementById("skipTitle").checked;
+
+  try {
+    const arrayBuffer = await selectedFile.arrayBuffer();
+    const outBlob = await addPageNumbers(arrayBuffer, { start, skipTitle });
+
+    const url = URL.createObjectURL(outBlob);
+    const outName = selectedFile.name.replace(/\.pptx$/i, "") + "-numbered.pptx";
+    downloadLink.href = url;
+    downloadLink.download = outName;
+    downloadLink.textContent = "Download " + outName;
+    downloadLink.style.display = "block";
+    setStatus("Done.", "ok");
+  } catch (err) {
+    console.error(err);
+    setStatus("Something went wrong: " + err.message, "error");
+  } finally {
+    processBtn.disabled = false;
+  }
+});
+
+// NOTE ON APPROACH: we only ever use DOMParser to *read* presentation.xml
+// and the rels file (both simple, predictable files). We never parse and
+// re-serialize a slide's own XML — real-world slides carry namespaces,
+// extension lists, and formatting details that a generic DOM round-trip
+// can subtly rewrite, and PowerPoint's schema checker is not forgiving of
+// that. Every write to a slide file is a plain string insertion, so every
+// byte of the original slide XML is left untouched except for the one
+// snippet we add.
+
+async function addPageNumbers(arrayBuffer, { start, skipTitle }) {
+  const zip = await JSZip.loadAsync(arrayBuffer);
+  const parser = new DOMParser();
+
+  const presFile = zip.file("ppt/presentation.xml");
+  const relsFile = zip.file("ppt/_rels/presentation.xml.rels");
+  if (!presFile || !relsFile) {
+    throw new Error("This doesn't look like a valid .pptx file.");
+  }
+
+  const presXml = await presFile.async("string");
+  const relsXml = await relsFile.async("string");
+  const presDoc = parser.parseFromString(presXml, "application/xml");
+  const relsDoc = parser.parseFromString(relsXml, "application/xml");
+
+  if (presDoc.getElementsByTagName("parsererror").length) {
+    throw new Error("Couldn't parse presentation.xml — the file may be corrupted.");
+  }
+
+  // Map relationship id -> target path
+  const relMap = {};
+  Array.from(relsDoc.getElementsByTagName("Relationship")).forEach((r) => {
+    relMap[r.getAttribute("Id")] = r.getAttribute("Target");
+  });
+
+  // Real slide order comes from <p:sldIdLst>, not filename order
+  const sldIdNodes = Array.from(presDoc.getElementsByTagNameNS(P_NS, "sldId"));
+  if (sldIdNodes.length === 0) {
+    throw new Error("Couldn't find any slides in this file.");
+  }
+  const slidePaths = sldIdNodes.map((node) => {
+    const rId = node.getAttributeNS(R_NS, "id");
+    return "ppt/" + relMap[rId];
+  });
+
+  // Slide dimensions, to position the number bottom-right
+  const sldSzEl = presDoc.getElementsByTagNameNS(P_NS, "sldSz")[0];
+  const slideW = parseInt(sldSzEl.getAttribute("cx"), 10);
+  const slideH = parseInt(sldSzEl.getAttribute("cy"), 10);
+
+  const boxW = 914400;   // 1 inch
+  const boxH = 365760;   // 0.4 inch
+  const left = slideW - boxW - 274320;  // 0.3in right margin
+  const top = slideH - boxH - 182880;   // 0.2in bottom margin
+
+  // Custom start number = PowerPoint's own "first slide number" attribute.
+  // Set via plain string edit on the opening <p:presentation ...> tag —
+  // no parse/serialize round-trip of the file.
+  if (start !== 1) {
+    if (/firstSlideNum\s*=/.test(presXml)) {
+      zip.file("ppt/presentation.xml", presXml.replace(/firstSlideNum="\d+"/, 'firstSlideNum="' + start + '"'));
+    } else {
+      const newPresXml = presXml.replace(/<p:presentation\b/, '<p:presentation firstSlideNum="' + start + '"');
+      zip.file("ppt/presentation.xml", newPresXml);
+    }
+  }
+
+  for (let i = 0; i < slidePaths.length; i++) {
+    if (skipTitle && i === 0) continue;
+
+    const path = slidePaths[i];
+    const number = start + i;
+    const slideFile = zip.file(path);
+    if (!slideFile) continue;
+
+    const xml = await slideFile.async("string");
+
+    if (!/<p:spTree[\s>]/.test(xml) || xml.indexOf("</p:spTree>") === -1) {
+      // Unexpected slide structure — skip rather than risk corrupting it
+      continue;
+    }
+
+    // Unique shape id: highest existing id in this slide, plus one
+    let maxId = 1;
+    const idRegex = /<p:cNvPr[^>]*\sid="(\d+)"/g;
+    let m;
+    while ((m = idRegex.exec(xml)) !== null) {
+      const id = parseInt(m[1], 10);
+      if (id > maxId) maxId = id;
+    }
+    const newId = maxId + 1;
+    const guid = "{A1B2C3D4-" + String(newId).padStart(4, "0") + "-4E5F-8A9B-" +
+                 String(number).padStart(12, "0") + "}";
+
+    const shapeXml =
+      '<p:sp>' +
+        '<p:nvSpPr>' +
+          '<p:cNvPr id="' + newId + '" name="Slide Number Placeholder"/>' +
+          '<p:cNvSpPr txBox="1"/>' +
+          '<p:nvPr/>' +
+        '</p:nvSpPr>' +
+        '<p:spPr>' +
+          '<a:xfrm><a:off x="' + left + '" y="' + top + '"/><a:ext cx="' + boxW + '" cy="' + boxH + '"/></a:xfrm>' +
+          '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>' +
+        '</p:spPr>' +
+        '<p:txBody>' +
+          '<a:bodyPr wrap="none" anchor="b"/>' +
+          '<a:lstStyle/>' +
+          '<a:p>' +
+            '<a:pPr algn="r"/>' +
+            '<a:fld id="' + guid + '" type="slidenum">' +
+              '<a:rPr lang="en-US" sz="1200"><a:solidFill><a:srgbClr val="808080"/></a:solidFill></a:rPr>' +
+              '<a:t>' + number + '</a:t>' +
+            '</a:fld>' +
+          '</a:p>' +
+        '</p:txBody>' +
+      '</p:sp>';
+
+    // Insert right before the closing </p:spTree> tag — every other byte
+    // of the slide is untouched.
+    const newXml = xml.replace("</p:spTree>", shapeXml + "</p:spTree>");
+    zip.file(path, newXml);
+  }
+
+  return zip.generateAsync({
+    type: "blob",
+    mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  });
+}
+</script>
+
+</body>
+</html>

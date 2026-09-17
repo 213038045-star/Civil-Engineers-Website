@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Add Page Numbers</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<style>
+  :root {
+    --bg: #060a14;
+    --panel: #0d1526;
+    --panel-border: #1c2942;
+    --accent: #ff8a3d;
+    --white: #f4f6fb;
+    --dim: #6b7a99;
+    --blue: #3b82f6;
+    --green: #4ade80;
+    --red: #f87171;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(59,130,246,0.06), transparent 40%),
+      radial-gradient(circle at 80% 100%, rgba(255,138,61,0.05), transparent 40%);
+  }
+  body {
+    font-family: "SF Mono", "Consolas", "Menlo", "Courier New", monospace;
+    color: var(--white);
+    padding: 48px 20px 80px;
+    font-size: 17px;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 36px 40px;
+  }
+
+  h1 { font-size: 36px; letter-spacing: 1px; margin: 0 0 14px; font-weight: 800; }
+  h1 .accent { color: var(--accent); }
+
+  .tagline { color: var(--blue); font-size: 14px; letter-spacing: 2px; margin: 0 0 22px; }
+  .desc { color: #a9b4cc; font-size: 17px; line-height: 1.6; margin: 0 0 30px; }
+
+  .file-row { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
+  .file-btn {
+    background: var(--bg);
+    border: 1px solid var(--panel-border);
+    color: var(--white);
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 16px;
+    padding: 14px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .file-btn:hover { border-color: var(--dim); }
+  .file-name { color: var(--dim); font-size: 15px; }
+  input[type="file"] { display: none; }
+
+  .page-info { color: var(--dim); font-size: 15px; margin: 8px 0 30px; }
+
+  .field { margin-bottom: 24px; }
+  .field label {
+    display: block;
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  .field .hint { color: var(--dim); font-size: 14px; margin-top: 8px; line-height: 1.5; }
+
+  select, input[type="text"], input[type="number"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--panel-border);
+    color: var(--white);
+    font-family: inherit;
+    font-size: 16px;
+    padding: 12px 14px;
+    border-radius: 8px;
+  }
+  select:focus, input:focus { outline: none; border-color: var(--blue); }
+  input::placeholder { color: #4b5875; }
+
+  .row2 { display: flex; gap: 16px; }
+  .row2 > div { flex: 1; }
+
+  .section-divider {
+    border: none;
+    border-top: 1px solid var(--panel-border);
+    margin: 30px 0;
+  }
+
+  /* 3x3 position grid */
+  .pos-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .pos-cell {
+    aspect-ratio: 3 / 2;
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    background: var(--bg);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pos-cell:hover { border-color: var(--dim); }
+  .pos-cell.selected { border-color: var(--blue); background: rgba(59,130,246,0.12); }
+  .pos-cell .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--dim); }
+  .pos-cell.selected .dot { background: var(--blue); }
+  .pos-cell[data-pos="top-left"] .dot, .pos-cell[data-pos="bottom-left"] .dot { margin-right: auto; margin-left: 10px; }
+  .pos-cell[data-pos="top-right"] .dot, .pos-cell[data-pos="bottom-right"] .dot { margin-left: auto; margin-right: 10px; }
+  .pos-cell[data-pos="top-left"], .pos-cell[data-pos="top-center"], .pos-cell[data-pos="top-right"] { align-items: flex-start; padding-top: 8px; }
+  .pos-cell[data-pos="bottom-left"], .pos-cell[data-pos="bottom-center"], .pos-cell[data-pos="bottom-right"] { align-items: flex-end; padding-bottom: 8px; }
+  .pos-cell[data-pos="center"] { opacity: .3; cursor: not-allowed; }
+
+  .custom-pos-row { display: none; gap: 16px; margin-top: 14px; }
+  .custom-pos-row.show { display: flex; }
+  .custom-pos-row > div { flex: 1; }
+
+  .preview-hint {
+    color: var(--dim);
+    font-size: 14px;
+    margin-top: 6px;
+  }
+  .preview-hint b { color: var(--white); font-weight: 700; }
+
+  .go-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 16px;
+    background: var(--accent);
+    color: #1a0e05;
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+  }
+  .go-btn:hover { background: #ff9c5c; }
+  .go-btn:disabled { background: #4a3a2b; color: #8a7a68; cursor: not-allowed; }
+
+  #status { margin-top: 18px; font-size: 15px; min-height: 20px; }
+  #status.error { color: var(--red); }
+  #status.success { color: var(--green); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel">
+    <h1>ADD PAGE<span class="accent">NUMBERS</span></h1>
+    <p class="tagline">CLIENT-SIDE PDF TOOL &middot; NO UPLOAD REQUIRED</p>
+    <p class="desc">Stamp page numbers onto an existing PDF — pick a corner, or type an exact spot. Runs entirely in your browser; the file never leaves your device.</p>
+
+    <div class="file-row">
+      <button class="file-btn" onclick="document.getElementById('fileInput').click()">Choose PDF</button>
+      <span class="file-name" id="fileName">No file chosen</span>
+      <input type="file" id="fileInput" accept="application/pdf">
+    </div>
+    <div class="page-info" id="pageInfo">Upload the PDF you want to number.</div>
+
+    <hr class="section-divider">
+
+    <div class="field" style="margin-bottom:18px;">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" id="hideToggle" style="width:18px;height:18px;">
+        Cover / hide an existing page number
+      </label>
+      <div class="hint">pdf-lib can't detect and truly delete arbitrary text baked into a PDF — the reliable fix is to draw a solid box over the old number so it's no longer visible. If the page background isn't plain white, pick a matching color below.</div>
+    </div>
+
+    <div id="hideBody" class="hidden">
+      <div class="field">
+        <label for="hideModeSelect">Where is the existing number?</label>
+        <select id="hideModeSelect">
+          <option value="match" selected>Same spot as the new number (set below)</option>
+          <option value="custom">A different spot — enter a rectangle</option>
+        </select>
+      </div>
+
+      <div class="row2" id="hideCustomRow" style="display:none;">
+        <div>
+          <label for="hideX">X (pt from left edge)</label>
+          <input type="number" id="hideX" placeholder="e.g. 260">
+        </div>
+        <div>
+          <label for="hideY">Y (pt from bottom edge)</label>
+          <input type="number" id="hideY" placeholder="e.g. 20">
+        </div>
+      </div>
+      <div class="row2" id="hideCustomRow2" style="display:none; margin-top:16px;">
+        <div>
+          <label for="hideW">Width (pt)</label>
+          <input type="number" id="hideW" placeholder="e.g. 60">
+        </div>
+        <div>
+          <label for="hideH">Height (pt)</label>
+          <input type="number" id="hideH" placeholder="e.g. 16">
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:16px;">
+        <label for="hideColor">Cover color</label>
+        <input type="color" id="hideColor" value="#ffffff" style="height:46px;padding:4px;">
+        <div class="hint">Defaults to white, which matches most page backgrounds.</div>
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <div class="field" style="margin-bottom:6px;">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" id="addToggle" checked style="width:18px;height:18px;">
+        Add a new page number
+      </label>
+    </div>
+
+    <div id="addBody">
+      <div class="field" style="margin-bottom:16px;margin-top:16px;">
+        <label>Position on the page</label>
+        <div class="pos-grid">
+          <div class="pos-cell" data-pos="top-left" onclick="setPos('top-left')"><span class="dot"></span></div>
+          <div class="pos-cell" data-pos="top-center" onclick="setPos('top-center')"><span class="dot"></span></div>
+          <div class="pos-cell" data-pos="top-right" onclick="setPos('top-right')"><span class="dot"></span></div>
+          <div class="pos-cell" data-pos="left"></div>
+          <div class="pos-cell" data-pos="center"></div>
+          <div class="pos-cell" data-pos="right"></div>
+          <div class="pos-cell" data-pos="bottom-left" onclick="setPos('bottom-left')"><span class="dot"></span></div>
+          <div class="pos-cell selected" data-pos="bottom-center" onclick="setPos('bottom-center')"><span class="dot"></span></div>
+          <div class="pos-cell" data-pos="bottom-right" onclick="setPos('bottom-right')"><span class="dot"></span></div>
+        </div>
+        <div class="hint">Pick a corner or edge — or choose "Custom" below to type an exact spot.</div>
+      </div>
+
+      <div class="row2">
+        <div>
+          <label for="marginInput">Margin from edge (pt)</label>
+          <input type="number" id="marginInput" value="28" min="0">
+        </div>
+        <div>
+          <label for="customToggle">Or use a custom location</label>
+          <select id="customToggle">
+            <option value="preset" selected>Use the corner picked above</option>
+            <option value="custom">Custom X / Y position</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="custom-pos-row" id="customPosRow">
+        <div>
+          <label for="customX">X (pt from left edge)</label>
+          <input type="number" id="customX" placeholder="e.g. 300">
+        </div>
+        <div>
+          <label for="customY">Y (pt from bottom edge)</label>
+          <input type="number" id="customY" placeholder="e.g. 20">
+        </div>
+      </div>
+      <div class="hint" style="margin-bottom:20px;">Point (0,0) is the bottom-left corner of the page. Text is drawn starting at this point.</div>
+
+      <hr class="section-divider">
+
+      <div class="field">
+        <label for="styleSelect">Numbering style</label>
+        <select id="styleSelect">
+          <option value="{n}">Just the number — 1, 2, 3…</option>
+          <option value="{n} / {total}" selected>Number / total — 1 / 8</option>
+          <option value="Page {n} of {total}">Page X of Y — Page 1 of 8</option>
+          <option value="- {n} -">Dashed — - 1 -</option>
+          <option value="custom">Custom format…</option>
+        </select>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="formatInput">Format</label>
+          <input type="text" id="formatInput" value="{n} / {total}">
+        </div>
+        <div class="field">
+          <label for="fontSizeInput">Font size (pt)</label>
+          <input type="number" id="fontSizeInput" value="10" min="4">
+        </div>
+      </div>
+      <div class="preview-hint" id="formatPreview">Preview: <b>1 / 8</b></div>
+      <div class="hint">Use <code>{n}</code> for the number and <code>{total}</code> for the total page count — e.g. "Page {n} of {total}".</div>
+
+      <div class="field" style="margin-top:20px;">
+        <label for="fontSelect">Font</label>
+        <select id="fontSelect">
+          <option value="Helvetica" selected>Helvetica (Arial-style)</option>
+          <option value="HelveticaBold">Helvetica Bold</option>
+          <option value="TimesRoman">Times New Roman</option>
+          <option value="TimesRomanBold">Times New Roman Bold</option>
+          <option value="TimesRomanItalic">Times New Roman Italic</option>
+          <option value="Courier">Courier New</option>
+          <option value="CourierBold">Courier New Bold</option>
+        </select>
+        <div class="hint">These are the standard PDF fonts, so no extra files are downloaded — they render identically everywhere.</div>
+      </div>
+
+      <div class="row2" style="margin-top:24px;">
+        <div class="field">
+          <label for="startAtInput">Start counting at</label>
+          <input type="number" id="startAtInput" value="1" min="1">
+        </div>
+        <div class="field">
+          <label for="rangeInput">Apply to pages</label>
+          <input type="text" id="rangeInput" placeholder="e.g. 2-8 (leave blank for all pages)">
+        </div>
+      </div>
+      <div class="hint">"Start counting at" sets the number shown on the first page you're numbering — handy if page 1 is a cover you're skipping.</div>
+    </div>
+
+    <button class="go-btn" id="goBtn" disabled onclick="addPageNumbers()">Add Page Numbers</button>
+    <div id="status"></div>
+  </div>
+</div>
+
+<script>
+const { PDFDocument, StandardFonts, rgb } = PDFLib;
+
+let file = null;
+let pdfBytes = null;
+let totalPages = 0;
+let pos = 'bottom-center';
+
+const fileInput = document.getElementById('fileInput');
+const fileName = document.getElementById('fileName');
+const pageInfo = document.getElementById('pageInfo');
+const goBtn = document.getElementById('goBtn');
+const statusEl = document.getElementById('status');
+
+const customToggle = document.getElementById('customToggle');
+const customPosRow = document.getElementById('customPosRow');
+const customX = document.getElementById('customX');
+const customY = document.getElementById('customY');
+const marginInput = document.getElementById('marginInput');
+const formatInput = document.getElementById('formatInput');
+const fontSizeInput = document.getElementById('fontSizeInput');
+const formatPreview = document.getElementById('formatPreview');
+const startAtInput = document.getElementById('startAtInput');
+const rangeInput = document.getElementById('rangeInput');
+const styleSelect = document.getElementById('styleSelect');
+const fontSelect = document.getElementById('fontSelect');
+
+const hideToggle = document.getElementById('hideToggle');
+const hideBody = document.getElementById('hideBody');
+const hideModeSelect = document.getElementById('hideModeSelect');
+const hideCustomRow = document.getElementById('hideCustomRow');
+const hideCustomRow2 = document.getElementById('hideCustomRow2');
+const hideX = document.getElementById('hideX');
+const hideY = document.getElementById('hideY');
+const hideW = document.getElementById('hideW');
+const hideH = document.getElementById('hideH');
+const hideColor = document.getElementById('hideColor');
+
+const addToggle = document.getElementById('addToggle');
+const addBody = document.getElementById('addBody');
+
+hideToggle.addEventListener('change', () => {
+  hideBody.classList.toggle('hidden', !hideToggle.checked);
+  updateGoButtonLabel();
+});
+hideModeSelect.addEventListener('change', () => {
+  const custom = hideModeSelect.value === 'custom';
+  hideCustomRow.style.display = custom ? 'flex' : 'none';
+  hideCustomRow2.style.display = custom ? 'flex' : 'none';
+});
+addToggle.addEventListener('change', () => {
+  addBody.classList.toggle('hidden', !addToggle.checked);
+  updateGoButtonLabel();
+});
+
+function updateGoButtonLabel() {
+  const hide = hideToggle.checked;
+  const add = addToggle.checked;
+  if (hide && add) goBtn.textContent = 'Update Page Numbers';
+  else if (hide) goBtn.textContent = 'Remove Page Numbers';
+  else goBtn.textContent = 'Add Page Numbers';
+}
+
+function hexToRgb01(hex) {
+  const h = hex.replace('#', '');
+  return {
+    r: parseInt(h.substring(0, 2), 16) / 255,
+    g: parseInt(h.substring(2, 4), 16) / 255,
+    b: parseInt(h.substring(4, 6), 16) / 255
+  };
+}
+
+function setPos(p) {
+  pos = p;
+  document.querySelectorAll('.pos-cell').forEach(c => c.classList.toggle('selected', c.dataset.pos === p));
+  customToggle.value = 'preset';
+  customPosRow.classList.remove('show');
+}
+
+customToggle.addEventListener('change', () => {
+  customPosRow.classList.toggle('show', customToggle.value === 'custom');
+});
+
+function escapeHtml(s) { return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function updateFormatPreview() {
+  const fmt = formatInput.value || '{n} / {total}';
+  const startAt = parseInt(startAtInput.value, 10) || 1;
+  const total = totalPages || 8;
+  const text = fmt.replace(/{n}/g, startAt).replace(/{total}/g, total);
+  formatPreview.innerHTML = 'Preview: <b>' + escapeHtml(text) + '</b>';
+}
+[formatInput, startAtInput].forEach(el => el.addEventListener('input', updateFormatPreview));
+
+styleSelect.addEventListener('change', () => {
+  if (styleSelect.value === 'custom') {
+    formatInput.focus();
+    return;
+  }
+  formatInput.value = styleSelect.value;
+  updateFormatPreview();
+});
+formatInput.addEventListener('input', () => {
+  // if the user hand-edits the format, reflect that the preset no longer matches
+  const matching = Array.from(styleSelect.options).find(o => o.value === formatInput.value);
+  styleSelect.value = matching ? matching.value : 'custom';
+});
+
+fileInput.addEventListener('change', async (e) => {
+  const f = e.target.files[0];
+  statusEl.textContent = '';
+  statusEl.className = '';
+  pageInfo.textContent = 'Upload the PDF you want to number.';
+  file = null;
+  pdfBytes = null;
+
+  if (!f) {
+    fileName.textContent = 'No file chosen';
+    goBtn.disabled = true;
+    return;
+  }
+
+  fileName.textContent = f.name;
+
+  try {
+    file = f;
+    pdfBytes = await f.arrayBuffer();
+    const doc = await PDFDocument.load(pdfBytes);
+    totalPages = doc.getPageCount();
+    pageInfo.textContent = `${totalPages} page${totalPages !== 1 ? 's' : ''} loaded.`;
+    updateFormatPreview();
+    goBtn.disabled = false;
+  } catch (err) {
+    statusEl.textContent = 'Could not read this PDF: ' + err.message;
+    statusEl.className = 'error';
+    goBtn.disabled = true;
+  }
+});
+
+function parsePageRanges(input, max) {
+  const pages = [];
+  const seen = new Set();
+  const parts = input.split(',').map(s => s.trim()).filter(Boolean);
+
+  for (const part of parts) {
+    if (part.includes('-')) {
+      const [startStr, endStr] = part.split('-').map(s => s.trim());
+      const start = parseInt(startStr, 10);
+      const end = parseInt(endStr, 10);
+      if (isNaN(start) || isNaN(end) || start < 1 || end < 1 || start > end) {
+        throw new Error(`Invalid range: "${part}"`);
+      }
+      if (end > max) throw new Error(`Page ${end} doesn't exist — this PDF only has ${max} pages.`);
+      for (let i = start; i <= end; i++) {
+        if (!seen.has(i)) { seen.add(i); pages.push(i); }
+      }
+    } else {
+      const num = parseInt(part, 10);
+      if (isNaN(num) || num < 1) throw new Error(`Invalid page number: "${part}"`);
+      if (num > max) throw new Error(`Page ${num} doesn't exist — this PDF only has ${max} pages.`);
+      if (!seen.has(num)) { seen.add(num); pages.push(num); }
+    }
+  }
+  return pages;
+}
+
+function resolveXY(pageWidth, pageHeight, textWidth, fontSize, margin) {
+  if (customToggle.value === 'custom') {
+    const x = parseFloat(customX.value);
+    const y = parseFloat(customY.value);
+    if (isNaN(x) || isNaN(y)) throw new Error('Enter both a custom X and Y position (in points).');
+    return { x, y };
+  }
+
+  let x, y;
+  if (pos.endsWith('left')) x = margin;
+  else if (pos.endsWith('right')) x = pageWidth - margin - textWidth;
+  else x = (pageWidth - textWidth) / 2;
+
+  if (pos.startsWith('top')) y = pageHeight - margin - fontSize * 0.8;
+  else y = margin;
+
+  return { x, y };
+}
+
+async function addPageNumbers() {
+  statusEl.textContent = '';
+  statusEl.className = '';
+
+  if (!pdfBytes) {
+    statusEl.textContent = 'Choose a PDF file first.';
+    statusEl.className = 'error';
+    return;
+  }
+
+  const doHide = hideToggle.checked;
+  const doAdd = addToggle.checked;
+
+  if (!doHide && !doAdd) {
+    statusEl.textContent = 'Turn on at least one of "Cover existing page number" or "Add a new page number".';
+    statusEl.className = 'error';
+    return;
+  }
+  if (doHide && hideModeSelect.value === 'match' && !doAdd) {
+    statusEl.textContent = '"Same spot as the new number" needs "Add a new page number" turned on too — or switch to "A different spot" and enter a rectangle.';
+    statusEl.className = 'error';
+    return;
+  }
+
+  goBtn.disabled = true;
+  goBtn.textContent = 'Processing…';
+
+  try {
+    const doc = await PDFDocument.load(pdfBytes);
+    const total = doc.getPageCount();
+
+    const rangeText = rangeInput.value.trim();
+    const targetPageNums = rangeText === ''
+      ? Array.from({ length: total }, (_, i) => i + 1)
+      : parsePageRanges(rangeText, total);
+
+    const fmt = formatInput.value.trim() || '{n} / {total}';
+    const fontSize = parseFloat(fontSizeInput.value) || 10;
+    const margin = parseFloat(marginInput.value) || 0;
+    const startAt = parseInt(startAtInput.value, 10) || 1;
+
+    const font = doAdd ? await doc.embedFont(StandardFonts[fontSelect.value]) : null;
+    const pages = doc.getPages();
+    const cover = doHide ? hexToRgb01(hideColor.value) : null;
+
+    targetPageNums.forEach((pageNum, i) => {
+      const page = pages[pageNum - 1];
+      const { width, height } = page.getSize();
+
+      let label = '', textWidth = 0, x = 0, y = 0;
+      if (doAdd) {
+        label = fmt.replace(/{n}/g, String(startAt + i)).replace(/{total}/g, String(total));
+        textWidth = font.widthOfTextAtSize(label, fontSize);
+        ({ x, y } = resolveXY(width, height, textWidth, fontSize, margin));
+      }
+
+      if (doHide) {
+        let rx, ry, rw, rh;
+        if (hideModeSelect.value === 'custom') {
+          rx = parseFloat(hideX.value);
+          ry = parseFloat(hideY.value);
+          rw = parseFloat(hideW.value);
+          rh = parseFloat(hideH.value);
+          if ([rx, ry, rw, rh].some(v => isNaN(v))) {
+            throw new Error('Enter X, Y, width, and height for the cover rectangle.');
+          }
+        } else {
+          // match the new number's spot, with padding around it
+          const padX = 8, padY = fontSize * 0.5;
+          rx = x - padX;
+          ry = y - padY;
+          rw = textWidth + padX * 2;
+          rh = fontSize + padY * 2;
+        }
+        page.drawRectangle({ x: rx, y: ry, width: rw, height: rh, color: rgb(cover.r, cover.g, cover.b) });
+      }
+
+      if (doAdd) {
+        page.drawText(label, { x, y, size: fontSize, font, color: rgb(0.42, 0.45, 0.52) });
+      }
+    });
+
+    const outBytes = await doc.save();
+    const blob = new Blob([outBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const baseName = file.name.replace(/\.pdf$/i, '');
+    const suffix = doHide && doAdd ? '_renumbered' : doHide ? '_number_removed' : '_numbered';
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${baseName}${suffix}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    statusEl.textContent = `Done — updated ${targetPageNums.length} page${targetPageNums.length !== 1 ? 's' : ''} and downloaded the PDF.`;
+    statusEl.className = 'success';
+  } catch (err) {
+    statusEl.textContent = 'Error: ' + err.message;
+    statusEl.className = 'error';
+  } finally {
+    goBtn.disabled = false;
+    updateGoButtonLabel();
+  }
+}
+
+</script>
+</body>
+</html>
