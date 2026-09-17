@@ -209,6 +209,13 @@
   .unit-cell.active .u-val {
     color: #7ee787;
   }
+
+  .force-note {
+    font-size: 11px;
+    color: #6b7394;
+    margin-top: 16px;
+    line-height: 1.5;
+  }
 </style>
 </head>
 <body>
@@ -221,7 +228,9 @@
       <span>g</span><span class="dot">&middot;</span>
       <span>kg</span><span class="dot">&middot;</span>
       <span>oz</span><span class="dot">&middot;</span>
-      <span>lb</span>
+      <span>lb</span><span class="dot">&middot;</span>
+      <span>kip</span><span class="dot">&middot;</span>
+      <span>kN</span>
     </div>
     <div class="progress-line"></div>
   </div>
@@ -258,11 +267,16 @@
 
     <div class="section-label">All units</div>
     <div class="unit-grid" id="unitGrid"></div>
+
+    <div class="force-note">kip and kN are force (weight) units, converted using standard gravity g = 9.80665 m/s&sup2;.</div>
   </div>
 </div>
 
 <script>
   // base unit: gram
+  // kip and kN are force units — included here as their mass-equivalent
+  // weight under standard gravity (g = 9.80665 m/s²), a common civil/
+  // structural engineering convenience.
   const units = {
     "µg": { label: "Microgram", factor: 0.000001 },
     "mg": { label: "Milligram", factor: 0.001 },
@@ -271,7 +285,9 @@
     "t":  { label: "Metric Ton", factor: 1000000 },
     "oz": { label: "Ounce",      factor: 28.3495 },
     "lb": { label: "Pound",      factor: 453.592 },
-    "st": { label: "Stone",      factor: 6350.29 }
+    "st": { label: "Stone",      factor: 6350.29 },
+    "kip": { label: "Kip (force)", factor: 453592.37 },
+    "kN": { label: "Kilonewton (force)", factor: 101971.6212978 }
   };
 
   const fromSel = document.getElementById('fromUnit');
