@@ -204,7 +204,12 @@ body{
   white-space:pre;
   cursor:pointer;
   border:1px solid transparent;
-  line-height:1;
+  /*
+     PDF text often contains descenders (g, y, p, q, j)
+     that extend below the nominal font-size box. A line-height
+     of 1 can make the browser's editable overlay appear clipped.
+  */
+  line-height:1.2;
   transform-origin:left top;
   transform-box:border-box;
   color:transparent;
@@ -994,8 +999,14 @@ async function render(){
     );
 
 
+    /*
+       Give the overlay enough vertical room for real font
+       ascenders/descenders. The PDF font size is not a strict
+       glyph bounding-box height, so using exactly `font` can
+       make the lower part of g/y/p/q/j look cut off.
+    */
     const h=Math.max(
-      font,
+      font*1.20,
       7
     );
 
@@ -1074,8 +1085,14 @@ async function render(){
       contentAngle=0;
 
 
+    /*
+       Keep the original top anchor so existing text does not
+       visibly jump, while the taller overlay below gives
+       descenders enough room. The actual PDF baseline remains
+       unchanged when saving.
+    */
     const topY=
-      baselineY-font;
+      baselineY-(font*0.82);
 
 
     /*
@@ -1148,7 +1165,8 @@ async function render(){
       font+'px';
 
 
-    el.style.lineHeight='1';
+    /* Match the enlarged text overlay box. */
+    el.style.lineHeight='1.2';
 
 
     /*
@@ -1329,9 +1347,14 @@ async function render(){
          glyph. Capped small so it can't reach
          into the next line of text.
       */
+      /*
+         Extra cover below the baseline is important for
+         descenders such as g, y, p, q and j. Keep it capped
+         so the cover cannot unnecessarily reach the next line.
+      */
       const descentPad=
         (Math.abs(base.angle||0)<2) ?
-        Math.min(6,(base.font||0)*0.35) :
+        Math.min(8,(base.font||0)*0.45) :
         0;
 
 
@@ -2174,7 +2197,27 @@ function editExisting(i,el){
        original text ended, shrink the size (never enlarge)
        just enough so the new text's rendered width fits
        inside the original text's width.
+
+       IMPORTANT: this must only kick in when it's actually
+       needed. Measuring width with a substitute web font
+       (Arial/Times/Courier) is only an approximation of the
+       PDF's real embedded font, so it frequently reports
+       "overflow" even when the text is completely unchanged
+       (e.g. the user just opened the box and hit Apply
+       without editing anything) — that false positive was
+       shrinking (and, through the size field, subtly
+       repositioning) text that never needed to change at all.
+       Two guards fix that:
+         1) skip the check entirely if the text itself
+            wasn't changed — nothing can have "grown", so
+            there's nothing to fit.
+         2) only shrink for a genuine, meaningful overflow
+            (>15%), not the small measurement noise that
+            comes from comparing two different font engines.
     */
+
+    const textChanged=
+      newText!==base.str;
 
     const sizePxRequested=
       sizePt*(scale||1);
@@ -2190,10 +2233,13 @@ function editExisting(i,el){
 
     let fittedSizePt=sizePt;
 
+    const OVERFLOW_TOLERANCE=1.15;
+
     if(
       !sizeTouchedByUser &&
+      textChanged &&
       base.w>0 &&
-      newWidthPxAtRequested>base.w
+      newWidthPxAtRequested>base.w*OVERFLOW_TOLERANCE
     ){
 
       fittedSizePt=
@@ -4468,6 +4514,124 @@ $('save').onclick=async()=>{
     }
 
 
+    /* =====================================================
+       SCREEN-ANGLE → CONTENT-ANGLE
+
+       New text and new images are placed by the user
+       looking at the on-screen page, where "0 degrees"
+       always means "reads left-to-right, upright, exactly
+       like the Add Text box the user typed into". But
+       pdf-lib draws into the page's RAW content stream,
+       which is not aware of the page's own /Rotate entry —
+       a PDF viewer applies /Rotate on top, for display,
+       AFTER everything already on the page (old content
+       and anything we just added) has been drawn. So on a
+       page whose /Rotate is 90/180/270, content drawn at
+       "0 degrees" in the raw stream comes out rotated by
+       that same amount once a viewer displays it — which
+       is exactly the "my added text/image rotates on its
+       own" bug.
+
+       This helper answers: "what raw content-space angle
+       do I need to draw at so that, after the viewer applies
+       this page's rotation, it LOOKS like screenAngleDeg?"
+       It reuses the very same inverseViewportPoint transform
+       already used everywhere else on this page (rather than
+       hand-deriving the PDF /Rotate sign convention), so it's
+       guaranteed consistent with how positions are mapped.
+    ===================================================== */
+
+    function contentAngleForScreenAngle(vp,screenAngleDeg){
+
+      const rad=
+        screenAngleDeg*Math.PI/180;
+
+      const p0=
+        inverseViewportPoint(vp,0,0);
+
+      const p1=
+        inverseViewportPoint(
+          vp,
+          Math.cos(rad)*1000,
+          Math.sin(rad)*1000
+        );
+
+      let a=
+        Math.atan2(
+          p1.y-p0.y,
+          p1.x-p0.x
+        )*180/Math.PI;
+
+      /*
+         Page /Rotate is always a multiple of 90°,
+         so the result should already sit almost
+         exactly on 0/90/180/270 — snapping removes
+         any tiny floating-point drift.
+      */
+
+      const snapped=
+        Math.round(a/90)*90;
+
+      return(
+        (
+          (snapped%360)+360
+        )%360
+      );
+
+    }
+
+
+    /* =====================================================
+       PLACEMENT FOR A ROTATED IMAGE/SIGNATURE
+
+       pdf-lib's drawImage rotates the image's own
+       (unrotated) width×height rectangle about the
+       (x,y) anchor it's given — it does NOT rotate about
+       the rectangle's center. So simply reusing the same
+       axis-aligned target box for every rotation would
+       put the image in the wrong spot for anything but
+       0°. This works out, for each of the 4 possible
+       page rotations, exactly which corner to anchor on
+       so the rotated image lands back on the intended
+       target box (targetMinX/targetMinY, sized Ws×Hs in
+       its own unrotated orientation).
+    ===================================================== */
+
+    function graphicDrawParams(theta,targetMinX,targetMinY,Ws,Hs){
+
+      theta=
+        ((theta%360)+360)%360;
+
+      if(theta===90)
+        return{
+          x:targetMinX+Hs,
+          y:targetMinY,
+          rotate:90
+        };
+
+      if(theta===180)
+        return{
+          x:targetMinX+Ws,
+          y:targetMinY+Hs,
+          rotate:180
+        };
+
+      if(theta===270)
+        return{
+          x:targetMinX,
+          y:targetMinY+Ws,
+          rotate:270
+        };
+
+      return{
+        x:targetMinX,
+        y:targetMinY,
+        rotate:0
+      };
+
+    }
+
+
     const graphicCache=new Map();
 
     async function embedGraphic(data){
@@ -4506,6 +4670,19 @@ $('save').onclick=async()=>{
         pv.getViewport({
           scale
         });
+
+
+      /*
+         How much raw content-space rotation is needed on
+         THIS page so that newly added (screen-upright)
+         text and images come out upright once the page's
+         own /Rotate is applied for display. Existing text
+         doesn't need this — its contentAngle already comes
+         straight from the original PDF and needs no help.
+      */
+
+      const neededRotation=
+        contentAngleForScreenAngle(vp,0);
 
 
       /*
@@ -4565,7 +4742,7 @@ $('save').onclick=async()=>{
 
           const h=
             Math.max(
-              fontScreen,
+              fontScreen*1.20,
               7
             );
 
@@ -4659,8 +4836,14 @@ $('save').onclick=async()=>{
 
             x,
 
+            /*
+               Use the same generous vertical overlay geometry as
+               the on-screen editor. The original PDF baseline is
+               still stored separately and is used unchanged for
+               the actual replacement text during export.
+            */
             y:
-              baselineY-fontScreen,
+              baselineY-(fontScreen*0.82),
 
             w,
 
@@ -4697,6 +4880,77 @@ $('save').onclick=async()=>{
 
       /* ===================================================
          APPLY CHANGES
+
+         PASS 1: cover ALL original text first.
+
+         This is important when two edited lines are close
+         together. Previously the code covered one line and
+         immediately drew its replacement, then the cover for
+         the next line could overlap the descender of the
+         previous replacement (for example the bottom of "g").
+         By completing every original-text cover first, no later
+         text cover can erase a replacement glyph.
+      =================================================== */
+
+      for(
+        const c of(changes[pn]||[])
+      ){
+
+        if(c.i===undefined)
+          continue;
+
+        const it=pageTextItems[c.i];
+        if(!it)
+          continue;
+
+        const padX=
+          Math.min(
+            1.5,
+            Math.max(0.5,it.w*0.015)
+          );
+
+        const padY=
+          Math.min(
+            1.5,
+            Math.max(0.5,it.h*0.06)
+          );
+
+        /*
+           Keep the extra descender clearance modest. The cover
+           is now in a separate pass, so it can safely cover the
+           original glyph without being able to cover a replacement
+           drawn later.
+        */
+        const descentPad=
+          (Math.abs(it.angle)<2) ?
+          Math.min(4,it.font*0.22) :
+          0;
+
+        let coverW=it.w;
+        let coverH=it.h;
+
+        if(
+          Math.abs(
+            Math.abs(it.angle)-90
+          )<2
+        ){
+          coverW=it.h;
+          coverH=it.w;
+        }
+
+        coverScreenRect(
+          pg,
+          vp,
+          it.x-padX,
+          it.y-padY,
+          coverW+padX*2,
+          coverH+padY*2+descentPad
+        );
+      }
+
+
+      /* ===================================================
+         PASS 2: draw replacements and other edits.
       =================================================== */
 
       for(
@@ -4722,85 +4976,10 @@ $('save').onclick=async()=>{
 
 
           /*
-             Cover original text.
-
-             Padding is generous and
-             scales with the text size —
-             this is what was leaving
-             stray fragments of the old
-             glyphs visible at the edges
-             (serifs, descenders, AA halo).
-
-             descentPad extends the cover
-             DOWNWARD past the baseline only,
-             to also swallow descenders on
-             letters like g, y, p, q, j —
-             the box was previously measured
-             from the text's top down to the
-             baseline only (it.h = font size),
-             so anything a glyph draws below
-             the baseline was left uncovered
-             and leaked through in the saved
-             PDF after the replacement text
-             (or the whiteout-only cover) was
-             drawn on top.
+             The original glyph was already covered in PASS 1.
+             Do not create another cover here — doing so can cover
+             the descenders of another replacement text item.
           */
-
-          const padX=
-            Math.min(
-              1.5,
-              Math.max(0.5,it.w*0.015)
-            );
-
-          const padY=
-            Math.min(
-              1.5,
-              Math.max(0.5,it.h*0.06)
-            );
-
-          const descentPad=
-            (Math.abs(it.angle)<2) ?
-            Math.min(6,it.h*0.35) :
-            0;
-
-
-          let coverW=it.w;
-          let coverH=it.h;
-
-
-          /*
-             90-degree text occupies
-             a visually rotated rectangle.
-          */
-
-          if(
-            Math.abs(
-              Math.abs(it.angle)-90
-            )<2
-          ){
-
-            coverW=it.h;
-            coverH=it.w;
-
-          }
-
-
-          coverScreenRect(
-
-            pg,
-
-            vp,
-
-            it.x-padX,
-
-            it.y-padY,
-
-            coverW+padX*2,
-
-            coverH+padY*2+descentPad
-
-          );
-
 
           /*
              If deleted, don't draw replacement.
@@ -4856,10 +5035,6 @@ $('save').onclick=async()=>{
             (it.contentAngle||0);
 
 
-          const rotationRad=
-            rotation*Math.PI/180;
-
-
           const drawFont=
             pickFont(
               c.family||'arial',
@@ -4908,23 +5083,35 @@ $('save').onclick=async()=>{
           }
           else{
 
-            /* KEEP ORIGINAL VISUAL TOP POSITION */
+            /*
+               KEEP THE EXACT ORIGINAL ANCHOR.
+
+               it.raw.transform[4]/[5] is the PDF's own,
+               un-rounded x/baseline-y for this text run,
+               straight from the page's content stream —
+               nothing screen/viewport-derived about it.
+               Drawing the replacement text at that exact
+               x/y guarantees it lands on precisely the same
+               spot the original glyph did, no matter what
+               size or font the replacement ends up using.
+
+               The previous approach reconstructed a "top"
+               from the OLD font's size, then re-derived a
+               new baseline by adding the REPLACEMENT font's
+               heightAtSize() (ascent+descent) back on top of
+               that "top". Those two numbers use different,
+               incompatible height conventions (a plain
+               point-size approximation vs. a real font metric
+               box), so whenever the size changed — including
+               the automatic shrink-to-fit above — the text
+               visibly drifted up or down. Anchoring straight
+               to the original baseline removes that mismatch
+               entirely.
+            */
+
             posX = it.raw.transform[4];
+            posY = it.raw.transform[5];
 
-            const originalBaseline = it.raw.transform[5];
-            const originalFontPt = it.font / (scale || 1);
-            const originalTop = originalBaseline - originalFontPt;
-
-            let replacementHeight = fontSize;
-            try{
-              if(drawFont && typeof drawFont.heightAtSize === 'function'){
-                replacementHeight = drawFont.heightAtSize(fontSize);
-              }
-            }catch(_){
-              replacementHeight = fontSize;
-            }
-
-            posY = originalTop + replacementHeight;
           }
 
 
@@ -5017,7 +5204,19 @@ $('save').onclick=async()=>{
                   q.r,
                   q.g,
                   q.b
-                )
+                ),
+
+              /*
+                 Counter the page's own /Rotate so this
+                 brand-new text — typed upright on screen —
+                 still reads upright once the PDF viewer
+                 applies that rotation. See
+                 contentAngleForScreenAngle() above; existing
+                 text doesn't need this since its rotation is
+                 read directly from the original PDF.
+              */
+              rotate:
+                degrees(neededRotation)
 
             }
 
@@ -5043,11 +5242,56 @@ $('save').onclick=async()=>{
             c.y+(c.h||120)
           );
 
+          const targetMinX=Math.min(p1.x,p2.x);
+          const targetMinY=Math.min(p1.y,p2.y);
+
+          /*
+             c.w/c.h are SCREEN pixels because the editor is rendered
+             at `scale` (currently 1.5). Passing those pixel values
+             directly to pdf-lib makes exported pictures larger than
+             the size shown in the editor.
+
+             Convert the selected screen rectangle to PDF points first.
+             For a 90/270-degree page rotation, the PDF axes are swapped.
+          */
+          const pdfDx=Math.abs(p2.x-p1.x);
+          const pdfDy=Math.abs(p2.y-p1.y);
+          const graphicRotation=
+            ((neededRotation%360)+360)%360;
+
+          let Ws,Hs;
+          if(graphicRotation===90 || graphicRotation===270){
+            Ws=pdfDy;
+            Hs=pdfDx;
+          }else{
+            Ws=pdfDx;
+            Hs=pdfDy;
+          }
+
+          Ws=Math.max(0.1,Ws);
+          Hs=Math.max(0.1,Hs);
+
+          /*
+             Same idea as added text: place/rotate the
+             image so that, after the page's own /Rotate
+             is applied by the viewer, it lands upright and
+             in the same spot the user dropped it on screen.
+          */
+          const gp=
+            graphicDrawParams(
+              neededRotation,
+              targetMinX,
+              targetMinY,
+              Ws,
+              Hs
+            );
+
           pg.drawImage(image,{
-            x:Math.min(p1.x,p2.x),
-            y:Math.min(p1.y,p2.y),
-            width:Math.abs(p2.x-p1.x),
-            height:Math.abs(p2.y-p1.y)
+            x:gp.x,
+            y:gp.y,
+            width:Ws,
+            height:Hs,
+            rotate:degrees(gp.rotate)
           });
         }
 
