@@ -1,405 +1,2318 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Merge PDF — Abdur Rauf</title>
-<style>
-  :root{
-    --bg:#0a0f1a;
-    --panel:#111a2c;
-    --panel-hover:#16233a;
-    --border:#1f2c42;
-    --border-light:#2a3c58;
-    --text:#dbe4ee;
-    --text-dim:#6b7d94;
-    --accent-blue:#2f6fdb;
-    --accent-blue-hover:#3a7ce8;
-    --accent-cyan:#4fd8ea;
-    --accent-green:#34d399;
-    --accent-orange:#ff8a3d;
-    --accent-red:#ff8a7a;
-  }
-  *{box-sizing:border-box;}
-  body{
-    background:
-      linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px) 0 0/28px 28px,
-      linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px) 0 0/28px 28px,
-      var(--bg);
-    color:var(--text);
-    font-family:'JetBrains Mono','SFMono-Regular',Consolas,'Courier New',monospace;
-    min-height:100vh;
-  }
-  .container{width:100%;padding:0 1rem;}
-  .tool-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:2rem;max-width:640px;margin:3rem auto;}
 
-  a.back-link{color:var(--accent-cyan);text-decoration:none;font-size:.8rem;letter-spacing:.03em;}
-  a.back-link:hover{color:var(--accent-blue-hover);}
+<title>Merge PDF — Abdur Rauf</title>
+
+<style>
+
+:root{
+  --bg:#0a0f1a;
+  --panel:#111a2c;
+  --panel-hover:#16233a;
+  --border:#1f2c42;
+  --border-light:#2a3c58;
+  --text:#dbe4ee;
+  --text-dim:#6b7d94;
+
+  --accent-blue:#2f6fdb;
+  --accent-blue-hover:#3a7ce8;
+
+  --accent-cyan:#4fd8ea;
+  --accent-green:#34d399;
+  --accent-orange:#ff8a3d;
+  --accent-red:#ff8a7a;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+
+  background:
+    linear-gradient(
+      rgba(255,255,255,.025) 1px,
+      transparent 1px
+    ) 0 0/28px 28px,
+
+    linear-gradient(
+      90deg,
+      rgba(255,255,255,.025) 1px,
+      transparent 1px
+    ) 0 0/28px 28px,
+
+    var(--bg);
+
+  color:var(--text);
+
+  font-family:
+    'JetBrains Mono',
+    'SFMono-Regular',
+    Consolas,
+    'Courier New',
+    monospace;
+
+  min-height:100vh;
+}
+
+.container{
+  width:100%;
+  padding:0 1rem;
+}
+
+.tool-card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:10px;
+
+  padding:2rem;
+
+  max-width:700px;
+
+  margin:3rem auto;
+}
+
+a.back-link{
+  color:var(--accent-cyan);
+  text-decoration:none;
+
+  font-size:.8rem;
+  letter-spacing:.03em;
+}
+
+a.back-link:hover{
+  color:var(--accent-blue-hover);
+}
+
+h1{
+  font-family:inherit;
+
+  text-transform:uppercase;
+  letter-spacing:.04em;
+
+  font-weight:800;
+
+  font-size:1.9rem;
+
+  margin:0;
+}
+
+h1 .accent{
+  color:var(--accent-orange);
+}
+
+.tagline{
+  font-size:.72rem;
+
+  letter-spacing:.12em;
+
+  text-transform:uppercase;
+
+  color:var(--accent-cyan);
+
+  margin:.35rem 0 1rem;
+}
+
+.text-secondary{
+  color:var(--text-dim);
+
+  font-size:.85rem;
+
+  line-height:1.5;
+}
+
+.btn{
+  display:inline-block;
+
+  padding:.375rem .75rem;
+
+  border-radius:6px;
+
+  font-size:.85rem;
+
+  cursor:pointer;
+
+  font-family:inherit;
+
+  transition:
+    background .15s ease,
+    border-color .15s ease,
+    box-shadow .15s ease;
+}
+
+.btn-sm{
+  padding:.25rem .55rem;
+  font-size:.75rem;
+}
+
+.btn-outline-light{
+  background:transparent;
+
+  border:1px solid var(--border-light);
+
+  color:var(--text);
+}
+
+.btn-outline-light:hover{
+  background:var(--panel-hover);
+  border-color:var(--accent-blue);
+}
+
+.btn-outline-danger{
+  background:transparent;
+
+  border:1px solid #b0473f;
+
+  color:var(--accent-red);
+}
+
+.btn-outline-danger:hover{
+  background:#2a1512;
+
+  border-color:var(--accent-red);
+}
+
+.w-100{
+  width:100%;
+}
+
+.mb-1{
+  margin-bottom:.25rem;
+}
+
+.mb-2{
+  margin-bottom:.5rem;
+}
+
+.mb-3{
+  margin-bottom:1rem;
+}
+
+.mb-0{
+  margin-bottom:0;
+}
+
+.mt-1{
+  margin-top:.25rem;
+}
+
+.mt-2{
+  margin-top:.5rem;
+}
+
+.mt-3{
+  margin-top:1rem;
+}
+
+.me-1{
+  margin-right:.4rem;
+}
+
+.form-control{
+  background:var(--bg);
+
+  color:var(--text);
+
+  border:1px solid var(--border-light);
+
+  border-radius:6px;
+
+  font-family:inherit;
+
+  font-size:.9rem;
+
+  padding:.5rem .6rem;
+}
+
+.form-control:focus{
+  background:var(--bg);
+
+  color:var(--text);
+
+  border-color:var(--accent-cyan);
+
+  outline:none;
+
+  box-shadow:
+    0 0 0 3px rgba(79,216,234,.15);
+}
+
+
+/* FILE INPUT */
+
+input[type="file"]::file-selector-button{
+
+  background:var(--panel);
+
+  color:var(--text);
+
+  border:1px solid var(--border-light);
+
+  border-radius:6px;
+
+  padding:.65rem 1.25rem;
+
+  font-size:.9rem;
+
+  font-weight:600;
+
+  font-family:inherit;
+
+  cursor:pointer;
+
+  margin-right:1rem;
+
+  transition:
+    background .15s ease,
+    border-color .15s ease;
+}
+
+input[type="file"]::file-selector-button:hover{
+
+  background:var(--panel-hover);
+
+  border-color:var(--accent-blue);
+}
+
+input[type="file"]{
+
+  padding:.5rem;
+
+  color:var(--text-dim);
+
+  font-size:.85rem;
+}
+
+
+/* FILE SORTING TOOLBAR */
+
+.file-tools{
+
+  display:flex;
+
+  flex-wrap:wrap;
+
+  gap:.5rem;
+
+  align-items:center;
+
+  margin:.75rem 0;
+}
+
+.file-tools .tool-label{
+
+  color:var(--text-dim);
+
+  font-size:.72rem;
+
+  text-transform:uppercase;
+
+  letter-spacing:.06em;
+}
+
+.file-tools select{
+
+  min-width:210px;
+}
+
+.case-toggle{
+
+  display:flex;
+
+  align-items:center;
+
+  gap:.4rem;
+
+  color:var(--text-dim);
+
+  font-size:.75rem;
+
+  cursor:pointer;
+}
+
+.case-toggle input{
+
+  accent-color:var(--accent-blue);
+
+  width:15px;
+
+  height:15px;
+}
+
+
+/* FILE LIST */
+
+.file-list{
+
+  list-style:none;
+
+  padding:0;
+
+  margin:1rem 0;
+}
+
+.file-list li{
+
+  background:var(--panel);
+
+  border:1px solid var(--border);
+
+  padding:.6rem 1rem;
+
+  border-radius:6px;
+
+  margin-bottom:.5rem;
+
+  display:flex;
+
+  justify-content:space-between;
+
+  align-items:center;
+
+  gap:.75rem;
+
+  font-size:.85rem;
+
+  transition:
+    background .15s ease,
+    border-color .15s ease;
+}
+
+.file-list li:hover{
+
+  background:var(--panel-hover);
+
+  border-color:var(--accent-blue);
+}
+
+.file-list li .name{
+
+  overflow:hidden;
+
+  text-overflow:ellipsis;
+
+  white-space:nowrap;
+
+  margin-right:.75rem;
+}
+
+.empty-list{
+
+  color:var(--text-dim);
+
+  text-align:center;
+
+  padding:.75rem;
+
+  border:1px dashed var(--border);
+
+  border-radius:6px;
+
+  font-size:.75rem;
+}
+
+
+/* STATUS */
+
+#status{
+
+  font-size:.8rem;
+
+  color:var(--accent-green);
+
+  letter-spacing:.02em;
+
+  min-height:1.2em;
+}
+
+#status.error{
+
+  color:var(--accent-red);
+}
+
+
+/* MERGE BUTTON */
+
+.btn-orange{
+
+  background:var(--accent-blue);
+
+  border:none;
+
+  color:#ffffff;
+
+  font-weight:700;
+
+  letter-spacing:.03em;
+
+  text-transform:uppercase;
+
+  font-size:.85rem;
+}
+
+.btn-orange:hover{
+
+  background:var(--accent-blue-hover);
+
+  color:#ffffff;
+}
+
+.btn-orange:disabled{
+
+  opacity:.4;
+
+  cursor:not-allowed;
+}
+
+
+/* DOWNLOAD BUTTON */
+
+.btn-download{
+
+  background:var(--accent-green);
+
+  border:none;
+
+  color:#052e22;
+
+  font-weight:700;
+
+  letter-spacing:.03em;
+
+  text-transform:uppercase;
+
+  font-size:.85rem;
+}
+
+.btn-download:hover{
+
+  background:#28b586;
+
+  color:#052e22;
+}
+
+
+/* REFRESH BUTTON */
+
+.btn-refresh{
+
+  background:transparent;
+
+  border:1px solid var(--border-light);
+
+  color:var(--accent-cyan);
+
+  font-weight:700;
+
+  text-transform:uppercase;
+
+  letter-spacing:.03em;
+
+  font-size:.85rem;
+}
+
+.btn-refresh:hover{
+
+  background:var(--panel-hover);
+
+  border-color:var(--accent-cyan);
+
+  box-shadow:
+    0 0 0 3px rgba(79,216,234,.08);
+}
+
+
+/* RESIZE OPTION */
+
+.resize-option{
+
+  border:1px solid var(--border);
+
+  border-radius:6px;
+
+  padding:.75rem 1rem;
+}
+
+.resize-option .check-row{
+
+  display:flex;
+
+  align-items:center;
+
+  cursor:pointer;
+
+  font-size:.85rem;
+}
+
+.resize-option input[type="checkbox"]{
+
+  accent-color:var(--accent-blue);
+
+  margin-right:.5rem;
+
+  width:16px;
+
+  height:16px;
+
+  flex-shrink:0;
+}
+
+.resize-option .sub-label{
+
+  color:var(--text-dim);
+
+  font-size:.72rem;
+
+  text-transform:uppercase;
+
+  letter-spacing:.06em;
+
+  display:block;
+
+  margin-bottom:.25rem;
+}
+
+.resize-controls{
+
+  display:none;
+
+  padding-left:1.6rem;
+
+  border-left:2px solid var(--border);
+
+  margin-top:.75rem;
+}
+
+.resize-controls .field{
+
+  margin-bottom:.75rem;
+}
+
+.resize-controls .field:last-child{
+
+  margin-bottom:0;
+}
+
+.resize-note{
+
+  font-size:.72rem;
+
+  color:var(--text-dim);
+
+  margin-top:.5rem;
+
+  line-height:1.4;
+}
+
+
+/* MOBILE */
+
+@media(max-width:600px){
+
+  .tool-card{
+
+    padding:1.25rem;
+
+    margin:1rem auto;
+  }
 
   h1{
-    font-family:inherit;
-    text-transform:uppercase;
-    letter-spacing:.04em;
-    font-weight:800;
-    font-size:1.9rem;
-    margin:0;
-  }
-  h1 .accent{color:var(--accent-orange);}
 
-  .tagline{
-    font-size:.72rem;
-    letter-spacing:.12em;
-    text-transform:uppercase;
-    color:var(--accent-cyan);
-    margin:.35rem 0 1rem 0;
+    font-size:1.5rem;
   }
 
-  .text-secondary{color:var(--text-dim);font-size:.85rem;line-height:1.5;}
+  .file-tools{
 
-  .btn{display:inline-block;padding:.375rem .75rem;border-radius:6px;font-size:.85rem;cursor:pointer;font-family:inherit;transition:background .15s ease,border-color .15s ease;}
-  .btn-sm{padding:.25rem .55rem;font-size:.75rem;}
-  .btn-outline-light{background:transparent;border:1px solid var(--border-light);color:var(--text);}
-  .btn-outline-light:hover{background:var(--panel-hover);border-color:var(--accent-blue);}
-  .btn-outline-danger{background:transparent;border:1px solid #b0473f;color:var(--accent-red);}
-  .btn-outline-danger:hover{background:#2a1512;border-color:var(--accent-red);}
+    align-items:stretch;
 
-  .w-100{width:100%;}
-  .mb-1{margin-bottom:.25rem;} .mb-2{margin-bottom:.5rem;} .mb-3{margin-bottom:1rem;} .mb-0{margin-bottom:0;}
-  .mt-1{margin-top:.25rem;} .mt-2{margin-top:.5rem;} .mt-3{margin-top:1rem;}
-  .me-1{margin-right:.4rem;}
-
-  .form-control{
-    background:var(--bg);
-    color:var(--text);
-    border:1px solid var(--border-light);
-    border-radius:6px;
-    font-family:inherit;
-    font-size:.9rem;
-    padding:.5rem .6rem;
-  }
-  .form-control:focus{
-    background:var(--bg);color:var(--text);
-    border-color:var(--accent-cyan);
-    outline:none;
-    box-shadow:0 0 0 3px rgba(79,216,234,.15);
+    flex-direction:column;
   }
 
-  /* Bigger, more clickable "Choose Files" button */
-  input[type="file"]::file-selector-button{
-    background:var(--panel);
-    color:var(--text);
-    border:1px solid var(--border-light);
-    border-radius:6px;
-    padding:.65rem 1.25rem;
-    font-size:.9rem;
-    font-weight:600;
-    font-family:inherit;
-    cursor:pointer;
-    margin-right:1rem;
-    transition:background .15s ease, border-color .15s ease;
+  .file-tools select{
+
+    width:100%;
   }
-  input[type="file"]::file-selector-button:hover{
-    background:var(--panel-hover);
-    border-color:var(--accent-blue);
-  }
-  input[type="file"]{padding:.5rem;color:var(--text-dim);font-size:.85rem;}
+}
 
-  .file-list{list-style:none;padding:0;margin:1rem 0;}
-  .file-list li{
-    background:var(--panel);
-    border:1px solid var(--border);
-    padding:.6rem 1rem;
-    border-radius:6px;
-    margin-bottom:.5rem;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    font-size:.85rem;
-    transition:background .15s ease, border-color .15s ease;
-  }
-  .file-list li:hover{
-    background:var(--panel-hover);
-    border-color:var(--accent-blue);
-  }
-  .file-list li .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:.75rem;}
-
-  #status{font-size:.8rem;color:var(--accent-green);letter-spacing:.02em;}
-  #status.error{color:var(--accent-red);}
-
-  .btn-orange{background:var(--accent-blue);border:none;color:#ffffff;font-weight:700;letter-spacing:.03em;text-transform:uppercase;font-size:.85rem;}
-  .btn-orange:hover{background:var(--accent-blue-hover);color:#ffffff;}
-  .btn-orange:disabled{opacity:.4;cursor:not-allowed;}
-
-  .btn-download{background:var(--accent-green);border:none;color:#052e22;font-weight:700;letter-spacing:.03em;text-transform:uppercase;font-size:.85rem;}
-  .btn-download:hover{background:#28b586;color:#052e22;}
-
-  .resize-option{border:1px solid var(--border);border-radius:6px;padding:.75rem 1rem;}
-  .resize-option .check-row{display:flex;align-items:center;cursor:pointer;font-size:.85rem;}
-  .resize-option input[type="checkbox"]{accent-color:var(--accent-blue);margin-right:.5rem;width:16px;height:16px;flex-shrink:0;}
-  .resize-option .sub-label{color:var(--text-dim);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:.25rem;}
-  .resize-controls{display:none;padding-left:1.6rem;border-left:2px solid var(--border);margin-top:.75rem;}
-  .resize-controls .field{margin-bottom:.75rem;}
-  .resize-controls .field:last-child{margin-bottom:0;}
-  .resize-note{font-size:.72rem;color:var(--text-dim);margin-top:.5rem;line-height:1.4;}
 </style>
 </head>
+
+
 <body>
+
 <div class="container">
+
   <div class="tool-card">
-    <a href="/" class="back-link">&larr; Back to home</a>
-    <h1 class="mb-0 mt-3">Merge<span class="accent">PDF</span></h1>
-    <div class="tagline">Client-side PDF merger · No upload required</div>
-    <p class="text-secondary">Combine multiple PDF files into one, in the order you choose. Files never leave your browser — nothing is uploaded to any server.</p>
 
-    <input type="file" id="fileInput" accept="application/pdf" multiple class="form-control mb-3">
-    <ul id="fileList" class="file-list"></ul>
+    <a href="/" class="back-link">
+      &larr; Back to home
+    </a>
 
-    <div class="resize-option mb-3">
-      <label class="check-row">
-        <input type="checkbox" id="normalizeCheckbox">
-        <span>Make every page the same size &amp; spacing</span>
-      </label>
-      <div class="resize-note mt-1">Checked: every page is resized onto a uniform canvas with equal spacing on all four sides. Unchecked: each page keeps its original size and layout exactly as in the source PDF.</div>
-      <div id="resizeControls" class="resize-controls">
-        <div class="field">
-          <span class="sub-label">Page size</span>
-          <select id="pageSizeSelect" class="form-control">
-            <option value="auto">Auto (match largest page)</option>
-            <option value="a4">A4</option>
-            <option value="letter">Letter</option>
-          </select>
-        </div>
-        <div class="field">
-          <span class="sub-label">Border spacing (pt)</span>
-          <input type="number" id="marginInput" class="form-control" value="20" min="0" step="1">
-        </div>
-        <div class="resize-note">When enabled, every page is resized onto a uniform canvas with equal spacing on all four sides. When disabled, each page keeps its original size and layout exactly as in the source PDF.</div>
-      </div>
+
+    <h1 class="mb-0 mt-3">
+      Merge<span class="accent">PDF</span>
+    </h1>
+
+
+    <div class="tagline">
+      Client-side PDF merger · No upload required
     </div>
 
-    <button id="mergeBtn" class="btn btn-orange w-100" disabled>Merge PDFs</button>
-    <button id="downloadBtn" class="btn btn-download w-100 mt-2" style="display:none;">Download result</button>
-    <div id="status" class="mt-3"></div>
+
+    <p class="text-secondary">
+
+      Combine multiple PDF files into one,
+      in the order you choose.
+
+      Files never leave your browser —
+      nothing is uploaded to any server.
+
+    </p>
+
+
+    <!-- FILE INPUT -->
+
+    <input
+      type="file"
+      id="fileInput"
+      accept="application/pdf"
+      multiple
+      class="form-control mb-3"
+    >
+
+
+    <!-- SORTING / ALPHABETICAL OPTIONS -->
+
+    <div class="file-tools">
+
+      <span class="tool-label">
+        File order:
+      </span>
+
+
+      <select
+        id="sortSelect"
+        class="form-control"
+      >
+
+        <option value="manual">
+          Manual order
+        </option>
+
+        <option value="az">
+          Alphabetical A → Z
+        </option>
+
+        <option value="za">
+          Alphabetical Z → A
+        </option>
+
+        <option value="nameUpper">
+          Uppercase name first
+        </option>
+
+        <option value="nameLower">
+          Lowercase name first
+        </option>
+
+      </select>
+
+
+      <label class="case-toggle">
+
+        <input
+          type="checkbox"
+          id="ignoreCase"
+          checked
+        >
+
+        Ignore case
+
+      </label>
+
+    </div>
+
+
+    <!-- FILE LIST -->
+
+    <ul
+      id="fileList"
+      class="file-list"
+    >
+
+      <li class="empty-list">
+        No PDF files selected.
+      </li>
+
+    </ul>
+
+
+    <!-- NORMALIZE OPTION -->
+
+    <div class="resize-option mb-3">
+
+      <label class="check-row">
+
+        <input
+          type="checkbox"
+          id="normalizeCheckbox"
+        >
+
+        <span>
+          Make every page the same size &amp; spacing
+        </span>
+
+      </label>
+
+
+      <div class="resize-note mt-1">
+
+        Checked: every page is resized onto
+        a uniform canvas with equal spacing
+        on all four sides.
+
+        Unchecked: each page keeps its original
+        size and layout exactly as in the source PDF.
+
+      </div>
+
+
+      <div
+        id="resizeControls"
+        class="resize-controls"
+      >
+
+        <div class="field">
+
+          <span class="sub-label">
+            Page size
+          </span>
+
+
+          <select
+            id="pageSizeSelect"
+            class="form-control"
+          >
+
+            <option value="auto">
+              Auto (match largest page)
+            </option>
+
+            <option value="a4">
+              A4
+            </option>
+
+            <option value="letter">
+              Letter
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="field">
+
+          <span class="sub-label">
+            Border spacing (pt)
+          </span>
+
+
+          <input
+            type="number"
+            id="marginInput"
+            class="form-control"
+            value="20"
+            min="0"
+            step="1"
+          >
+
+        </div>
+
+
+        <div class="resize-note">
+
+          When enabled, every page is resized
+          onto a uniform canvas with equal spacing
+          on all four sides.
+
+          When disabled, each page keeps its
+          original size and layout exactly as
+          in the source PDF.
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- MERGE -->
+
+    <button
+      id="mergeBtn"
+      class="btn btn-orange w-100"
+      disabled
+    >
+
+      Merge PDFs
+
+    </button>
+
+
+    <!-- DOWNLOAD -->
+
+    <button
+      id="downloadBtn"
+      class="btn btn-download w-100 mt-2"
+      style="display:none;"
+    >
+
+      Download result
+
+    </button>
+
+
+    <!-- REFRESH -->
+
+    <button
+      id="refreshBtn"
+      class="btn btn-refresh w-100 mt-2"
+      type="button"
+    >
+
+      ↻ Refresh / Start Again
+
+    </button>
+
+
+    <!-- STATUS -->
+
+    <div
+      id="status"
+      class="mt-3"
+    ></div>
+
   </div>
+
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<script>
-let files = [];
-const fileInput = document.getElementById('fileInput');
-const fileList = document.getElementById('fileList');
-const mergeBtn = document.getElementById('mergeBtn');
-const downloadBtn = document.getElementById('downloadBtn');
-const status = document.getElementById('status');
-let pendingResult = null; // { blob, filename }
 
-const normalizeCheckbox = document.getElementById('normalizeCheckbox');
-const resizeControls = document.getElementById('resizeControls');
-const pageSizeSelect = document.getElementById('pageSizeSelect');
-const marginInput = document.getElementById('marginInput');
+<!-- PDF-LIB -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+
+
+<script>
+
+'use strict';
+
+
+/* =========================================================
+   GLOBAL VARIABLES
+========================================================= */
+
+let files = [];
+
+let pendingResult = null;
+
+
+/* =========================================================
+   DOM ELEMENTS
+========================================================= */
+
+const fileInput =
+  document.getElementById('fileInput');
+
+const fileList =
+  document.getElementById('fileList');
+
+const mergeBtn =
+  document.getElementById('mergeBtn');
+
+const downloadBtn =
+  document.getElementById('downloadBtn');
+
+const refreshBtn =
+  document.getElementById('refreshBtn');
+
+const status =
+  document.getElementById('status');
+
+
+const normalizeCheckbox =
+  document.getElementById('normalizeCheckbox');
+
+const resizeControls =
+  document.getElementById('resizeControls');
+
+const pageSizeSelect =
+  document.getElementById('pageSizeSelect');
+
+const marginInput =
+  document.getElementById('marginInput');
+
+
+const sortSelect =
+  document.getElementById('sortSelect');
+
+const ignoreCase =
+  document.getElementById('ignoreCase');
+
+
+/* =========================================================
+   RESIZE PANEL
+========================================================= */
 
 function syncResizePanel(){
-  resizeControls.style.display = normalizeCheckbox.checked ? 'block' : 'none';
-}
-normalizeCheckbox.addEventListener('change', syncResizePanel);
-syncResizePanel(); // keep panel in sync even if the browser restores a checked checkbox on reload
 
-// Accumulate newly picked files instead of replacing the whole list,
-// and skip duplicates (same name + size already in the list).
-fileInput.addEventListener('change', (e) => {
-  const newFiles = Array.from(e.target.files);
-  newFiles.forEach((nf) => {
-    const isDuplicate = files.some(f => f.name === nf.name && f.size === nf.size);
-    if (!isDuplicate) files.push(nf);
-  });
-  fileInput.value = '';
-  setStatus('');
-  downloadBtn.style.display = 'none';
-  pendingResult = null;
+  resizeControls.style.display =
+    normalizeCheckbox.checked
+      ? 'block'
+      : 'none';
+
+}
+
+
+normalizeCheckbox.addEventListener(
+  'change',
+  syncResizePanel
+);
+
+
+syncResizePanel();
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+function setStatus(
+  message,
+  isError = false
+){
+
+  status.textContent =
+    message;
+
+  status.classList.toggle(
+    'error',
+    !!isError
+  );
+
+}
+
+
+/* =========================================================
+   FILE INPUT
+========================================================= */
+
+fileInput.addEventListener(
+  'change',
+  function(event){
+
+    const newFiles =
+      Array.from(
+        event.target.files
+      );
+
+
+    newFiles.forEach(
+      function(newFile){
+
+        const duplicate =
+          files.some(
+            function(existingFile){
+
+              return (
+                existingFile.name ===
+                newFile.name
+              )
+              &&
+              (
+                existingFile.size ===
+                newFile.size
+              );
+
+            }
+          );
+
+
+        if(!duplicate){
+
+          files.push(newFile);
+
+        }
+
+      }
+    );
+
+
+    /*
+     * Clear input so the same file can
+     * be selected again later.
+     */
+
+    fileInput.value = '';
+
+
+    sortSelect.value =
+      'manual';
+
+
+    downloadBtn.style.display =
+      'none';
+
+
+    pendingResult =
+      null;
+
+
+    setStatus('');
+
+
+    renderList();
+
+  }
+);
+
+
+/* =========================================================
+   FILE NAME COMPARISON
+========================================================= */
+
+function compareFileNames(
+  a,
+  b
+){
+
+  return a.name.localeCompare(
+    b.name,
+    undefined,
+    {
+      numeric:true,
+
+      sensitivity:
+        ignoreCase.checked
+          ? 'base'
+          : 'variant'
+    }
+  );
+
+}
+
+
+/* =========================================================
+   SORT FILES
+========================================================= */
+
+function applySort(){
+
+  const mode =
+    sortSelect.value;
+
+
+  /*
+   * Manual
+   */
+
+  if(mode === 'manual'){
+
+    renderList();
+
+    return;
+
+  }
+
+
+  /*
+   * A → Z
+   */
+
+  if(mode === 'az'){
+
+    files.sort(
+      function(a,b){
+
+        return compareFileNames(
+          a,
+          b
+        );
+
+      }
+    );
+
+  }
+
+
+  /*
+   * Z → A
+   */
+
+  else if(mode === 'za'){
+
+    files.sort(
+      function(a,b){
+
+        return compareFileNames(
+          b,
+          a
+        );
+
+      }
+    );
+
+  }
+
+
+  /*
+   * Uppercase first
+   */
+
+  else if(mode === 'nameUpper'){
+
+    files.sort(
+      function(a,b){
+
+        const aUpper =
+          /^[A-Z]/.test(
+            a.name
+          );
+
+        const bUpper =
+          /^[A-Z]/.test(
+            b.name
+          );
+
+
+        if(
+          aUpper !== bUpper
+        ){
+
+          return aUpper
+            ? -1
+            : 1;
+
+        }
+
+
+        return compareFileNames(
+          a,
+          b
+        );
+
+      }
+    );
+
+  }
+
+
+  /*
+   * Lowercase first
+   */
+
+  else if(mode === 'nameLower'){
+
+    files.sort(
+      function(a,b){
+
+        const aLower =
+          /^[a-z]/.test(
+            a.name
+          );
+
+        const bLower =
+          /^[a-z]/.test(
+            b.name
+          );
+
+
+        if(
+          aLower !== bLower
+        ){
+
+          return aLower
+            ? -1
+            : 1;
+
+        }
+
+
+        return compareFileNames(
+          a,
+          b
+        );
+
+      }
+    );
+
+  }
+
+
   renderList();
-});
 
-function setStatus(msg, isError){
-  status.textContent = msg;
-  status.classList.toggle('error', !!isError);
+
+  if(files.length >= 2){
+
+    setStatus(
+      'File order updated.'
+    );
+
+  }
+
 }
 
-function renderList(){
-  fileList.innerHTML = '';
-  files.forEach((f, i) => {
-    const li = document.createElement('li');
-    const nameSpan = document.createElement('span');
-    nameSpan.className = 'name';
-    nameSpan.textContent = f.name;
-    li.appendChild(nameSpan);
 
-    const btnGroup = document.createElement('span');
-    btnGroup.style.flexShrink = '0';
+sortSelect.addEventListener(
+  'change',
+  applySort
+);
 
-    const upBtn = document.createElement('button');
-    upBtn.textContent = '↑';
-    upBtn.className = 'btn btn-sm btn-outline-light me-1';
-    upBtn.setAttribute('aria-label', 'Move ' + f.name + ' up');
-    upBtn.onclick = () => { if(i>0){[files[i-1],files[i]]=[files[i],files[i-1]]; renderList();} };
 
-    const downBtn = document.createElement('button');
-    downBtn.textContent = '↓';
-    downBtn.className = 'btn btn-sm btn-outline-light me-1';
-    downBtn.setAttribute('aria-label', 'Move ' + f.name + ' down');
-    downBtn.onclick = () => { if(i<files.length-1){[files[i+1],files[i]]=[files[i],files[i+1]]; renderList();} };
+/*
+ * Re-sort if Ignore Case changes.
+ */
 
-    const removeBtn = document.createElement('button');
-    removeBtn.textContent = '✕';
-    removeBtn.className = 'btn btn-sm btn-outline-danger';
-    removeBtn.setAttribute('aria-label', 'Remove ' + f.name);
-    removeBtn.onclick = () => { files.splice(i,1); renderList(); };
+ignoreCase.addEventListener(
+  'change',
+  function(){
 
-    btnGroup.appendChild(upBtn);
-    btnGroup.appendChild(downBtn);
-    btnGroup.appendChild(removeBtn);
-    li.appendChild(btnGroup);
-    fileList.appendChild(li);
-  });
-  mergeBtn.disabled = files.length < 2;
-  downloadBtn.style.display = 'none';
-  pendingResult = null;
-}
+    const mode =
+      sortSelect.value;
 
-// Normalize any rotation value to one of 0, 90, 180, 270
-function normalizeAngle(angle){
-  return ((angle % 360) + 360) % 360;
-}
 
-mergeBtn.addEventListener('click', async () => {
-  mergeBtn.disabled = true;
-  downloadBtn.style.display = 'none';
-  pendingResult = null;
-  setStatus('Merging...', false);
-  try {
-    const { PDFDocument, degrees } = PDFLib;
-    const mergedPdf = await PDFDocument.create();
-    const normalize = normalizeCheckbox.checked;
+    if(
+      mode === 'az' ||
+      mode === 'za' ||
+      mode === 'nameUpper' ||
+      mode === 'nameLower'
+    ){
 
-    // If "normalize" is enabled, every page is resized onto a uniform
-    // page size with identical margins on all four sides.
-    // If disabled, each page is copied over exactly as it appears in
-    // the original PDF — no resizing or repositioning.
-    if (!normalize) {
-      // Original behavior: copy pages exactly as-is, no resizing.
-      // copyPages preserves each page's own /Rotate value, so this path
-      // was never affected by the rotation bug.
-      for (const file of files) {
-        const bytes = await file.arrayBuffer();
-        const pdf = await PDFDocument.load(bytes);
-        const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-        pages.forEach((p) => mergedPdf.addPage(p));
-      }
-    } else {
-      const margin = Math.max(0, parseFloat(marginInput.value) || 0);
-      const sizeChoice = pageSizeSelect.value; // 'auto' | 'a4' | 'letter'
+      applySort();
 
-      // Load every source doc once, and track the largest EFFECTIVE
-      // (rotation-aware) page size for "auto". A page rotated 90/270
-      // visually occupies height x width, not width x height.
-      const loaded = [];
-      let maxW = 0, maxH = 0;
-      for (const file of files) {
-        const bytes = await file.arrayBuffer();
-        const pdf = await PDFDocument.load(bytes);
-        loaded.push(pdf);
-        for (const page of pdf.getPages()) {
-          const { width, height } = page.getSize();
-          const angle = normalizeAngle(page.getRotation().angle);
-          const effW = (angle === 90 || angle === 270) ? height : width;
-          const effH = (angle === 90 || angle === 270) ? width : height;
-          if (effW > maxW) maxW = effW;
-          if (effH > maxH) maxH = effH;
-        }
-      }
-
-      let targetW, targetH;
-      if (sizeChoice === 'a4') { targetW = 595.28; targetH = 841.89; }
-      else if (sizeChoice === 'letter') { targetW = 612; targetH = 792; }
-      else { targetW = maxW || 595.28; targetH = maxH || 841.89; }
-
-      // Exact box every page's content must fill so the margin is identical on all 4 sides
-      const boxW = Math.max(1, targetW - margin * 2);
-      const boxH = Math.max(1, targetH - margin * 2);
-
-      for (let docIdx = 0; docIdx < loaded.length; docIdx++) {
-        const pdf = loaded[docIdx];
-        const indices = pdf.getPageIndices();
-        const sourcePages = pdf.getPages();
-        const embeddedPages = await mergedPdf.embedPdf(pdf, indices);
-
-        for (let i = 0; i < embeddedPages.length; i++) {
-          const embedded = embeddedPages[i];
-          const pageAngle = normalizeAngle(sourcePages[i].getRotation().angle);
-          const newPage = mergedPdf.addPage([targetW, targetH]);
-
-          // The PDF /Rotate value is clockwise, but pdf-lib's `rotate`
-          // option on drawPage() spins counter-clockwise. Convert once
-          // here so everything below works in pdf-lib's own direction.
-          const rot = normalizeAngle(360 - pageAngle);
-
-          // drawPage() rotates the drawn box about the (x, y) anchor
-          // BEFORE positioning it, so for 90/270 the width/height axes
-          // swap, and for every non-zero angle the anchor has to be
-          // offset so the box still lands inside the margins instead
-          // of rotating off the page.
-          let w, h, x, y;
-          switch (rot) {
-            case 90:
-              w = boxH; h = boxW;
-              x = margin + boxW; y = margin;
-              break;
-            case 180:
-              w = boxW; h = boxH;
-              x = margin + boxW; y = margin + boxH;
-              break;
-            case 270:
-              w = boxH; h = boxW;
-              x = margin; y = margin + boxH;
-              break;
-            default: // 0
-              w = boxW; h = boxH;
-              x = margin; y = margin;
-          }
-
-          newPage.drawPage(embedded, {
-            x, y,
-            width: w,
-            height: h,
-            rotate: degrees(rot)
-          });
-        }
-      }
     }
 
-    const mergedBytes = await mergedPdf.save();
-    const blob = new Blob([mergedBytes], { type: 'application/pdf' });
-    pendingResult = { blob, filename: 'merged.pdf' };
-    downloadBtn.style.display = 'block';
-    setStatus('Done! Click below to download your merged PDF.', false);
-  } catch (err) {
-    console.error(err);
-    setStatus('Something went wrong merging these PDFs. Make sure every file is a valid, unencrypted PDF and try again.', true);
-  } finally {
-    mergeBtn.disabled = files.length < 2;
   }
-});
+);
 
-downloadBtn.addEventListener('click', () => {
-  if (!pendingResult) return;
-  const url = URL.createObjectURL(pendingResult.blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = pendingResult.filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-});
+
+/* =========================================================
+   RENDER FILE LIST
+========================================================= */
+
+function renderList(){
+
+  fileList.innerHTML = '';
+
+
+  /*
+   * No files
+   */
+
+  if(files.length === 0){
+
+    const empty =
+      document.createElement(
+        'li'
+      );
+
+
+    empty.className =
+      'empty-list';
+
+
+    empty.textContent =
+      'No PDF files selected.';
+
+
+    fileList.appendChild(
+      empty
+    );
+
+  }
+
+
+  /*
+   * Files exist
+   */
+
+  else{
+
+    files.forEach(
+      function(file,index){
+
+        const li =
+          document.createElement(
+            'li'
+          );
+
+
+        /*
+         * File name
+         */
+
+        const nameSpan =
+          document.createElement(
+            'span'
+          );
+
+
+        nameSpan.className =
+          'name';
+
+
+        nameSpan.title =
+          file.name;
+
+
+        nameSpan.textContent =
+          (index + 1)
+          + '. '
+          + file.name;
+
+
+        li.appendChild(
+          nameSpan
+        );
+
+
+        /*
+         * Button group
+         */
+
+        const buttonGroup =
+          document.createElement(
+            'span'
+          );
+
+
+        buttonGroup.style.flexShrink =
+          '0';
+
+
+        /*
+         * UP
+         */
+
+        const upButton =
+          document.createElement(
+            'button'
+          );
+
+
+        upButton.textContent =
+          '↑';
+
+
+        upButton.className =
+          'btn btn-sm btn-outline-light me-1';
+
+
+        upButton.setAttribute(
+          'aria-label',
+          'Move '
+          + file.name
+          + ' up'
+        );
+
+
+        upButton.onclick =
+          function(){
+
+            if(index > 0){
+
+              [
+                files[index - 1],
+                files[index]
+              ] =
+              [
+                files[index],
+                files[index - 1]
+              ];
+
+
+              sortSelect.value =
+                'manual';
+
+
+              renderList();
+
+            }
+
+          };
+
+
+        /*
+         * DOWN
+         */
+
+        const downButton =
+          document.createElement(
+            'button'
+          );
+
+
+        downButton.textContent =
+          '↓';
+
+
+        downButton.className =
+          'btn btn-sm btn-outline-light me-1';
+
+
+        downButton.setAttribute(
+          'aria-label',
+          'Move '
+          + file.name
+          + ' down'
+        );
+
+
+        downButton.onclick =
+          function(){
+
+            if(
+              index <
+              files.length - 1
+            ){
+
+              [
+                files[index + 1],
+                files[index]
+              ] =
+              [
+                files[index],
+                files[index + 1]
+              ];
+
+
+              sortSelect.value =
+                'manual';
+
+
+              renderList();
+
+            }
+
+          };
+
+
+        /*
+         * REMOVE
+         */
+
+        const removeButton =
+          document.createElement(
+            'button'
+          );
+
+
+        removeButton.textContent =
+          '✕';
+
+
+        removeButton.className =
+          'btn btn-sm btn-outline-danger';
+
+
+        removeButton.setAttribute(
+          'aria-label',
+          'Remove '
+          + file.name
+        );
+
+
+        removeButton.onclick =
+          function(){
+
+            files.splice(
+              index,
+              1
+            );
+
+
+            sortSelect.value =
+              'manual';
+
+
+            renderList();
+
+          };
+
+
+        buttonGroup.appendChild(
+          upButton
+        );
+
+        buttonGroup.appendChild(
+          downButton
+        );
+
+        buttonGroup.appendChild(
+          removeButton
+        );
+
+
+        li.appendChild(
+          buttonGroup
+        );
+
+
+        fileList.appendChild(
+          li
+        );
+
+      }
+    );
+
+  }
+
+
+  /*
+   * Merge button
+   */
+
+  mergeBtn.disabled =
+    files.length < 2;
+
+
+  /*
+   * If there are not enough files,
+   * hide old download button.
+   */
+
+  if(files.length < 2){
+
+    downloadBtn.style.display =
+      'none';
+
+    pendingResult =
+      null;
+
+  }
+
+}
+
+
+/* =========================================================
+   REFRESH / START AGAIN
+========================================================= */
+
+function resetTool(){
+
+  /*
+   * Clear selected files
+   */
+
+  files = [];
+
+
+  /*
+   * Clear generated PDF
+   */
+
+  pendingResult =
+    null;
+
+
+  /*
+   * Reset file input
+   */
+
+  fileInput.value =
+    '';
+
+
+  /*
+   * Reset sorting
+   */
+
+  sortSelect.value =
+    'manual';
+
+
+  ignoreCase.checked =
+    true;
+
+
+  /*
+   * Reset page settings
+   */
+
+  normalizeCheckbox.checked =
+    false;
+
+
+  pageSizeSelect.value =
+    'auto';
+
+
+  marginInput.value =
+    '20';
+
+
+  syncResizePanel();
+
+
+  /*
+   * Reset buttons
+   */
+
+  mergeBtn.disabled =
+    true;
+
+
+  downloadBtn.style.display =
+    'none';
+
+
+  /*
+   * Clear status
+   */
+
+  setStatus('');
+
+
+  /*
+   * Rebuild empty list
+   */
+
+  renderList();
+
+
+  /*
+   * Return to top
+   */
+
+  window.scrollTo({
+    top:0,
+    behavior:'smooth'
+  });
+
+}
+
+
+refreshBtn.addEventListener(
+  'click',
+  resetTool
+);
+
+
+/* =========================================================
+   ROTATION
+========================================================= */
+
+function normalizeAngle(
+  angle
+){
+
+  return (
+    (angle % 360) + 360
+  ) % 360;
+
+}
+
+
+/* =========================================================
+   MERGE PDFs
+========================================================= */
+
+mergeBtn.addEventListener(
+  'click',
+  async function(){
+
+    mergeBtn.disabled =
+      true;
+
+
+    downloadBtn.style.display =
+      'none';
+
+
+    pendingResult =
+      null;
+
+
+    setStatus(
+      'Merging...',
+      false
+    );
+
+
+    try{
+
+      const {
+        PDFDocument,
+        degrees
+      } = PDFLib;
+
+
+      const mergedPdf =
+        await PDFDocument.create();
+
+
+      const normalize =
+        normalizeCheckbox.checked;
+
+
+      /*
+       * ====================================================
+       * NORMAL MODE
+       *
+       * Preserve every source page's original
+       * dimensions and layout.
+       * ====================================================
+       */
+
+      if(!normalize){
+
+        for(
+          const file of files
+        ){
+
+          const bytes =
+            await file.arrayBuffer();
+
+
+          const pdf =
+            await PDFDocument.load(
+              bytes
+            );
+
+
+          const pages =
+            await mergedPdf.copyPages(
+              pdf,
+              pdf.getPageIndices()
+            );
+
+
+          pages.forEach(
+            function(page){
+
+              mergedPdf.addPage(
+                page
+              );
+
+            }
+          );
+
+        }
+
+      }
+
+
+      /*
+       * ====================================================
+       * NORMALIZE MODE
+       * ====================================================
+       */
+
+      else{
+
+        const margin =
+          Math.max(
+            0,
+            parseFloat(
+              marginInput.value
+            ) || 0
+          );
+
+
+        const sizeChoice =
+          pageSizeSelect.value;
+
+
+        const loaded = [];
+
+
+        let maxW = 0;
+
+        let maxH = 0;
+
+
+        /*
+         * Load all PDFs
+         */
+
+        for(
+          const file of files
+        ){
+
+          const bytes =
+            await file.arrayBuffer();
+
+
+          const pdf =
+            await PDFDocument.load(
+              bytes
+            );
+
+
+          loaded.push(
+            pdf
+          );
+
+
+          /*
+           * Determine largest
+           * effective page size.
+           */
+
+          for(
+            const page of pdf.getPages()
+          ){
+
+            const {
+              width,
+              height
+            } =
+              page.getSize();
+
+
+            const angle =
+              normalizeAngle(
+                page
+                  .getRotation()
+                  .angle
+              );
+
+
+            const effectiveWidth =
+              (
+                angle === 90 ||
+                angle === 270
+              )
+              ? height
+              : width;
+
+
+            const effectiveHeight =
+              (
+                angle === 90 ||
+                angle === 270
+              )
+              ? width
+              : height;
+
+
+            if(
+              effectiveWidth >
+              maxW
+            ){
+
+              maxW =
+                effectiveWidth;
+
+            }
+
+
+            if(
+              effectiveHeight >
+              maxH
+            ){
+
+              maxH =
+                effectiveHeight;
+
+            }
+
+          }
+
+        }
+
+
+        /*
+         * Target page size
+         */
+
+        let targetW;
+
+        let targetH;
+
+
+        if(
+          sizeChoice === 'a4'
+        ){
+
+          targetW =
+            595.28;
+
+          targetH =
+            841.89;
+
+        }
+
+
+        else if(
+          sizeChoice === 'letter'
+        ){
+
+          targetW =
+            612;
+
+          targetH =
+            792;
+
+        }
+
+
+        else{
+
+          targetW =
+            maxW ||
+            595.28;
+
+          targetH =
+            maxH ||
+            841.89;
+
+        }
+
+
+        /*
+         * Available content area
+         */
+
+        const boxW =
+          Math.max(
+            1,
+            targetW -
+            margin * 2
+          );
+
+
+        const boxH =
+          Math.max(
+            1,
+            targetH -
+            margin * 2
+          );
+
+
+        /*
+         * Draw every page
+         */
+
+        for(
+          let docIndex = 0;
+          docIndex < loaded.length;
+          docIndex++
+        ){
+
+          const pdf =
+            loaded[docIndex];
+
+
+          const indices =
+            pdf.getPageIndices();
+
+
+          const sourcePages =
+            pdf.getPages();
+
+
+          const embeddedPages =
+            await mergedPdf.embedPdf(
+              pdf,
+              indices
+            );
+
+
+          for(
+            let i = 0;
+            i < embeddedPages.length;
+            i++
+          ){
+
+            const embedded =
+              embeddedPages[i];
+
+
+            const pageAngle =
+              normalizeAngle(
+                sourcePages[i]
+                  .getRotation()
+                  .angle
+              );
+
+
+            const newPage =
+              mergedPdf.addPage(
+                [
+                  targetW,
+                  targetH
+                ]
+              );
+
+
+            /*
+             * Convert PDF clockwise rotation
+             * to pdf-lib drawing rotation.
+             */
+
+            const rot =
+              normalizeAngle(
+                360 -
+                pageAngle
+              );
+
+
+            let width;
+            let height;
+            let x;
+            let y;
+
+
+            switch(rot){
+
+              case 90:
+
+                width =
+                  boxH;
+
+                height =
+                  boxW;
+
+                x =
+                  margin +
+                  boxW;
+
+                y =
+                  margin;
+
+                break;
+
+
+              case 180:
+
+                width =
+                  boxW;
+
+                height =
+                  boxH;
+
+                x =
+                  margin +
+                  boxW;
+
+                y =
+                  margin +
+                  boxH;
+
+                break;
+
+
+              case 270:
+
+                width =
+                  boxH;
+
+                height =
+                  boxW;
+
+                x =
+                  margin;
+
+                y =
+                  margin +
+                  boxH;
+
+                break;
+
+
+              default:
+
+                width =
+                  boxW;
+
+                height =
+                  boxH;
+
+                x =
+                  margin;
+
+                y =
+                  margin;
+
+            }
+
+
+            newPage.drawPage(
+              embedded,
+              {
+                x:x,
+                y:y,
+
+                width:width,
+                height:height,
+
+                rotate:
+                  degrees(rot)
+              }
+            );
+
+          }
+
+        }
+
+      }
+
+
+      /*
+       * Save merged PDF
+       */
+
+      const mergedBytes =
+        await mergedPdf.save();
+
+
+      const blob =
+        new Blob(
+          [mergedBytes],
+          {
+            type:
+              'application/pdf'
+          }
+        );
+
+
+      pendingResult = {
+
+        blob:blob,
+
+        filename:
+          'merged.pdf'
+
+      };
+
+
+      /*
+       * Show download button
+       */
+
+      downloadBtn.style.display =
+        'block';
+
+
+      setStatus(
+        'Done! Click Download result to save your merged PDF.',
+        false
+      );
+
+    }
+
+
+    catch(error){
+
+      console.error(
+        'PDF merge error:',
+        error
+      );
+
+
+      setStatus(
+        'Something went wrong merging these PDFs. Make sure every file is a valid, unencrypted PDF and try again.',
+        true
+      );
+
+    }
+
+
+    finally{
+
+      mergeBtn.disabled =
+        files.length < 2;
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   DOWNLOAD
+========================================================= */
+
+downloadBtn.addEventListener(
+  'click',
+  function(){
+
+    if(!pendingResult)
+      return;
+
+
+    const url =
+      URL.createObjectURL(
+        pendingResult.blob
+      );
+
+
+    const link =
+      document.createElement(
+        'a'
+      );
+
+
+    link.href =
+      url;
+
+
+    link.download =
+      pendingResult.filename;
+
+
+    document.body.appendChild(
+      link
+    );
+
+
+    link.click();
+
+
+    document.body.removeChild(
+      link
+    );
+
+
+    /*
+     * Give browser time to
+     * start the download.
+     */
+
+    setTimeout(
+      function(){
+
+        URL.revokeObjectURL(
+          url
+        );
+
+      },
+      1000
+    );
+
+
+    setStatus(
+      'Download started. Click Refresh / Start Again for another merge.',
+      false
+    );
+
+  }
+);
+
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
+
+renderList();
+
 </script>
+
 </body>
 </html>
