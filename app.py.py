@@ -1,25 +1,124 @@
 from flask import Flask, render_template, request, redirect, send_from_directory, url_for
 import csv
+import io
 import os
-from routes.projects import projects_bp 
+import logging
+import datetime
+from html import escape
+from routes.projects import projects_bp
+
+# `resend` is optional: if it isn't installed the site still works and
+# messages are only saved to the CSV file.
+try:
+    import resend
+except ImportError:
+    resend = None
 
 app = Flask(__name__)
 
 # Register the new Blueprint
 app.register_blueprint(projects_bp)
 
-# Ensure the 'data' directory exists
-if not os.path.exists('data'):
-    os.makedirs('data')
+# ---------------------------------------------------------------------------
+# Logging (only for this app's own messages, keeps Flask's request log clean)
+# ---------------------------------------------------------------------------
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+    logger.addHandler(_handler)
+logger.propagate = False
 
-# Path to the CSV file
-CSV_FILE = 'data/contact_messages.csv'
+# ---------------------------------------------------------------------------
+# Email configuration (Resend)
+# The API key must come from an environment variable. Never paste it in code.
+# ---------------------------------------------------------------------------
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY')
+NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL', '213038045@student.presidency.edu.bd')
+
+if resend and RESEND_API_KEY:
+    resend.api_key = RESEND_API_KEY
+    EMAIL_ENABLED = True
+else:
+    EMAIL_ENABLED = False
+    logger.warning('Email is disabled (resend not installed or RESEND_API_KEY not set).')
+
+# ---------------------------------------------------------------------------
+# CSV configuration
+# The CSV is a best-effort local copy. Even if the server cannot write files
+# (some hosts are read-only), the email still includes a CSV attachment.
+# ---------------------------------------------------------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, 'data')
+CSV_FILE = os.path.join(DATA_DIR, 'contact_messages.csv')
+CSV_HEADER = ['time', 'name', 'email', 'message']
+
+try:
+    os.makedirs(DATA_DIR, exist_ok=True)
+except OSError:
+    logger.warning('Could not create the data folder; the CSV will only be sent by email.')
+
+
+def safe_cell(value):
+    # Stops Excel from running text like "=1+1" as a formula
+    return "'" + value if value[:1] in ('=', '+', '-', '@') else value
+
+
+def make_row(name, email, message):
+    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    return [now, safe_cell(name), safe_cell(email), safe_cell(message)]
+
 
 # Function to save form data to CSV
-def save_to_csv(name, email, message):
-    with open(CSV_FILE, mode='a', newline='') as file:
+def save_to_csv(row):
+    is_new_file = not os.path.exists(CSV_FILE)
+    # utf-8-sig so Excel shows Bangla and other non-English text correctly
+    with open(CSV_FILE, mode='a', newline='', encoding='utf-8-sig') as file:
         writer = csv.writer(file)
-        writer.writerow([name, email, message])
+        if is_new_file:
+            writer.writerow(CSV_HEADER)
+        writer.writerow(row)
+
+
+def build_csv_attachment(row, saved_to_disk):
+    """Attach the full CSV file if it was saved, otherwise a one-row CSV."""
+    data = None
+    if saved_to_disk:
+        try:
+            with open(CSV_FILE, 'rb') as file:
+                data = file.read()
+        except OSError:
+            data = None
+    if data is None:
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(CSV_HEADER)
+        writer.writerow(row)
+        data = ('\ufeff' + buffer.getvalue()).encode('utf-8')
+    return {"filename": "contact_messages.csv", "content": list(data)}
+
+
+# Function to email the message (with the CSV attached) to you
+def send_notification(name, email, message, row, saved_to_disk):
+    if not EMAIL_ENABLED:
+        return
+    try:
+        resend.Emails.send({
+            "from": "Website Contact <onboarding@resend.dev>",
+            "to": [NOTIFY_EMAIL],
+            "reply_to": email,
+            "subject": f"New Contact Message from {name}"[:200],
+            "html": (
+                f"<p><strong>Name:</strong> {escape(name)}</p>"
+                f"<p><strong>Email:</strong> {escape(email)}</p>"
+                f"<p><strong>Message:</strong> {escape(message)}</p>"
+            ),
+            "attachments": [build_csv_attachment(row, saved_to_disk)],
+        })
+    except Exception:
+        logger.exception('Email failed to send')
+
 
 # Sample blog posts (can be replaced with dynamic data)
 blog_posts = [
@@ -51,13 +150,27 @@ def about():
 @app.route('/contact', methods=['GET', 'POST'])
 def contact():
     if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        message = request.form['message']
-        
-        # Save the form data to CSV
-        save_to_csv(name, email, message)
-        
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        message = request.form.get('message', '').strip()
+
+        # If something is missing, send them back to the form
+        if not (name and email and message):
+            return redirect(url_for('contact'))
+
+        row = make_row(name, email, message)
+
+        # Save to the CSV file. A failure here must not stop the email.
+        saved_to_disk = False
+        try:
+            save_to_csv(row)
+            saved_to_disk = True
+        except Exception:
+            logger.exception('Could not write to CSV')
+
+        # Email the message with the CSV attached
+        send_notification(name, email, message, row, saved_to_disk)
+
         # Redirect to the homepage after submission
         return redirect(url_for('home'))
     return render_template('contract/contact.html')
@@ -329,6 +442,3 @@ def base_plate_design():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
-
-#if __name__ == '__main__':
-#    app.run(debug=True)
