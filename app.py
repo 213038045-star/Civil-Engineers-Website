@@ -1,14 +1,12 @@
 from flask import Flask, render_template, request, redirect, send_from_directory, url_for
 import csv
-import io
 import os
 import logging
-import datetime
 from html import escape
 from routes.projects import projects_bp
 
 # `resend` is optional: if it isn't installed the site still works and
-# messages are only saved to the CSV file.
+# messages are saved to the CSV only.
 try:
     import resend
 except ImportError:
@@ -42,65 +40,27 @@ if resend and RESEND_API_KEY:
     EMAIL_ENABLED = True
 else:
     EMAIL_ENABLED = False
-    logger.warning('Email is disabled (resend not installed or RESEND_API_KEY not set).')
+    logger.warning('Email is disabled (resend not installed or RESEND_API_KEY not set). '
+                   'Messages are saved to the CSV only.')
 
 # ---------------------------------------------------------------------------
 # CSV configuration
-# The CSV is a best-effort local copy. Even if the server cannot write files
-# (some hosts are read-only), the email still includes a CSV attachment.
 # ---------------------------------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
+os.makedirs(DATA_DIR, exist_ok=True)
 CSV_FILE = os.path.join(DATA_DIR, 'contact_messages.csv')
-CSV_HEADER = ['time', 'name', 'email', 'message']
-
-try:
-    os.makedirs(DATA_DIR, exist_ok=True)
-except OSError:
-    logger.warning('Could not create the data folder; the CSV will only be sent by email.')
-
-
-def safe_cell(value):
-    # Stops Excel from running text like "=1+1" as a formula
-    return "'" + value if value[:1] in ('=', '+', '-', '@') else value
-
-
-def make_row(name, email, message):
-    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    return [now, safe_cell(name), safe_cell(email), safe_cell(message)]
 
 
 # Function to save form data to CSV
-def save_to_csv(row):
-    is_new_file = not os.path.exists(CSV_FILE)
-    # utf-8-sig so Excel shows Bangla and other non-English text correctly
-    with open(CSV_FILE, mode='a', newline='', encoding='utf-8-sig') as file:
+def save_to_csv(name, email, message):
+    with open(CSV_FILE, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        if is_new_file:
-            writer.writerow(CSV_HEADER)
-        writer.writerow(row)
+        writer.writerow([name, email, message])
 
 
-def build_csv_attachment(row, saved_to_disk):
-    """Attach the full CSV file if it was saved, otherwise a one-row CSV."""
-    data = None
-    if saved_to_disk:
-        try:
-            with open(CSV_FILE, 'rb') as file:
-                data = file.read()
-        except OSError:
-            data = None
-    if data is None:
-        buffer = io.StringIO()
-        writer = csv.writer(buffer)
-        writer.writerow(CSV_HEADER)
-        writer.writerow(row)
-        data = ('\ufeff' + buffer.getvalue()).encode('utf-8')
-    return {"filename": "contact_messages.csv", "content": list(data)}
-
-
-# Function to email the message (with the CSV attached) to you
-def send_notification(name, email, message, row, saved_to_disk):
+# Function to email the message to you
+def send_notification(name, email, message):
     if not EMAIL_ENABLED:
         return
     try:
@@ -114,7 +74,6 @@ def send_notification(name, email, message, row, saved_to_disk):
                 f"<p><strong>Email:</strong> {escape(email)}</p>"
                 f"<p><strong>Message:</strong> {escape(message)}</p>"
             ),
-            "attachments": [build_csv_attachment(row, saved_to_disk)],
         })
     except Exception:
         logger.exception('Email failed to send')
@@ -158,18 +117,14 @@ def contact():
         if not (name and email and message):
             return redirect(url_for('contact'))
 
-        row = make_row(name, email, message)
-
-        # Save to the CSV file. A failure here must not stop the email.
-        saved_to_disk = False
+        # Save the form data to CSV (backup). A failure here must not stop the email.
         try:
-            save_to_csv(row)
-            saved_to_disk = True
+            save_to_csv(name, email, message)
         except Exception:
             logger.exception('Could not write to CSV')
 
-        # Email the message with the CSV attached
-        send_notification(name, email, message, row, saved_to_disk)
+        # Email notification
+        send_notification(name, email, message)
 
         # Redirect to the homepage after submission
         return redirect(url_for('home'))
