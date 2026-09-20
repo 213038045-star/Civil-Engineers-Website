@@ -5,6 +5,19 @@ import os
 import logging
 import datetime
 from html import escape
+from routes.projects import projects_bp
+
+# `resend` is optional: if it isn't installed the site still works and
+# messages are only saved to the CSV file.
+try:
+    import resend
+except ImportError:
+    resend = None
+
+app = Flask(__name__)
+
+# Register the new Blueprint
+app.register_blueprint(projects_bp)
 
 # ---------------------------------------------------------------------------
 # Logging (only for this app's own messages, keeps Flask's request log clean)
@@ -16,24 +29,6 @@ if not logger.handlers:
     _handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
     logger.addHandler(_handler)
 logger.propagate = False
-
-# `resend` is optional: if it is missing or broken, the site still starts and
-# messages are only saved to the CSV file.
-try:
-    import resend
-except Exception:
-    resend = None
-    logger.warning('Could not import resend; email is disabled.')
-
-app = Flask(__name__)
-
-# Register the Blueprint. If routes/projects.py is missing or has an error, the
-# site still starts and the full reason is printed in the logs.
-try:
-    from routes.projects import projects_bp
-    app.register_blueprint(projects_bp)
-except Exception:
-    logger.exception('Could not load routes/projects.py (blueprint not registered)')
 
 # ---------------------------------------------------------------------------
 # Email configuration (Resend)
@@ -47,18 +42,17 @@ if resend and RESEND_API_KEY:
     EMAIL_ENABLED = True
 else:
     EMAIL_ENABLED = False
-    logger.warning('Email is disabled (resend not available or RESEND_API_KEY not set).')
+    logger.warning('Email is disabled (resend not installed or RESEND_API_KEY not set).')
 
 # ---------------------------------------------------------------------------
-# Paths / CSV configuration
-# The CSV is a best-effort local copy. Even if the server cannot write files,
-# the email still includes a CSV attachment.
+# CSV configuration
+# The CSV is a best-effort local copy. Even if the server cannot write files
+# (some hosts are read-only), the email still includes a CSV attachment.
 # ---------------------------------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 CSV_FILE = os.path.join(DATA_DIR, 'contact_messages.csv')
 CSV_HEADER = ['time', 'name', 'email', 'message']
-CONVERTER_DIR = os.path.join(BASE_DIR, 'templates', 'others', 'converter')
 
 try:
     os.makedirs(DATA_DIR, exist_ok=True)
@@ -258,51 +252,51 @@ def converter():
 
 @app.route("/pdf_converter")
 def pdf_converter():
-    return send_from_directory(CONVERTER_DIR, "pdf_converter.html")
+    return send_from_directory("templates/others/converter", "pdf_converter.html")
 
 @app.route("/pdf_editor")
 def pdf_editor():
-    return send_from_directory(CONVERTER_DIR, "pdf_editor.html")
+    return send_from_directory("templates/others/converter", "pdf_editor.html")
 
 @app.route("/word_to_pdf")
 def word_to_pdf():
-    return send_from_directory(CONVERTER_DIR, "word_to_pdf.html")
+    return send_from_directory("templates/others/converter", "word_to_pdf.html")
 
 @app.route("/extract_remove_pages")
 def extract_remove_pages():
-    return send_from_directory(CONVERTER_DIR, "extract_remove.html")
+    return send_from_directory("templates/others/converter", "extract_remove.html")
 
 @app.route("/add_pdf_page")
 def add_pdf_page():
-    return send_from_directory(CONVERTER_DIR, "add_pages.html")
+    return send_from_directory("templates/others/converter", "add_pages.html")
 
 @app.route("/add_page_number")
 def add_pdf_number():
-    return send_from_directory(CONVERTER_DIR, "add_page_number.html")
+    return send_from_directory("templates/others/converter", "add_page_number.html")
 
 @app.route("/image_to_pdf")
 def image_to_pdf():
-    return send_from_directory(CONVERTER_DIR, "image_to_pdf.html")
+    return send_from_directory("templates/others/converter", "image_to_pdf.html")
 
 @app.route("/excel_to_pdf")
 def excel_to_pdf():
-    return send_from_directory(CONVERTER_DIR, "excel_to_pdf.html")
+    return send_from_directory("templates/others/converter", "excel_to_pdf.html")
 
 @app.route("/pdf_to_excel")
 def pdf_to_excel():
-    return send_from_directory(CONVERTER_DIR, "pdf_to_excel.html")
+    return send_from_directory("templates/others/converter", "pdf_to_excel.html")
 
 @app.route("/powerpoint_to_pdf")
 def powerpoint_to_pdf():
-    return send_from_directory(CONVERTER_DIR, "powerpoint_to_pdf.html")
+    return send_from_directory("templates/others/converter", "powerpoint_to_pdf.html")
 
 @app.route("/pdf_to_powerpoint")
 def pdf_to_powerpoint():
-    return send_from_directory(CONVERTER_DIR, "pdf_to_powerpoint.html")
+    return send_from_directory("templates/others/converter", "pdf_to_powerpoint.html")
 
 @app.route("/powerpoint_page")
 def powerpoint_page():
-    return send_from_directory(CONVERTER_DIR, "powerpoint_page.html")
+    return send_from_directory("templates/others/converter", "powerpoint_page.html")
 
 
 
@@ -446,11 +440,5 @@ def beam_column():
 def base_plate_design():
     return render_template("design/steel_structure/base_plate.html")
 
-# Local development only. On Render, gunicorn runs the app and this block is skipped.
-# To get debug mode on your own computer, set FLASK_DEBUG=1 first.
 if __name__ == '__main__':
-    app.run(
-        debug=os.environ.get('FLASK_DEBUG') == '1',
-        host=os.environ.get('FLASK_HOST', '127.0.0.1'),
-        port=int(os.environ.get('PORT', 5000)),
-    )
+    app.run(debug=True, host='0.0.0.0', port=5000)
