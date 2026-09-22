@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Isolated Footing Design — BNBC 2020 (US Customary Units)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 :root{
-  --blue-deep:#0b2a4a; --blue-mid:#12406e; --blue-line:#3d6ea5;
-  --paper:#eef3f8; --accent:#e8a33d; --accent-soft:rgba(232,163,61,0.14);
-  --grid-line:rgba(255,255,255,0.055); --text-dim:#a8c2de;
-  --pass:#4caf6f; --fail:#e2584a;
+  --blue-deep:#0a0f1a; --blue-mid:#101827; --blue-line:#2a3b56;
+  --paper:#eef4ff; --accent:#3ee7a6; --accent-soft:rgba(62,231,166,0.12);
+  --grid-line:rgba(100,140,200,0.08); --text-dim:#8fa8c7;
+  --pass:#3ee7a6; --fail:#ff6b6b;
   --font-display:'Space Grotesk',sans-serif; --font-mono:'JetBrains Mono','Courier New',monospace;
 }
 *,*::before,*::after{box-sizing:border-box;}
@@ -119,6 +119,22 @@ button#calcBtn:hover{background:#f3b558;}
   margin-top:2px;
 }
 
+/* --- Loads box (pre-combined / nominal ASDIP-style) --- */
+.load-box{
+  background:rgba(232,163,61,0.08); border:1px solid var(--accent);
+  padding:16px 16px 4px; margin:0 0 20px;
+}
+.load-box .section-tag{margin-top:0;}
+.case-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.case-tab{
+  background:rgba(11,42,74,0.7); border:1px solid var(--blue-line); color:var(--text-dim);
+  font-family:var(--font-mono); font-size:0.72rem; font-weight:600;
+  padding:8px 11px; cursor:pointer; border-radius:2px; transition:all 0.15s ease;
+}
+.case-tab:hover{border-color:var(--accent);}
+.case-tab.active{background:var(--accent-soft); border-color:var(--accent); color:var(--accent);}
+.case-fields{padding-top:2px;}
+
 .results{min-height:200px;}
 .placeholder{
   border:1px dashed var(--blue-line);padding:48px 24px;text-align:center;
@@ -189,6 +205,97 @@ table.iter th{
 table.iter th:first-child, table.iter td:first-child{text-align:left;}
 table.iter td{text-align:right;padding:5px 8px;border-bottom:1px dashed rgba(61,110,165,0.25);}
 table.iter tr:last-child td{color:var(--accent);font-weight:700;border-bottom:none;}
+
+/* ================= FRAME3D-STYLE UI THEME ================= */
+body{
+  background:
+    linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0/28px 28px,
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0/28px 28px,
+    var(--blue-deep);
+}
+.panel{
+  background:rgba(16,24,39,0.96);
+  border:1px solid var(--blue-line);
+  border-radius:4px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.18);
+}
+.card{
+  background:rgba(16,24,39,0.92);
+  border:1px solid var(--blue-line);
+  border-radius:4px;
+}
+.field input,.field select{
+  background:#111b2b;
+  border:1px solid #2a3b56;
+  color:var(--paper);
+  border-radius:4px;
+}
+.field input:hover,.field select:hover{border-color:#355078;}
+.field input:focus,.field select:focus{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 1px rgba(62,231,166,0.12);
+}
+.mode-btn,.case-tab,.preset-btn{
+  background:#172235;
+  border:1px solid #2a3b56;
+  color:var(--text-dim);
+  border-radius:4px;
+}
+.mode-btn:hover,.case-tab:hover,.preset-btn:hover{
+  background:#1d2c45;
+  border-color:#3a5375;
+  color:var(--paper);
+}
+.mode-btn.active{
+  background:var(--accent);
+  color:#04140d;
+  border-color:var(--accent);
+}
+.case-tab.active{
+  background:rgba(62,231,166,0.12);
+  color:var(--accent);
+  border-color:var(--accent);
+}
+.preset-btn.active{
+  background:rgba(62,231,166,0.12);
+  color:var(--accent);
+  border-color:var(--accent);
+}
+.size-box,.load-box{
+  background:rgba(62,231,166,0.045);
+  border:1px solid #2d8066;
+  border-radius:4px;
+}
+.formula{
+  background:#0d1522;
+  border-left:2px solid var(--accent);
+}
+.summary{
+  background:rgba(62,231,166,0.045);
+  border:1px solid #2d8066;
+  border-radius:4px;
+}
+.summary .stat{background:#111b2b;border:1px solid rgba(42,59,86,0.7);}
+.placeholder{border-color:var(--blue-line);background:rgba(16,24,39,0.45);border-radius:4px;}
+button#calcBtn{
+  background:var(--accent);
+  color:#04140d;
+  border-radius:4px;
+  box-shadow:0 4px 14px rgba(62,231,166,0.12);
+}
+button#calcBtn:hover{background:#59efb7;}
+.eyebrow,.section-tag,.card-head .tag{color:var(--accent);}
+.badge.pass{background:rgba(62,231,166,0.12);color:var(--pass);border-color:var(--pass);}
+.badge.fail{background:rgba(255,107,107,0.12);color:var(--fail);border-color:var(--fail);}
+.badge.info{background:rgba(62,231,166,0.12);color:var(--accent);border-color:var(--accent);}
+table.iter th{color:var(--accent);}
+/* Keep the UI compact and software-like on narrow screens */
+@media (max-width:960px){
+  .wrap{padding:24px 14px 60px;}
+  .grid{gap:16px;}
+}
+
 </style>
 </head>
 <body>
@@ -204,15 +311,123 @@ table.iter tr:last-child td{color:var(--accent);font-weight:700;border-bottom:no
     <div class="panel">
       <h2>Design Inputs</h2>
 
-      <div class="section-tag">Column &amp; Axial Loads</div>
+      <div class="section-tag">Column Geometry</div>
       <div class="two-col">
         <div class="field"><label>Column width, bc <span class="unit">in</span></label><input type="number" id="bc" value="16"></div>
         <div class="field"><label>Column depth, hc <span class="unit">in</span></label><input type="number" id="hc" value="16"></div>
       </div>
-      <div class="two-col">
-        <div class="field"><label>Dead load, PD <span class="unit">kip</span></label><input type="number" id="PD" value="135"></div>
-        <div class="field"><label>Live load, PL <span class="unit">kip</span></label><input type="number" id="PL" value="79"></div>
+
+      <!-- ===================== COLUMN LOADS — ASDIP-STYLE INPUT ===================== -->
+      <div class="section-tag">Column Loads</div>
+      <div class="load-box">
+        <div class="mode-row">
+          <button type="button" class="mode-btn active" id="loadModePre" onclick="setLoadMode('pre')">Pre-combined loads</button>
+          <button type="button" class="mode-btn" id="loadModeNom" onclick="setLoadMode('nom')">Nominal loads (auto-combine)</button>
+        </div>
+
+        <div id="preLoadArea">
+          <div class="two-col">
+            <div class="field"><label>Service axial, Pa <span class="unit">kip</span></label><input type="number" id="PaPre" value="214"></div>
+            <div class="field"><label>Factored axial, Pu <span class="unit">kip</span></label><input type="number" id="PuPre" value="288.4"></div>
+          </div>
+          <div class="two-col">
+            <div class="field"><label>Moment, Mx <span class="unit">kip·ft</span></label><input type="number" id="MxPre" value="0"></div>
+            <div class="field"><label>Moment, Mz <span class="unit">kip·ft</span></label><input type="number" id="MzPre" value="0"></div>
+          </div>
+          <div class="two-col">
+            <div class="field"><label>Shear, Vx <span class="unit">kip</span></label><input type="number" id="VxPre" value="0"></div>
+            <div class="field"><label>Shear, Vz <span class="unit">kip</span></label><input type="number" id="VzPre" value="0"></div>
+          </div>
+          <div class="field"><label>Uplift demand, Pup <span class="unit">kip</span></label><input type="number" id="PupPre" value="0"></div>
+          <small>Pa = unfactored service axial load (drives soil bearing pressure &amp; footing size). Pu = already-factored axial load (drives shear, flexure &amp; bearing design). Enter M/V already at whatever combination level you want the overturning/uplift check run at.</small>
+        </div>
+
+        <div id="nomLoadArea" style="display:none;">
+          <div class="case-tabs" id="caseTabs">
+            <button type="button" class="case-tab active" data-case="D" onclick="showCase('D')">Dead</button>
+            <button type="button" class="case-tab" data-case="L" onclick="showCase('L')">Live</button>
+            <button type="button" class="case-tab" data-case="Lr" onclick="showCase('Lr')">R Live</button>
+            <button type="button" class="case-tab" data-case="S" onclick="showCase('S')">Snow</button>
+            <button type="button" class="case-tab" data-case="W" onclick="showCase('W')">Wind</button>
+            <button type="button" class="case-tab" data-case="E" onclick="showCase('E')">Seismic</button>
+          </div>
+
+          <div id="case-D" class="case-fields">
+            <div class="two-col">
+              <div class="field"><label>Axial force, P <span class="unit">kip</span></label><input type="number" id="D_P" value="135"></div>
+              <div class="field"><label>Moment, Mx <span class="unit">kip·ft</span></label><input type="number" id="D_Mx" value="0"></div>
+            </div>
+            <div class="two-col">
+              <div class="field"><label>Moment, Mz <span class="unit">kip·ft</span></label><input type="number" id="D_Mz" value="0"></div>
+              <div class="field"><label>Shear, Vx <span class="unit">kip</span></label><input type="number" id="D_Vx" value="0"></div>
+            </div>
+            <div class="field"><label>Shear, Vz <span class="unit">kip</span></label><input type="number" id="D_Vz" value="0"></div>
+          </div>
+
+          <div id="case-L" class="case-fields" style="display:none;">
+            <div class="two-col">
+              <div class="field"><label>Axial force, P <span class="unit">kip</span></label><input type="number" id="L_P" value="79"></div>
+              <div class="field"><label>Moment, Mx <span class="unit">kip·ft</span></label><input type="number" id="L_Mx" value="0"></div>
+            </div>
+            <div class="two-col">
+              <div class="field"><label>Moment, Mz <span class="unit">kip·ft</span></label><input type="number" id="L_Mz" value="0"></div>
+              <div class="field"><label>Shear, Vx <span class="unit">kip</span></label><input type="number" id="L_Vx" value="0"></div>
+            </div>
+            <div class="field"><label>Shear, Vz <span class="unit">kip</span></label><input type="number" id="L_Vz" value="0"></div>
+          </div>
+
+          <div id="case-Lr" class="case-fields" style="display:none;">
+            <div class="two-col">
+              <div class="field"><label>Axial force, P <span class="unit">kip</span></label><input type="number" id="Lr_P" value="0"></div>
+              <div class="field"><label>Moment, Mx <span class="unit">kip·ft</span></label><input type="number" id="Lr_Mx" value="0"></div>
+            </div>
+            <div class="two-col">
+              <div class="field"><label>Moment, Mz <span class="unit">kip·ft</span></label><input type="number" id="Lr_Mz" value="0"></div>
+              <div class="field"><label>Shear, Vx <span class="unit">kip</span></label><input type="number" id="Lr_Vx" value="0"></div>
+            </div>
+            <div class="field"><label>Shear, Vz <span class="unit">kip</span></label><input type="number" id="Lr_Vz" value="0"></div>
+          </div>
+
+          <div id="case-S" class="case-fields" style="display:none;">
+            <div class="two-col">
+              <div class="field"><label>Axial force, P <span class="unit">kip</span></label><input type="number" id="S_P" value="0"></div>
+              <div class="field"><label>Moment, Mx <span class="unit">kip·ft</span></label><input type="number" id="S_Mx" value="0"></div>
+            </div>
+            <div class="two-col">
+              <div class="field"><label>Moment, Mz <span class="unit">kip·ft</span></label><input type="number" id="S_Mz" value="0"></div>
+              <div class="field"><label>Shear, Vx <span class="unit">kip</span></label><input type="number" id="S_Vx" value="0"></div>
+            </div>
+            <div class="field"><label>Shear, Vz <span class="unit">kip</span></label><input type="number" id="S_Vz" value="0"></div>
+          </div>
+
+          <div id="case-W" class="case-fields" style="display:none;">
+            <div class="two-col">
+              <div class="field"><label>Axial force, P <span class="unit">kip</span></label><input type="number" id="W_P" value="0"></div>
+              <div class="field"><label>Moment, Mx <span class="unit">kip·ft</span></label><input type="number" id="W_Mx" value="0"></div>
+            </div>
+            <div class="two-col">
+              <div class="field"><label>Moment, Mz <span class="unit">kip·ft</span></label><input type="number" id="W_Mz" value="0"></div>
+              <div class="field"><label>Shear, Vx <span class="unit">kip</span></label><input type="number" id="W_Vx" value="0"></div>
+            </div>
+            <div class="field"><label>Shear, Vz <span class="unit">kip</span></label><input type="number" id="W_Vz" value="0"></div>
+          </div>
+
+          <div id="case-E" class="case-fields" style="display:none;">
+            <div class="two-col">
+              <div class="field"><label>Axial force, P <span class="unit">kip</span></label><input type="number" id="E_P" value="0"></div>
+              <div class="field"><label>Moment, Mx <span class="unit">kip·ft</span></label><input type="number" id="E_Mx" value="0"></div>
+            </div>
+            <div class="two-col">
+              <div class="field"><label>Moment, Mz <span class="unit">kip·ft</span></label><input type="number" id="E_Mz" value="0"></div>
+              <div class="field"><label>Shear, Vx <span class="unit">kip</span></label><input type="number" id="E_Vx" value="0"></div>
+            </div>
+            <div class="field"><label>Shear, Vz <span class="unit">kip</span></label><input type="number" id="E_Vz" value="0"></div>
+          </div>
+
+          <div class="note" style="margin-top:8px;">Loads applied at top of footing; positive moments produce compression on the positive axes. On Calculate, ASCE 7 basic LRFD combinations are applied to these six cases to find the governing factored axial (Pu), and the gravity cases (D+L+Lr+S) are summed for the service bearing pressure (Pa). Moments/shears are summed across all cases (service level) for the overturning &amp; uplift check.</div>
+        </div>
       </div>
+      <!-- =================== END COLUMN LOADS =================== -->
 
       <div class="section-tag">Soil &amp; Founding Depth</div>
       <div class="field"><label>Allowable bearing capacity, qa <span class="unit">ksf</span></label><input type="number" id="qa" value="3.0" step="0.1"></div>
@@ -282,14 +497,7 @@ table.iter tr:last-child td{color:var(--accent);font-weight:700;border-bottom:no
         <input type="checkbox" id="enableLateral">
         <label for="enableLateral" style="margin:0;">Include overturning &amp; uplift check (e.g. tower / pole / eccentric footings)</label>
       </div>
-      <div id="lateralFields" style="display:none;">
-        <div class="two-col">
-          <div class="field"><label>Base moment, M <span class="unit">kip·ft</span></label><input type="number" id="Mo" value="0"></div>
-          <div class="field"><label>Base shear, H <span class="unit">kip</span></label><input type="number" id="Ho" value="0"></div>
-        </div>
-        <div class="field"><label>Uplift force, Pup <span class="unit">kip</span></label><input type="number" id="Pup" value="0"></div>
-        <small>Leave at 0 if not applicable. FoS targets: overturning ≥ 1.5, uplift ≥ 1.5 (verify against your project's load combinations).</small>
-      </div>
+      <div class="note" style="margin-top:-8px;margin-bottom:14px;">Moments, shears and uplift demand are taken automatically from the Column Loads section above — no separate entry needed. FoS targets: overturning ≥ 1.5, uplift ≥ 1.5 (verify against your project's load combinations).</div>
 
       <button id="calcBtn" onclick="runDesign()">Calculate Design</button>
     </div>
@@ -301,14 +509,36 @@ table.iter tr:last-child td{color:var(--accent);font-weight:700;border-bottom:no
   </div>
 
   <div class="footnote">
-    Preliminary design tool for educational / early‑stage use. Formulas follow BNBC 2020 Strength Design provisions (adapted from ACI 318), expressed in US customary units — f'c and fy in psi, forces in kip, plan dimensions in ft, section dimensions (b, d, h, cover, bar dia) in inches. Simplifications: single effective depth "d" used for both reinforcement directions (skin difference between top/bottom layers ignored), square base pressure assumed uniform, flexural steel is sized by direct trial‑and‑error (a / As) iteration rather than the closed‑form quadratic, development length uses the simplified ACI straight‑bar equation assuming (c<sub>b</sub>+K<sub>tr</sub>)/d<sub>b</sub> = 1.5 with ψ<sub>t</sub>=ψ<sub>e</sub>=ψ<sub>s</sub>=λ=1 (coefficient 20 for db ≥ #7, 25 for db &lt; #7). Always verify against project‑specific geotechnical report and have the final design checked/sealed by a licensed structural engineer before construction.
+    Preliminary design tool for educational / early‑stage use. Formulas follow BNBC 2020 Strength Design provisions (adapted from ACI 318), expressed in US customary units — f'c and fy in psi, forces in kip, plan dimensions in ft, section dimensions (b, d, h, cover, bar dia) in inches. Simplifications: single effective depth "d" used for both reinforcement directions (skin difference between top/bottom layers ignored), square base pressure assumed uniform (moments/shears from the Loads section are used only for the overturning &amp; uplift check, not for eccentric bearing-pressure redistribution), flexural steel is sized by direct trial‑and‑error (a / As) iteration rather than the closed‑form quadratic, development length uses the simplified ACI straight‑bar equation assuming (c<sub>b</sub>+K<sub>tr</sub>)/d<sub>b</sub> = 1.5 with ψ<sub>t</sub>=ψ<sub>e</sub>=ψ<sub>s</sub>=λ=1 (coefficient 20 for db ≥ #7, 25 for db &lt; #7). When "Nominal loads" is used, the governing factored axial (Pu) is taken as the maximum of the seven ASCE 7 basic LRFD combinations (1.4D; 1.2D+1.6L+0.5(Lr+S); 1.2D+1.0L+1.6(Lr+S)+0.5W; 1.2D+1.0L+0.5(Lr+S)+1.0W; 1.2D+1.0L+0.2S+1.0E; 0.9D+1.0W; 0.9D+1.0E), service axial (Pa) is the sum of the gravity cases D+L+Lr+S, and uplift demand is taken from the more severe of the two 0.9D combinations. Always verify against project‑specific geotechnical report and have the final design checked/sealed by a licensed structural engineer before construction.
   </div>
 </div>
 
 <script>
-document.getElementById('enableLateral').addEventListener('change', function(){
-  document.getElementById('lateralFields').style.display = this.checked ? 'block' : 'none';
-});
+/* ---------------- Column loads: pre-combined vs nominal ---------------- */
+function setLoadMode(mode){
+  const preBtn = document.getElementById('loadModePre');
+  const nomBtn = document.getElementById('loadModeNom');
+  const preArea = document.getElementById('preLoadArea');
+  const nomArea = document.getElementById('nomLoadArea');
+  if(mode === 'nom'){
+    preBtn.classList.remove('active');
+    nomBtn.classList.add('active');
+    preArea.style.display = 'none';
+    nomArea.style.display = 'block';
+  } else {
+    nomBtn.classList.remove('active');
+    preBtn.classList.add('active');
+    nomArea.style.display = 'none';
+    preArea.style.display = 'block';
+  }
+}
+
+function showCase(code){
+  document.querySelectorAll('.case-fields').forEach(el=>el.style.display='none');
+  document.getElementById('case-'+code).style.display = 'block';
+  document.querySelectorAll('.case-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector('.case-tab[data-case="'+code+'"]').classList.add('active');
+}
 
 /* ---------------- Footing size mode / preset logic ---------------- */
 function setSizeMode(mode){
@@ -371,26 +601,69 @@ function badge(pass, txt){
 }
 
 function runDesign(){
-  // ---------- read inputs ----------
+  // ---------- read basic inputs ----------
   const bc = num('bc'), hc = num('hc');                 // in
-  const PD = num('PD'), PL = num('PL');                  // kip
   const qa = num('qa'), Df = num('Df');                   // ksf, ft
   const gammaEq = num('gammaEq'), gammaC = num('gammaC'), gammaS = num('gammaS'); // pcf
   const fc = num('fc'), fy = num('fy');                   // psi
   const cover = num('cover'), barDia = num('barDia');     // in
   const lateralOn = document.getElementById('enableLateral').checked;
-  const Mo = lateralOn ? (num('Mo')||0) : 0;   // kip-ft
-  const Ho = lateralOn ? (num('Ho')||0) : 0;   // kip
-  const Pup = lateralOn ? (num('Pup')||0) : 0; // kip
-
   const fixedMode = document.getElementById('modeFixed').classList.contains('active');
 
   const lambda = 1.0; // normal-weight concrete
   const fc_ksi = fc/1000, fy_ksi = fy/1000;
 
+  // ---------- read & combine column loads ----------
+  const loadMode = document.getElementById('loadModePre').classList.contains('active') ? 'pre' : 'nom';
+  let Pservice, Pu, Mx_s=0, Mz_s=0, Vx_s=0, Vz_s=0, Pup=0, comboNote='', PD_col;
+
+  if(loadMode === 'pre'){
+    Pservice = num('PaPre')||0;
+    Pu = num('PuPre')||0;
+    Mx_s = num('MxPre')||0;
+    Mz_s = num('MzPre')||0;
+    Vx_s = num('VxPre')||0;
+    Vz_s = num('VzPre')||0;
+    Pup = num('PupPre')||0;
+    PD_col = Pservice;
+    comboNote = 'user-specified pre-combined loads';
+  } else {
+    const cases = ['D','L','Lr','S','W','E'];
+    const LC = {};
+    cases.forEach(c=>{
+      LC[c] = { P:num(c+'_P')||0, Mx:num(c+'_Mx')||0, Mz:num(c+'_Mz')||0, Vx:num(c+'_Vx')||0, Vz:num(c+'_Vz')||0 };
+    });
+    Pservice = LC.D.P + LC.L.P + LC.Lr.P + LC.S.P;
+    Mx_s = LC.D.Mx+LC.L.Mx+LC.Lr.Mx+LC.S.Mx+LC.W.Mx+LC.E.Mx;
+    Mz_s = LC.D.Mz+LC.L.Mz+LC.Lr.Mz+LC.S.Mz+LC.W.Mz+LC.E.Mz;
+    Vx_s = LC.D.Vx+LC.L.Vx+LC.Lr.Vx+LC.S.Vx+LC.W.Vx+LC.E.Vx;
+    Vz_s = LC.D.Vz+LC.L.Vz+LC.Lr.Vz+LC.S.Vz+LC.W.Vz+LC.E.Vz;
+    PD_col = LC.D.P;
+
+    function comboP(fD,fL,fLr,fS,fW,fE){
+      return fD*LC.D.P + fL*LC.L.P + fLr*LC.Lr.P + fS*LC.S.P + fW*LC.W.P + fE*LC.E.P;
+    }
+    const combos = [
+      {n:'1.4D', p:comboP(1.4,0,0,0,0,0)},
+      {n:'1.2D+1.6L+0.5(Lr+S)', p:comboP(1.2,1.6,0.5,0.5,0,0)},
+      {n:'1.2D+1.0L+1.6(Lr+S)+0.5W', p:comboP(1.2,1.0,1.6,1.6,0.5,0)},
+      {n:'1.2D+1.0L+0.5(Lr+S)+1.0W', p:comboP(1.2,1.0,0.5,0.5,1.0,0)},
+      {n:'1.2D+1.0L+0.2S+1.0E', p:comboP(1.2,1.0,0,0.2,0,1.0)},
+      {n:'0.9D+1.0W', p:comboP(0.9,0,0,0,1.0,0)},
+      {n:'0.9D+1.0E', p:comboP(0.9,0,0,0,0,1.0)},
+    ];
+    let gov = combos[0];
+    combos.forEach(c=>{ if(c.p > gov.p) gov = c; });
+    Pu = gov.p;
+    comboNote = gov.n;
+    const upliftMin = Math.min(combos[5].p, combos[6].p);
+    Pup = upliftMin < 0 ? -upliftMin : 0;
+  }
+  const Mo = Math.sqrt(Mx_s*Mx_s + Mz_s*Mz_s);   // resultant service moment, kip-ft
+  const Ho = Math.sqrt(Vx_s*Vx_s + Vz_s*Vz_s);   // resultant service shear, kip
+
   // ---------- Step 1: net allowable soil pressure & sizing ----------
   const qnet = qa - (gammaEq/1000)*Df;      // ksf  (pcf/1000 = kcf)
-  const Pservice = PD + PL;                  // kip
   const Areq = Pservice / qnet;              // ft2
   let sideAuto = Math.ceil((Math.sqrt(Areq))/0.25)*0.25;
 
@@ -403,8 +676,7 @@ function runDesign(){
   const A = L*B;                              // ft2
   const qact = Pservice / A;                  // ksf
 
-  // ---------- Step 2: factored loads ----------
-  const Pu = 1.2*PD + 1.6*PL;                 // kip
+  // ---------- Step 2: qu from governing factored axial ----------
   const qu = Pu / A;                           // ksf (net upward factored pressure)
 
   // ---------- Step 3: iterate thickness for shear (if not overridden) ----------
@@ -504,7 +776,7 @@ function runDesign(){
   if(lateralOn){
     const Wfoot = gammaC*L*B*(hTotal/12)/1000;                              // kip
     const Wsoil = gammaS*(L*B - (bc*hc)/144)*(Df - hTotal/12)/1000;        // kip
-    const Wtotal = Wfoot + Wsoil + PD;                                      // kip
+    const Wtotal = Wfoot + Wsoil + PD_col;                                  // kip
     const OTM = Mo + Ho*Df;                                                 // kip-ft
     const RM = Pservice*(L/2);                                              // kip-ft
     FoS_ot = OTM>0 ? RM/OTM : Infinity;
@@ -523,6 +795,7 @@ function runDesign(){
   html += `<div class="summary">
     <h3>Design Summary — ${allPass? 'ALL CHECKS SATISFIED':'REVIEW REQUIRED'}</h3>
     ${hOverrideIgnored ? `<div class="calc-row"><span class="k">⚠ Thickness override ignored</span><span class="v">${badge(false,'auto-used instead')}</span></div>` : ''}
+    <div class="calc-row"><span class="k">Load input mode</span><span class="v">${loadMode==='nom' ? 'Nominal loads (auto-combined)' : 'Pre-combined loads'}</span></div>
     <div class="calc-row"><span class="k">Sizing mode</span><span class="v">${sizeIsFixed ? 'Fixed (user-specified)' : 'Auto-sized from soil pressure'}</span></div>
     <div class="calc-row"><span class="k">Overall status</span><span class="v">${badge(allPass)}</span></div>
     <div class="grid3">
@@ -543,26 +816,43 @@ function runDesign(){
       <span class="badge info">SCHEMATIC</span>
     </div>
     ${crossSectionSVG(bmm, hTotal, d, cover, barDia, nBars, bc, barLabel(barDia))}
-    <div class="note">Schematic only (thickness exaggerated for legibility, not to true scale). <strong style="color:#e8a33d;">Orange dots</strong> = main bars in the governing direction, cut end-on (perpendicular to the page) — ${nBars} bars @ ${fmt(spacing,1)} in c/c. <strong style="color:#4caf6f;">Green bar</strong> = the perpendicular-direction reinforcement, cut along its length, which is why it draws as a continuous line resting just above the main layer — this is the layer placed second in a two-way mat. This sheet uses one effective depth "d" for both directions (a common simplification), so the perpendicular layer's own (slightly smaller) effective depth is not separately calculated here. Top mat, dowels, and ties are not shown.</div>
+    <div class="note">Schematic only (thickness exaggerated for legibility, not to true scale). <strong style="color:#3ee7a6;">Orange dots</strong> = main bars in the governing direction, cut end-on (perpendicular to the page) — ${nBars} bars @ ${fmt(spacing,1)} in c/c. <strong style="color:#3ee7a6;">Green bar</strong> = the perpendicular-direction reinforcement, cut along its length, which is why it draws as a continuous line resting just above the main layer — this is the layer placed second in a two-way mat. This sheet uses one effective depth "d" for both directions (a common simplification), so the perpendicular layer's own (slightly smaller) effective depth is not separately calculated here. Top mat, dowels, and ties are not shown.</div>
+  </div>`;
+
+  // Top-view plan diagram — dimensions are scaled from the actual footing and column inputs
+  html += `<div class="card">
+    <div class="card-head">
+      <div><span class="tag">VISUAL</span><h3>Footing Plan — Actual Geometry &amp; Dimensioned Layout</h3></div>
+      <span class="badge info">TOP VIEW</span>
+    </div>
+    ${topViewSVG(L, B, bc, hc, cantL, cantB, d, hTotal, qact, A, barLabel(barDia), nBars, spacing)}
+    <div class="note">Plan view is proportionally scaled from the calculated footing dimensions. The footing rectangle, centered column, column dimensions, and both cantilever dimensions change automatically whenever L, B, bc, or hc changes. The effective depth d and total thickness h are shown in the design-information panel because they are vertical dimensions and therefore cannot be represented directly in a top view.</div>
   </div>`;
 
   // A. Sizing
   html += card('A', 'Footing Sizing — Service Loads', qact<=qa, `
     <div class="formula">q_net = qa − (γeq/1000)·Df = ${qa} − (${gammaEq}/1000)×${Df} = ${fmt(qnet,3)} ksf
-A_req = (PD+PL) / q_net = (${PD}+${PL}) / ${fmt(qnet,3)} = ${fmt(Areq,2)} ft²
+A_req = Pa / q_net = ${fmt(Pservice,1)} / ${fmt(qnet,3)} = ${fmt(Areq,2)} ft²
 ${sizeIsFixed ? `Fixed size specified: L × B = ${fmt(L,2)} × ${fmt(B,2)} ft  (A = ${fmt(A,2)} ft²)` : `Adopted (auto-sized): L × B = ${fmt(L,2)} × ${fmt(B,2)} ft  (A = ${fmt(A,2)} ft²)`}</div>
-    <div class="calc-row"><span class="k">Actual service pressure, q_act = (PD+PL)/A</span><span class="v">${fmt(qact,2)} ksf</span></div>
+    <div class="calc-row"><span class="k">Actual service pressure, q_act = Pa/A</span><span class="v">${fmt(qact,2)} ksf</span></div>
     <div class="calc-row"><span class="k">Allowable bearing capacity, qa</span><span class="v">${fmt(qa,2)} ksf</span></div>
     <div class="calc-row"><span class="k">Check q_act ≤ qa</span><span class="v">${badge(qact<=qa)}</span></div>
     ${sizeIsFixed && qact>qa ? `<div class="note">The fixed size ${fmt(L,2)}×${fmt(B,2)} ft is smaller than required (A_req = ${fmt(Areq,2)} ft²). Increase L/B, improve qa, or accept a higher bearing pressure only if your geotechnical engineer confirms it.</div>` : ''}
   `);
 
-  // B. Factored loads
-  html += card('B', 'Factored Design Loads', true, `
-    <div class="formula">Pu = 1.2·PD + 1.6·PL = 1.2×${PD} + 1.6×${PL} = ${fmt(Pu,1)} kip
+  // B. Design loads summary (from Loads section)
+  html += card('B', 'Design Loads Summary', true, `
+    <div class="formula">${loadMode==='nom' ? `Governing strength combo: ${comboNote}
+Pu = ${fmt(Pu,1)} kip
+Pa (service, D+L+Lr+S) = ${fmt(Pservice,1)} kip` : `User-specified pre-combined loads
+Pa (service) = ${fmt(Pservice,1)} kip
+Pu (factored) = ${fmt(Pu,1)} kip`}
 qu = Pu / A = ${fmt(Pu,1)} / ${fmt(A,2)} = ${fmt(qu,2)} ksf</div>
-    <div class="calc-row"><span class="k">Factored axial load, Pu</span><span class="v">${fmt(Pu,1)} kip</span></div>
-    <div class="calc-row"><span class="k">Net upward factored pressure, qu</span><span class="v">${fmt(qu,2)} ksf</span></div>
+    <div class="calc-row"><span class="k">Service axial, Pa</span><span class="v">${fmt(Pservice,1)} kip</span></div>
+    <div class="calc-row"><span class="k">Factored axial, Pu</span><span class="v">${fmt(Pu,1)} kip</span></div>
+    <div class="calc-row"><span class="k">Resultant moment (service), M</span><span class="v">${fmt(Mo,1)} kip·ft</span></div>
+    <div class="calc-row"><span class="k">Resultant shear (service), H</span><span class="v">${fmt(Ho,2)} kip</span></div>
+    <div class="calc-row"><span class="k">Uplift demand, Pup</span><span class="v">${fmt(Pup,1)} kip</span></div>
   `, false);
 
   // C. Punching shear
@@ -637,8 +927,8 @@ Available embedment past critical section = cantilever − cover = ${fmt(availab
   // I & J. Overturning & Uplift
   if(lateralOn){
     html += card('I', 'Overturning Check', otOK, `
-      <div class="formula">Overturning moment, OTM = M + H·Df = ${Mo} + ${Ho}×${Df} = ${fmt(otText.OTM,1)} kip·ft
-Resisting moment, RM = (PD+PL)·(L/2) = ${fmt(otText.RM,1)} kip·ft
+      <div class="formula">Overturning moment, OTM = M + H·Df = ${fmt(Mo,1)} + ${fmt(Ho,2)}×${Df} = ${fmt(otText.OTM,1)} kip·ft
+Resisting moment, RM = Pa·(L/2) = ${fmt(otText.RM,1)} kip·ft
 FoS = RM / OTM = ${FoS_ot===Infinity?'∞':fmt(FoS_ot,2)}</div>
       <div class="calc-row"><span class="k">Factor of safety against overturning</span><span class="v">${FoS_ot===Infinity?'∞':fmt(FoS_ot,2)}</span></div>
       <div class="calc-row"><span class="k">Required FoS ≥ 1.5</span><span class="v">${badge(otOK)}</span></div>
@@ -655,6 +945,129 @@ FoS = W_total / Pup = ${FoS_up===Infinity?'∞':fmt(FoS_up,2)}</div>
 
   document.getElementById('results').innerHTML = html;
   document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function topViewSVG(L, B, bc, hc, cantL, cantB, d, hTotal, qact, A, barLbl, nBars, spacing){
+  const W = 900, H = 560;
+  const marginL = 105, marginR = 250, marginT = 70, marginB = 105;
+  const availW = W - marginL - marginR;
+  const availH = H - marginT - marginB;
+
+  const LftIn = L * 12;
+  const BftIn = B * 12;
+  const scale = Math.min(availW / LftIn, availH / BftIn);
+  const footW = LftIn * scale;
+  const footH = BftIn * scale;
+  const footX = marginL + (availW - footW) / 2;
+  const footY = marginT + (availH - footH) / 2;
+
+  const colW = bc * scale;
+  const colH = hc * scale;
+  const colX = footX + (footW - colW) / 2;
+  const colY = footY + (footH - colH) / 2;
+
+  const cx = footX + footW / 2;
+  const cy = footY + footH / 2;
+  const xDimY = footY - 30;
+  const yDimX = footX - 38;
+
+  const fmt1 = v => Number(v).toFixed(2);
+  const fmt2 = v => Number(v).toFixed(1);
+
+  // Keep very small columns visible while preserving their actual proportional size as much as possible.
+  const colDrawW = Math.max(colW, 28);
+  const colDrawH = Math.max(colH, 28);
+  const colDrawX = cx - colDrawW/2;
+  const colDrawY = cy - colDrawH/2;
+
+  // Main reinforcement indication in plan: two orthogonal bar lines clipped visually inside the footing.
+  const barInset = Math.max(10, Math.min(18, 0.04 * Math.min(footW, footH)));
+  const barSpacingPx = nBars > 1 ? (footW - 2*barInset) / (nBars - 1) : 0;
+  let verticalBars = '';
+  for(let i=0;i<nBars;i++){
+    const x = nBars > 1 ? footX + barInset + i*barSpacingPx : cx;
+    verticalBars += `<line x1="${x.toFixed(1)}" y1="${footY+barInset}" x2="${x.toFixed(1)}" y2="${footY+footH-barInset}" stroke="#3ee7a6" stroke-width="1.2" opacity="0.58"/>`;
+  }
+  const horizontalBarCount = nBars;
+  const barSpacingY = horizontalBarCount > 1 ? (footH - 2*barInset) / (horizontalBarCount - 1) : 0;
+  let horizontalBars = '';
+  for(let i=0;i<horizontalBarCount;i++){
+    const y = horizontalBarCount > 1 ? footY + barInset + i*barSpacingY : cy;
+    horizontalBars += `<line x1="${footX+barInset}" y1="${y.toFixed(1)}" x2="${footX+footW-barInset}" y2="${y.toFixed(1)}" stroke="#7fd8a0" stroke-width="1.0" opacity="0.34"/>`;
+  }
+
+  return `
+  <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">
+    <defs>
+      <marker id="arrowTop" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto" markerUnits="strokeWidth">
+        <path d="M 0 0 L 7 3.5 L 0 7 z" fill="#8fa8c7"/>
+      </marker>
+    </defs>
+
+    <!-- footing plan -->
+    <rect x="${footX}" y="${footY}" width="${footW}" height="${footH}" fill="rgba(61,110,165,0.20)" stroke="#3ee7a6" stroke-width="2.2"/>
+    ${verticalBars}
+    ${horizontalBars}
+
+    <!-- column -->
+    <rect x="${colDrawX}" y="${colDrawY}" width="${colDrawW}" height="${colDrawH}" fill="rgba(232,163,61,0.28)" stroke="#e8a33d" stroke-width="2.2"/>
+    <text x="${cx}" y="${cy+4}" text-anchor="middle" font-size="11" font-weight="700" fill="#eef3f8" font-family="JetBrains Mono, monospace">COLUMN</text>
+
+    <!-- center lines -->
+    <line x1="${cx}" y1="${footY-10}" x2="${cx}" y2="${footY+footH+10}" stroke="#8fa8c7" stroke-width="0.8" stroke-dasharray="5,5" opacity="0.55"/>
+    <line x1="${footX-10}" y1="${cy}" x2="${footX+footW+10}" y2="${cy}" stroke="#8fa8c7" stroke-width="0.8" stroke-dasharray="5,5" opacity="0.55"/>
+
+    <!-- overall L dimension -->
+    <line x1="${footX}" y1="${xDimY}" x2="${footX+footW}" y2="${xDimY}" stroke="#8fa8c7" stroke-width="1" marker-start="url(#arrowTop)" marker-end="url(#arrowTop)"/>
+    <line x1="${footX}" y1="${xDimY+6}" x2="${footX}" y2="${footY}" stroke="#8fa8c7" stroke-width="1"/>
+    <line x1="${footX+footW}" y1="${xDimY+6}" x2="${footX+footW}" y2="${footY}" stroke="#8fa8c7" stroke-width="1"/>
+    <text x="${cx}" y="${xDimY-8}" text-anchor="middle" font-size="13" font-weight="700" fill="#eef3f8" font-family="JetBrains Mono, monospace">L = ${fmt1(L)} ft</text>
+
+    <!-- overall B dimension -->
+    <line x1="${yDimX}" y1="${footY}" x2="${yDimX}" y2="${footY+footH}" stroke="#8fa8c7" stroke-width="1" marker-start="url(#arrowTop)" marker-end="url(#arrowTop)"/>
+    <line x1="${yDimX+6}" y1="${footY}" x2="${footX}" y2="${footY}" stroke="#8fa8c7" stroke-width="1"/>
+    <line x1="${yDimX+6}" y1="${footY+footH}" x2="${footX}" y2="${footY+footH}" stroke="#8fa8c7" stroke-width="1"/>
+    <text x="${yDimX-10}" y="${cy+5}" text-anchor="middle" font-size="13" font-weight="700" fill="#eef3f8" font-family="JetBrains Mono, monospace" transform="rotate(-90 ${yDimX-10} ${cy+5})">B = ${fmt1(B)} ft</text>
+
+    <!-- column bc dimension -->
+    <line x1="${colDrawX}" y1="${colDrawY-20}" x2="${colDrawX+colDrawW}" y2="${colDrawY-20}" stroke="#e8a33d" stroke-width="1" marker-start="url(#arrowTop)" marker-end="url(#arrowTop)"/>
+    <text x="${cx}" y="${colDrawY-26}" text-anchor="middle" font-size="11.5" fill="#e8a33d" font-family="JetBrains Mono, monospace">bc = ${fmt2(bc)} in</text>
+
+    <!-- column hc dimension -->
+    <line x1="${colDrawX+colDrawW+20}" y1="${colDrawY}" x2="${colDrawX+colDrawW+20}" y2="${colDrawY+colDrawH}" stroke="#e8a33d" stroke-width="1" marker-start="url(#arrowTop)" marker-end="url(#arrowTop)"/>
+    <text x="${colDrawX+colDrawW+29}" y="${cy+4}" font-size="11.5" fill="#e8a33d" font-family="JetBrains Mono, monospace">hc = ${fmt2(hc)} in</text>
+
+    <!-- cantilever in L direction -->
+    <line x1="${footX}" y1="${footY+footH+34}" x2="${colDrawX}" y2="${footY+footH+34}" stroke="#3ee7a6" stroke-width="1" marker-start="url(#arrowTop)" marker-end="url(#arrowTop)"/>
+    <text x="${(footX+colDrawX)/2}" y="${footY+footH+51}" text-anchor="middle" font-size="11" fill="#3ee7a6" font-family="JetBrains Mono, monospace">cantL = ${fmt2(cantL)} in</text>
+    <line x1="${colDrawX+colDrawW}" y1="${footY+footH+34}" x2="${footX+footW}" y2="${footY+footH+34}" stroke="#3ee7a6" stroke-width="1" marker-start="url(#arrowTop)" marker-end="url(#arrowTop)"/>
+    <text x="${(colDrawX+colDrawW+footX+footW)/2}" y="${footY+footH+51}" text-anchor="middle" font-size="11" fill="#3ee7a6" font-family="JetBrains Mono, monospace">cantL = ${fmt2(cantL)} in</text>
+
+    <!-- cantilever in B direction -->
+    <text x="${footX+footW+12}" y="${footY+footH/2-8}" font-size="10.5" fill="#3ee7a6" font-family="JetBrains Mono, monospace">cantB</text>
+    <text x="${footX+footW+12}" y="${footY+footH/2+9}" font-size="10.5" fill="#3ee7a6" font-family="JetBrains Mono, monospace">= ${fmt2(cantB)} in</text>
+
+    <!-- information panel -->
+    <rect x="${W-marginR+18}" y="${marginT-12}" width="${marginR-28}" height="${H-marginT-marginB+24}" rx="5" fill="rgba(16,24,39,0.82)" stroke="#253552"/>
+    <text x="${W-marginR+32}" y="${marginT+15}" font-size="11" font-weight="700" fill="#3ee7a6" font-family="JetBrains Mono, monospace">DESIGN DIMENSIONS</text>
+    <line x1="${W-marginR+32}" y1="${marginT+25}" x2="${W-22}" y2="${marginT+25}" stroke="#253552"/>
+    <text x="${W-marginR+32}" y="${marginT+50}" font-size="11" fill="#8fa8c7" font-family="JetBrains Mono, monospace">Footing L × B</text>
+    <text x="${W-marginR+32}" y="${marginT+68}" font-size="12" font-weight="700" fill="#eef3f8" font-family="JetBrains Mono, monospace">${fmt1(L)} × ${fmt1(B)} ft</text>
+    <text x="${W-marginR+32}" y="${marginT+96}" font-size="11" fill="#8fa8c7" font-family="JetBrains Mono, monospace">Column bc × hc</text>
+    <text x="${W-marginR+32}" y="${marginT+114}" font-size="12" font-weight="700" fill="#e8a33d" font-family="JetBrains Mono, monospace">${fmt2(bc)} × ${fmt2(hc)} in</text>
+    <text x="${W-marginR+32}" y="${marginT+142}" font-size="11" fill="#8fa8c7" font-family="JetBrains Mono, monospace">Cantilever L / B</text>
+    <text x="${W-marginR+32}" y="${marginT+160}" font-size="11.5" font-weight="700" fill="#3ee7a6" font-family="JetBrains Mono, monospace">${fmt2(cantL)} / ${fmt2(cantB)} in</text>
+    <text x="${W-marginR+32}" y="${marginT+188}" font-size="11" fill="#8fa8c7" font-family="JetBrains Mono, monospace">Effective depth d</text>
+    <text x="${W-marginR+32}" y="${marginT+206}" font-size="12" font-weight="700" fill="#3ee7a6" font-family="JetBrains Mono, monospace">${fmt2(d)} in</text>
+    <text x="${W-marginR+32}" y="${marginT+234}" font-size="11" fill="#8fa8c7" font-family="JetBrains Mono, monospace">Total thickness h</text>
+    <text x="${W-marginR+32}" y="${marginT+252}" font-size="12" font-weight="700" fill="#eef3f8" font-family="JetBrains Mono, monospace">${fmt2(hTotal)} in</text>
+    <text x="${W-marginR+32}" y="${marginT+280}" font-size="11" fill="#8fa8c7" font-family="JetBrains Mono, monospace">Area A</text>
+    <text x="${W-marginR+32}" y="${marginT+298}" font-size="12" font-weight="700" fill="#eef3f8" font-family="JetBrains Mono, monospace">${fmt2(A)} ft²</text>
+    <text x="${W-marginR+32}" y="${marginT+326}" font-size="11" fill="#8fa8c7" font-family="JetBrains Mono, monospace">Service pressure</text>
+    <text x="${W-marginR+32}" y="${marginT+344}" font-size="12" font-weight="700" fill="#eef3f8" font-family="JetBrains Mono, monospace">${fmt2(qact)} ksf</text>
+    <text x="${W-marginR+32}" y="${marginT+372}" font-size="11" fill="#8fa8c7" font-family="JetBrains Mono, monospace">Main bars</text>
+    <text x="${W-marginR+32}" y="${marginT+390}" font-size="11.5" font-weight="700" fill="#3ee7a6" font-family="JetBrains Mono, monospace">${nBars}–${barLbl} @ ${fmt2(spacing)} in</text>
+  </svg>`;
 }
 
 function crossSectionSVG(bmm, hTotal, d, cover, barDia, nBars, bc, barLbl){
@@ -682,20 +1095,20 @@ function crossSectionSVG(bmm, hTotal, d, cover, barDia, nBars, bc, barLbl){
   let bars = '';
   for(let i=0;i<nBars;i++){
     const bx = nBars>1 ? barsStartX + i*spacingPx : (barsStartX+barsEndX)/2;
-    bars += `<circle cx="${bx.toFixed(1)}" cy="${barY.toFixed(1)}" r="5.5" fill="#e8a33d" stroke="#0b2a4a" stroke-width="1"/>`;
+    bars += `<circle cx="${bx.toFixed(1)}" cy="${barY.toFixed(1)}" r="5.5" fill="#3ee7a6" stroke="#0a0f1a" stroke-width="1"/>`;
   }
 
   // perpendicular-direction bars: this cut runs ALONG their length, so they appear as a
   // continuous line, resting just above the main (governing-direction) layer shown as dots
   const perpBars = `
     <line x1="${barsStartX-4}" y1="${perpY}" x2="${barsEndX+4}" y2="${perpY}" stroke="#7fd8a0" stroke-width="4.5" stroke-linecap="round" opacity="0.9"/>
-    <circle cx="${barsStartX-4}" cy="${perpY}" r="4" fill="#4caf6f"/>
-    <circle cx="${barsEndX+4}" cy="${perpY}" r="4" fill="#4caf6f"/>`;
+    <circle cx="${barsStartX-4}" cy="${perpY}" r="4" fill="#3ee7a6"/>
+    <circle cx="${barsEndX+4}" cy="${perpY}" r="4" fill="#3ee7a6"/>`;
 
   // soil hatch lines under footing
   let hatch = '';
   for(let x=footX-10; x<footX+footW+10; x+=14){
-    hatch += `<line x1="${x}" y1="${footY+footH}" x2="${x-9}" y2="${footY+footH+11}" stroke="#3d6ea5" stroke-width="1.4"/>`;
+    hatch += `<line x1="${x}" y1="${footY+footH}" x2="${x-9}" y2="${footY+footH+11}" stroke="#2a3b56" stroke-width="1.4"/>`;
   }
 
   // right-side gutter holds two stacked dimension lines (d, then h further out) — plenty
@@ -707,53 +1120,53 @@ function crossSectionSVG(bmm, hTotal, d, cover, barDia, nBars, bc, barLbl){
   <svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
     <!-- soil hatch -->
     ${hatch}
-    <line x1="${footX-14}" y1="${footY+footH}" x2="${footX+footW+14}" y2="${footY+footH}" stroke="#3d6ea5" stroke-width="1.4"/>
+    <line x1="${footX-14}" y1="${footY+footH}" x2="${footX+footW+14}" y2="${footY+footH}" stroke="#2a3b56" stroke-width="1.4"/>
 
     <!-- footing block -->
-    <rect x="${footX}" y="${footY}" width="${footW}" height="${footH}" fill="rgba(61,110,165,0.28)" stroke="#e8a33d" stroke-width="2"/>
+    <rect x="${footX}" y="${footY}" width="${footW}" height="${footH}" fill="rgba(61,110,165,0.28)" stroke="#3ee7a6" stroke-width="2"/>
 
     <!-- column stub -->
-    <rect x="${colX}" y="${colY}" width="${colWpx}" height="${colH}" fill="rgba(61,110,165,0.42)" stroke="#e8a33d" stroke-width="2"/>
-    <line x1="${colX}" y1="${footY}" x2="${colX}" y2="${footY+footH*0.16}" stroke="#0b2a4a" stroke-width="1" stroke-dasharray="3,2"/>
-    <line x1="${colX+colWpx}" y1="${footY}" x2="${colX+colWpx}" y2="${footY+footH*0.16}" stroke="#0b2a4a" stroke-width="1" stroke-dasharray="3,2"/>
+    <rect x="${colX}" y="${colY}" width="${colWpx}" height="${colH}" fill="rgba(61,110,165,0.42)" stroke="#3ee7a6" stroke-width="2"/>
+    <line x1="${colX}" y1="${footY}" x2="${colX}" y2="${footY+footH*0.16}" stroke="#0a0f1a" stroke-width="1" stroke-dasharray="3,2"/>
+    <line x1="${colX+colWpx}" y1="${footY}" x2="${colX+colWpx}" y2="${footY+footH*0.16}" stroke="#0a0f1a" stroke-width="1" stroke-dasharray="3,2"/>
 
     <!-- perpendicular-direction bars (continuous — this cut runs along their length) -->
     ${perpBars}
 
     <!-- main bars, governing direction (cut perpendicular to their length, shown as dots) -->
     ${bars}
-    <line x1="${barsStartX}" y1="${barY}" x2="${barsEndX}" y2="${barY}" stroke="#e8a33d" stroke-width="1" stroke-dasharray="2,3" opacity="0.55"/>
+    <line x1="${barsStartX}" y1="${barY}" x2="${barsEndX}" y2="${barY}" stroke="#3ee7a6" stroke-width="1" stroke-dasharray="2,3" opacity="0.55"/>
 
     <!-- cover dimension (left side, bottom) -->
-    <line x1="${footX-26}" y1="${footY+footH}" x2="${footX-26}" y2="${barY}" stroke="#a8c2de" stroke-width="1"/>
-    <line x1="${footX-30}" y1="${footY+footH}" x2="${footX-22}" y2="${footY+footH}" stroke="#a8c2de" stroke-width="1"/>
-    <line x1="${footX-30}" y1="${barY}" x2="${footX-22}" y2="${barY}" stroke="#a8c2de" stroke-width="1"/>
-    <text x="${footX-34}" y="${(footY+footH+barY)/2+3}" text-anchor="end" font-size="12" fill="#a8c2de" font-family="JetBrains Mono, monospace">cover ${fmt(cover,2)}"</text>
+    <line x1="${footX-26}" y1="${footY+footH}" x2="${footX-26}" y2="${barY}" stroke="#8fa8c7" stroke-width="1"/>
+    <line x1="${footX-30}" y1="${footY+footH}" x2="${footX-22}" y2="${footY+footH}" stroke="#8fa8c7" stroke-width="1"/>
+    <line x1="${footX-30}" y1="${barY}" x2="${footX-22}" y2="${barY}" stroke="#8fa8c7" stroke-width="1"/>
+    <text x="${footX-34}" y="${(footY+footH+barY)/2+3}" text-anchor="end" font-size="12" fill="#8fa8c7" font-family="JetBrains Mono, monospace">cover ${fmt(cover,2)}"</text>
 
     <!-- effective depth d (dashed, right-side gutter, inner line) -->
-    <line x1="${dDimX}" y1="${footY}" x2="${dDimX}" y2="${barY}" stroke="#4caf6f" stroke-width="1" stroke-dasharray="4,3"/>
-    <line x1="${dDimX-4}" y1="${footY}" x2="${dDimX+4}" y2="${footY}" stroke="#4caf6f" stroke-width="1"/>
-    <line x1="${dDimX-4}" y1="${barY}" x2="${dDimX+4}" y2="${barY}" stroke="#4caf6f" stroke-width="1"/>
-    <text x="${dDimX+8}" y="${(footY+barY)/2+3}" font-size="12" fill="#4caf6f" font-family="JetBrains Mono, monospace">d = ${fmt(d,2)}"</text>
+    <line x1="${dDimX}" y1="${footY}" x2="${dDimX}" y2="${barY}" stroke="#3ee7a6" stroke-width="1" stroke-dasharray="4,3"/>
+    <line x1="${dDimX-4}" y1="${footY}" x2="${dDimX+4}" y2="${footY}" stroke="#3ee7a6" stroke-width="1"/>
+    <line x1="${dDimX-4}" y1="${barY}" x2="${dDimX+4}" y2="${barY}" stroke="#3ee7a6" stroke-width="1"/>
+    <text x="${dDimX+8}" y="${(footY+barY)/2+3}" font-size="12" fill="#3ee7a6" font-family="JetBrains Mono, monospace">d = ${fmt(d,2)}"</text>
 
     <!-- total thickness h (right-side gutter, outer line) -->
-    <line x1="${hDimX}" y1="${footY}" x2="${hDimX}" y2="${footY+footH}" stroke="#a8c2de" stroke-width="1"/>
-    <line x1="${hDimX-4}" y1="${footY}" x2="${hDimX+4}" y2="${footY}" stroke="#a8c2de" stroke-width="1"/>
-    <line x1="${hDimX-4}" y1="${footY+footH}" x2="${hDimX+4}" y2="${footY+footH}" stroke="#a8c2de" stroke-width="1"/>
-    <text x="${hDimX+8}" y="${footY+footH/2+3}" font-size="12" fill="#a8c2de" font-family="JetBrains Mono, monospace">h = ${fmt(hTotal,1)}"</text>
+    <line x1="${hDimX}" y1="${footY}" x2="${hDimX}" y2="${footY+footH}" stroke="#8fa8c7" stroke-width="1"/>
+    <line x1="${hDimX-4}" y1="${footY}" x2="${hDimX+4}" y2="${footY}" stroke="#8fa8c7" stroke-width="1"/>
+    <line x1="${hDimX-4}" y1="${footY+footH}" x2="${hDimX+4}" y2="${footY+footH}" stroke="#8fa8c7" stroke-width="1"/>
+    <text x="${hDimX+8}" y="${footY+footH/2+3}" font-size="12" fill="#8fa8c7" font-family="JetBrains Mono, monospace">h = ${fmt(hTotal,1)}"</text>
 
     <!-- width label, above the column so it never sits near the bar labels -->
-    <line x1="${footX}" y1="${colY-24}" x2="${footX+footW}" y2="${colY-24}" stroke="#a8c2de" stroke-width="1"/>
-    <line x1="${footX}" y1="${colY-28}" x2="${footX}" y2="${colY-20}" stroke="#a8c2de" stroke-width="1"/>
-    <line x1="${footX+footW}" y1="${colY-28}" x2="${footX+footW}" y2="${colY-20}" stroke="#a8c2de" stroke-width="1"/>
-    <text x="${footX+footW/2}" y="${colY-34}" text-anchor="middle" font-size="12" fill="#a8c2de" font-family="JetBrains Mono, monospace">b = ${fmt(bmm,1)}" (governing direction)</text>
+    <line x1="${footX}" y1="${colY-24}" x2="${footX+footW}" y2="${colY-24}" stroke="#8fa8c7" stroke-width="1"/>
+    <line x1="${footX}" y1="${colY-28}" x2="${footX}" y2="${colY-20}" stroke="#8fa8c7" stroke-width="1"/>
+    <line x1="${footX+footW}" y1="${colY-28}" x2="${footX+footW}" y2="${colY-20}" stroke="#8fa8c7" stroke-width="1"/>
+    <text x="${footX+footW/2}" y="${colY-34}" text-anchor="middle" font-size="12" fill="#8fa8c7" font-family="JetBrains Mono, monospace">b = ${fmt(bmm,1)}" (governing direction)</text>
 
     <!-- column label -->
-    <text x="${colX+colWpx/2}" y="${colY+colH/2+4}" text-anchor="middle" font-size="10.5" fill="#eef3f8" font-family="JetBrains Mono, monospace">COLUMN</text>
+    <text x="${colX+colWpx/2}" y="${colY+colH/2+4}" text-anchor="middle" font-size="10.5" fill="#eef4ff" font-family="JetBrains Mono, monospace">COLUMN</text>
 
     <!-- bar callouts, both directions — stacked as captions below the footing, clear of every other element -->
-    <text x="${footX+footW/2}" y="${footY+footH+34}" text-anchor="middle" font-size="12" fill="#e8a33d" font-family="JetBrains Mono, monospace">${nBars}–${barLbl} main bars, governing dir. (dots = cut end‑on)</text>
-    <text x="${footX+footW/2}" y="${footY+footH+54}" text-anchor="middle" font-size="11.5" fill="#4caf6f" font-family="JetBrains Mono, monospace">${barLbl} bars, perpendicular dir. (line = cut along length)</text>
+    <text x="${footX+footW/2}" y="${footY+footH+34}" text-anchor="middle" font-size="12" fill="#3ee7a6" font-family="JetBrains Mono, monospace">${nBars}–${barLbl} main bars, governing dir. (dots = cut end‑on)</text>
+    <text x="${footX+footW/2}" y="${footY+footH+54}" text-anchor="middle" font-size="11.5" fill="#3ee7a6" font-family="JetBrains Mono, monospace">${barLbl} bars, perpendicular dir. (line = cut along length)</text>
   </svg>`;
 }
 
