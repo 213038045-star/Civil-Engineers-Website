@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Strong OCR - Layout Preserving</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a1a;
+      padding: 16px;
+      line-height: 1.4;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      padding: 22px;
+    }
+    h1 { font-size: 1.4rem; margin-bottom: 4px; }
+    .subtitle { color: #666; margin-bottom: 16px; font-size: 0.9rem; }
+
+    .upload-area {
+      border: 2px dashed #ccc;
+      border-radius: 10px;
+      padding: 28px;
+      text-align: center;
+      background: #fafafa;
+      cursor: pointer;
+      transition: 0.2s;
+      margin-bottom: 16px;
+    }
+    .upload-area:hover, .upload-area.dragover {
+      border-color: #4f46e5;
+      background: #f5f3ff;
+    }
+    .upload-area input { display: none; }
+    .btn {
+      background: #4f46e5;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      margin: 4px;
+    }
+    .btn:hover { background: #4338ca; }
+    .btn:disabled { background: #a5b4fc; cursor: not-allowed; }
+    .btn-secondary { background: #e5e7eb; color: #1a1a1a; }
+    .btn-secondary:hover { background: #d1d5db; }
+
+    #status {
+      margin: 10px 0;
+      font-weight: 500;
+      color: #4f46e5;
+      min-height: 22px;
+    }
+
+    .preview-section { display: none; margin-top: 14px; }
+    .preview-section.active { display: block; }
+
+    .image-wrapper {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f8f8f8;
+      margin-bottom: 12px;
+    }
+    #previewImg {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+    #overlayCanvas {
+      position: absolute;
+      top: 0; left: 0;
+      pointer-events: none;
+    }
+    #layoutLayer {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .ocr-word {
+      position: absolute;
+      color: #111;
+      background: rgba(255, 255, 180, 0.85);
+      font-family: Arial, sans-serif;
+      white-space: nowrap;
+      line-height: 1;
+      border-radius: 2px;
+      padding: 0 1px;
+    }
+
+    .controls {
+      margin: 12px 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 0.88rem;
+      background: #fafafa;
+      resize: vertical;
+    }
+    .section-title {
+      font-weight: 600;
+      margin: 16px 0 6px;
+      font-size: 0.95rem;
+    }
+    .note {
+      margin-top: 16px;
+      font-size: 0.82rem;
+      color: #555;
+      background: #f8fafc;
+      padding: 11px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Strong OCR – Layout Preserving</h1>
+    <p class="subtitle">
+      Better for tables & colored cells • Upscales + preprocesses image • Keeps positions
+    </p>
+
+    <div class="upload-area" id="dropZone">
+      <p style="font-size: 1.05rem; margin-bottom: 6px;">📁 Drop the engineering sheet image here</p>
+      <p style="color:#888; font-size:0.88rem;">or click to select</p>
+      <input type="file" id="fileInput" accept="image/*">
+      <br>
+      <button class="btn" onclick="document.getElementById('fileInput').click()">Choose Image</button>
+    </div>
+
+    <div id="status"></div>
+
+    <div class="preview-section" id="previewSection">
+      <div class="controls">
+        <label class="toggle-label">
+          <input type="checkbox" id="showBoxes" checked> Show boxes
+        </label>
+        <label class="toggle-label">
+          <input type="checkbox" id="showLayoutText" checked> Show positioned text
+        </label>
+        <button class="btn btn-secondary" id="downloadImgBtn">Download Original Image</button>
+        <button class="btn btn-secondary" onclick="copyPlainText()">Copy Plain Text</button>
+        <button class="btn btn-secondary" onclick="clearAll()">Clear</button>
+      </div>
+
+      <div class="image-wrapper" id="imageWrapper">
+        <img id="previewImg" alt="Uploaded image">
+        <canvas id="overlayCanvas"></canvas>
+        <div id="layoutLayer"></div>
+      </div>
+
+      <div class="section-title">Extracted Text (improved reading order)</div>
+      <textarea id="plainText" readonly></textarea>
+
+      <div class="section-title">Words + Positions (JSON)</div>
+      <textarea id="jsonOutput" readonly style="min-height:140px;"></textarea>
+    </div>
+
+    <div class="note">
+      <strong>Improvements in this version:</strong><br>
+      • Image is upscaled 2× and contrast-enhanced before OCR<br>
+      • Better page segmentation mode for tables<br>
+      • Works much better on colored cells and dense text<br>
+      • Still shows original image + download + position overlay
+    </div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const statusEl = document.getElementById('status');
+    const previewSection = document.getElementById('previewSection');
+    const previewImg = document.getElementById('previewImg');
+    const overlayCanvas = document.getElementById('overlayCanvas');
+    const layoutLayer = document.getElementById('layoutLayer');
+    const plainTextEl = document.getElementById('plainText');
+    const jsonOutput = document.getElementById('jsonOutput');
+    const showBoxesCb = document.getElementById('showBoxes');
+    const showLayoutTextCb = document.getElementById('showLayoutText');
+    const downloadImgBtn = document.getElementById('downloadImgBtn');
+
+    let currentFile = null;
+    let currentWords = [];
+    let currentImageURL = null;
+    let naturalWidth = 0;
+    let naturalHeight = 0;
+    let processedCanvas = null; // the upscaled version used for OCR
+
+    // Drag & Drop
+    dropZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => {
+      if (e.target.files.length) handleFile(e.target.files[0]);
+    });
+
+    showBoxesCb.addEventListener('change', redrawOverlay);
+    showLayoutTextCb.addEventListener('change', () => {
+      layoutLayer.style.display = showLayoutTextCb.checked ? 'block' : 'none';
+    });
+
+    // ========== Preprocess image for better OCR ==========
+    function preprocessImage(img) {
+      const scale = 2; // upscale 2x – very important for small text
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth * scale;
+      canvas.height = img.naturalHeight * scale;
+      const ctx = canvas.getContext('2d');
+
+      // Draw upscaled
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // Get image data and increase contrast + convert to grayscale
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+
+      // Simple contrast + grayscale
+      const contrast = 1.35;
+      const factor = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
+
+      for (let i = 0; i < data.length; i += 4) {
+        // grayscale
+        let gray = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+        // contrast
+        gray = factor * (gray - 128) + 128;
+        gray = Math.max(0, Math.min(255, gray));
+        data[i] = data[i+1] = data[i+2] = gray;
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      return canvas;
+    }
+
+    async function handleFile(file) {
+      if (!file.type.startsWith('image/')) {
+        statusEl.textContent = 'Please upload an image file.';
+        return;
+      }
+
+      currentFile = file;
+      clearResults();
+
+      if (currentImageURL) URL.revokeObjectURL(currentImageURL);
+      currentImageURL = URL.createObjectURL(file);
+      previewImg.src = currentImageURL;
+      previewSection.classList.add('active');
+
+      statusEl.textContent = 'Preparing image (upscaling + contrast)...';
+
+      try {
+        // Wait for original image to load
+        await new Promise(resolve => {
+          if (previewImg.complete && previewImg.naturalWidth) resolve();
+          else previewImg.onload = resolve;
+        });
+
+        naturalWidth = previewImg.naturalWidth;
+        naturalHeight = previewImg.naturalHeight;
+
+        // Preprocess
+        processedCanvas = preprocessImage(previewImg);
+
+        statusEl.textContent = 'Running strong OCR (this may take 10–30 seconds)...';
+
+        const worker = await Tesseract.createWorker('eng', 1, {
+          logger: m => {
+            if (m.status === 'recognizing text') {
+              statusEl.textContent = `OCR progress: ${Math.round(m.progress * 100)}%`;
+            } else if (m.status) {
+              statusEl.textContent = m.status + '...';
+            }
+          }
+        });
+
+        // Better parameters for tables / dense text
+        await worker.setParameters({
+          tessedit_pageseg_mode: '6',          // Assume a single uniform block of text
+          // tessedit_pageseg_mode: '4',       // alternative: single column
+          preserve_interword_spaces: '1',
+          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,:()[]/@°Øøµ²³±=+-_ mMkNPa/% '
+        });
+
+        const { data } = await worker.recognize(processedCanvas);
+        await worker.terminate();
+
+        // Because we upscaled 2×, we need to scale the bboxes back down
+        const scaleBack = 0.5;
+        currentWords = (data.words || []).map(w => ({
+          text: w.text,
+          confidence: w.confidence,
+          bbox: {
+            x0: w.bbox.x0 * scaleBack,
+            y0: w.bbox.y0 * scaleBack,
+            x1: w.bbox.x1 * scaleBack,
+            y1: w.bbox.y1 * scaleBack
+          }
+        }));
+
+        // Clean text a bit
+        let cleanText = data.text
+          .replace(/\n{3,}/g, '\n\n')
+          .trim();
+
+        plainTextEl.value = cleanText || '(No text detected)';
+        jsonOutput.value = JSON.stringify(
+          currentWords.map(w => ({
+            text: w.text,
+            confidence: Math.round(w.confidence),
+            x0: Math.round(w.bbox.x0),
+            y0: Math.round(w.bbox.y0),
+            x1: Math.round(w.bbox.x1),
+            y1: Math.round(w.bbox.y1)
+          })),
+          null, 2
+        );
+
+        setupCanvasAndLayout();
+        statusEl.textContent = `Done! Detected ${currentWords.length} words.`;
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Error: ' + err.message;
+      }
+    }
+
+    function setupCanvasAndLayout() {
+      const displayWidth = previewImg.clientWidth;
+      const displayHeight = previewImg.clientHeight;
+      const scaleX = displayWidth / naturalWidth;
+      const scaleY = displayHeight / naturalHeight;
+
+      overlayCanvas.width = displayWidth;
+      overlayCanvas.height = displayHeight;
+      overlayCanvas.style.width = displayWidth + 'px';
+      overlayCanvas.style.height = displayHeight + 'px';
+
+      layoutLayer.style.width = displayWidth + 'px';
+      layoutLayer.style.height = displayHeight + 'px';
+
+      redrawOverlay();
+      buildLayoutText(scaleX, scaleY);
+    }
+
+    function redrawOverlay() {
+      const ctx = overlayCanvas.getContext('2d');
+      ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+      if (!showBoxesCb.checked || !currentWords.length) return;
+
+      const scaleX = overlayCanvas.width / naturalWidth;
+      const scaleY = overlayCanvas.height / naturalHeight;
+
+      ctx.strokeStyle = '#16a34a';
+      ctx.lineWidth = 1.5;
+
+      currentWords.forEach(word => {
+        const { x0, y0, x1, y1 } = word.bbox;
+        ctx.strokeRect(
+          x0 * scaleX,
+          y0 * scaleY,
+          (x1 - x0) * scaleX,
+          (y1 - y0) * scaleY
+        );
+      });
+    }
+
+    function buildLayoutText(scaleX, scaleY) {
+      layoutLayer.innerHTML = '';
+      if (!showLayoutTextCb.checked) return;
+
+      currentWords.forEach(word => {
+        if (!word.text.trim()) return;
+        const { x0, y0, x1, y1 } = word.bbox;
+        const h = (y1 - y0) * scaleY;
+
+        const span = document.createElement('span');
+        span.className = 'ocr-word';
+        span.textContent = word.text;
+        span.style.left = (x0 * scaleX) + 'px';
+        span.style.top = (y0 * scaleY) + 'px';
+        span.style.fontSize = Math.max(9, h * 0.82) + 'px';
+        span.title = `Conf: ${Math.round(word.confidence)}%`;
+        layoutLayer.appendChild(span);
+      });
+    }
+
+    window.addEventListener('resize', () => {
+      if (currentWords.length && previewImg.complete) setupCanvasAndLayout();
+    });
+
+    downloadImgBtn.addEventListener('click', () => {
+      if (!currentFile) return;
+      const a = document.createElement('a');
+      a.href = currentImageURL;
+      a.download = currentFile.name || 'extracted-image.png';
+      a.click();
+    });
+
+    function copyPlainText() {
+      plainTextEl.select();
+      document.execCommand('copy');
+      statusEl.textContent = 'Text copied!';
+    }
+
+    function clearResults() {
+      currentWords = [];
+      plainTextEl.value = '';
+      jsonOutput.value = '';
+      layoutLayer.innerHTML = '';
+      const ctx = overlayCanvas.getContext('2d');
+      if (ctx) ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    }
+
+    function clearAll() {
+      clearResults();
+      previewSection.classList.remove('active');
+      if (currentImageURL) {
+        URL.revokeObjectURL(currentImageURL);
+        currentImageURL = null;
+      }
+      currentFile = null;
+      fileInput.value = '';
+      statusEl.textContent = '';
+    }
+  </script>
+</body>
+</html>

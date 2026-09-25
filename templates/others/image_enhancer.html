@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Image Quality Enhancer</title>
+
+  <!-- TensorFlow.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  
+  <!-- Default model -->
+  <script src="https://cdn.jsdelivr.net/npm/@upscalerjs/default-model@latest/dist/umd/index.min.js"></script>
+  
+  <!-- UpscalerJS -->
+  <script src="https://cdn.jsdelivr.net/npm/upscaler@latest/dist/browser/umd/upscaler.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 6px;
+      background: linear-gradient(90deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      color: #94a3b8;
+      margin-bottom: 28px;
+      font-size: 0.95rem;
+    }
+    .upload-box {
+      border: 2px dashed #334155;
+      border-radius: 16px;
+      padding: 40px 20px;
+      text-align: center;
+      background: #1e293b;
+      cursor: pointer;
+      transition: 0.2s;
+      margin-bottom: 24px;
+    }
+    .upload-box:hover, .upload-box.dragover {
+      border-color: #60a5fa;
+      background: #1e3a5f;
+    }
+    .upload-box input { display: none; }
+    .btn {
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      color: white;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 6px;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn:disabled {
+      background: #475569;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    .btn-secondary { background: #334155; }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .size-box {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .size-box.active { display: block; }
+    .size-box label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      color: #94a3b8;
+    }
+    .size-box select,
+    .size-box input {
+      background: #0f172a;
+      color: #e2e8f0;
+      border: 1px solid #475569;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      margin-right: 8px;
+      margin-bottom: 10px;
+    }
+    .size-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    #status {
+      margin: 12px 0 20px;
+      font-weight: 500;
+      color: #60a5fa;
+      min-height: 24px;
+    }
+    .preview {
+      display: none;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .preview.active { display: flex; }
+    .preview-card {
+      flex: 1;
+      min-width: 280px;
+      background: #1e293b;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #334155;
+    }
+    .preview-card h3 {
+      padding: 12px 16px;
+      background: #0f172a;
+      font-size: 0.95rem;
+      color: #94a3b8;
+    }
+    .preview-card img {
+      width: 100%;
+      display: block;
+      background: #000;
+    }
+    .info {
+      margin-top: 24px;
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AI Image Quality Enhancer</h1>
+    <p class="subtitle">Enhance low-resolution images + download in your required size (Passport, Custom, etc.)</p>
+
+    <div class="upload-box" id="dropZone">
+      <p style="font-size: 1.15rem; margin-bottom: 8px;">📁 Drop a low-quality image here</p>
+      <p style="color:#64748b; font-size:0.9rem; margin-bottom:16px;">or click to select (JPG, PNG, WEBP…)</p>
+      <input type="file" id="fileInput" accept="image/*">
+      <button class="btn" onclick="document.getElementById('fileInput').click()">Choose Image</button>
+    </div>
+
+    <div class="controls" id="controls" style="display:none;">
+      <button class="btn" id="enhanceBtn" onclick="enhanceImage()">Enhance Image (2×)</button>
+    </div>
+
+    <!-- Download Size Options -->
+    <div class="size-box" id="sizeBox">
+      <label>Download Size</label>
+      <div class="size-row">
+        <select id="sizePreset" onchange="onPresetChange()">
+          <option value="original">Original Enhanced Size</option>
+          <option value="passport">Passport (35×45 mm ≈ 413×531 px)</option>
+          <option value="passport_us">US Passport (2×2 inch ≈ 600×600 px)</option>
+          <option value="square_500">Square 500×500</option>
+          <option value="square_1000">Square 1000×1000</option>
+          <option value="custom">Custom Size</option>
+        </select>
+      </div>
+
+      <div id="customSize" style="display:none; margin-top:10px;">
+        <div class="size-row">
+          <div>
+            <label>Width (px)</label>
+            <input type="number" id="customWidth" value="413" min="50" max="4000">
+          </div>
+          <div>
+            <label>Height (px)</label>
+            <input type="number" id="customHeight" value="531" min="50" max="4000">
+          </div>
+          <div style="padding-top: 22px;">
+            <label>
+              <input type="checkbox" id="keepAspect" checked> Keep aspect ratio
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn" id="downloadBtn" onclick="downloadResult()" style="margin-top:12px;">
+        Download Enhanced Image
+      </button>
+    </div>
+
+    <div id="status"></div>
+
+    <div class="preview" id="preview">
+      <div class="preview-card">
+        <h3>Original (Low Quality)</h3>
+        <img id="originalImg" alt="Original">
+      </div>
+      <div class="preview-card">
+        <h3>Enhanced (AI Upscaled)</h3>
+        <img id="resultImg" alt="Enhanced">
+      </div>
+    </div>
+
+    <div class="info">
+      <strong>How it works:</strong><br>
+      1. Upload a low quality image<br>
+      2. Click <b>Enhance Image (2×)</b><br>
+      3. Choose your required size (Passport / Custom)<br>
+      4. Download
+    </div>
+  </div>
+
+  <script>
+    let originalFile = null;
+    let originalURL = null;
+    let resultURL = null;          // full enhanced image (base64)
+    let upscaler = null;
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const statusEl = document.getElementById('status');
+    const controls = document.getElementById('controls');
+    const sizeBox = document.getElementById('sizeBox');
+    const preview = document.getElementById('preview');
+    const originalImg = document.getElementById('originalImg');
+    const resultImg = document.getElementById('resultImg');
+    const enhanceBtn = document.getElementById('enhanceBtn');
+    const sizePreset = document.getElementById('sizePreset');
+    const customSizeDiv = document.getElementById('customSize');
+    const customWidth = document.getElementById('customWidth');
+    const customHeight = document.getElementById('customHeight');
+    const keepAspect = document.getElementById('keepAspect');
+
+    // Drag & drop
+    dropZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => {
+      if (e.target.files.length) handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+      if (!file.type.startsWith('image/')) {
+        statusEl.textContent = 'Please select an image file.';
+        return;
+      }
+
+      originalFile = file;
+      if (originalURL) URL.revokeObjectURL(originalURL);
+
+      originalURL = URL.createObjectURL(file);
+      originalImg.src = originalURL;
+      resultImg.src = '';
+      resultURL = null;
+
+      controls.style.display = 'flex';
+      sizeBox.classList.remove('active');
+      preview.classList.add('active');
+      statusEl.textContent = 'Image loaded. Click “Enhance Image (2×)” first.';
+    }
+
+    function onPresetChange() {
+      customSizeDiv.style.display = sizePreset.value === 'custom' ? 'block' : 'none';
+    }
+
+    async function enhanceImage() {
+      if (!originalFile) return;
+
+      enhanceBtn.disabled = true;
+      statusEl.textContent = 'Loading AI model & enhancing… please wait (10–40 seconds)';
+
+      try {
+        if (!upscaler) {
+          upscaler = new Upscaler({
+            model: DefaultUpscalerJSModel
+          });
+        }
+
+        const upscaledSrc = await upscaler.upscale(originalURL, {
+          output: 'base64',
+          patchSize: 64,
+          padding: 8
+        });
+
+        resultURL = upscaledSrc;
+        resultImg.src = resultURL;
+
+        statusEl.textContent = 'Done! Now choose your download size and click Download.';
+        sizeBox.classList.add('active');
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Error: ' + err.message;
+      } finally {
+        enhanceBtn.disabled = false;
+      }
+    }
+
+    // Resize image to target size
+    function resizeImage(base64, targetW, targetH, keepRatio = true) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          let w = targetW;
+          let h = targetH;
+
+          if (keepRatio) {
+            const ratio = Math.min(targetW / img.width, targetH / img.height);
+            w = Math.round(img.width * ratio);
+            h = Math.round(img.height * ratio);
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+
+          // High quality
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, w, h);
+
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.src = base64;
+      });
+    }
+
+    async function downloadResult() {
+      if (!resultURL) {
+        statusEl.textContent = 'Please enhance the image first.';
+        return;
+      }
+
+      let finalDataUrl = resultURL;
+      const preset = sizePreset.value;
+
+      try {
+        if (preset !== 'original') {
+          let targetW, targetH;
+
+          if (preset === 'passport') {
+            targetW = 413;   // ~35mm at 300dpi
+            targetH = 531;   // ~45mm at 300dpi
+          } else if (preset === 'passport_us') {
+            targetW = 600;
+            targetH = 600;
+          } else if (preset === 'square_500') {
+            targetW = 500;
+            targetH = 500;
+          } else if (preset === 'square_1000') {
+            targetW = 1000;
+            targetH = 1000;
+          } else if (preset === 'custom') {
+            targetW = parseInt(customWidth.value) || 413;
+            targetH = parseInt(customHeight.value) || 531;
+          }
+
+          statusEl.textContent = 'Resizing to selected size…';
+          finalDataUrl = await resizeImage(
+            resultURL,
+            targetW,
+            targetH,
+            keepAspect.checked
+          );
+        }
+
+        // Download
+        const a = document.createElement('a');
+        a.href = finalDataUrl;
+        a.download = 'enhanced-' + (originalFile?.name?.replace(/\.[^/.]+$/, '') || 'image') + '.png';
+        a.click();
+
+        statusEl.textContent = 'Download started!';
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Error while resizing: ' + err.message;
+      }
+    }
+  </script>
+</body>
+</html>

@@ -165,9 +165,21 @@ def mass_unit():
 def pressure_converter():
     return render_template('others/pressure_convert.html')
 
+@app.route('/extract_word')
+def extract_word():
+    return render_template('others/extract_word.html')
+
+@app.route('/image_enhancer')
+def image_enhancer():
+    return render_template('others/image_enhancer.html')
+
 @app.route('/unit_weight')
 def unit_weight():
     return render_template('others/unit_weight.html')
+
+@app.route('/background_remover')
+def background_remover():
+    return render_template('others/background_remover.html')
 
 @app.route('/marge_pdf_tool')
 def marge_pdf_tool():
@@ -254,7 +266,9 @@ def powerpoint_page():
     return send_from_directory("templates/others/converter", "powerpoint_page.html")
 
 
-
+@app.route("/bnbc_pile_design")
+def bnbc_pile_design():
+    return render_template("design/projects/bnbc_pile.html")
 
 @app.route("/two_beam_design")
 def two_beam_design():

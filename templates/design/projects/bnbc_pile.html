@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bored Pile Axial Capacity Calculator</title>
+<style>
+  :root {
+    --bg: #060a14;
+    --bg-glow: radial-gradient(circle at 50% -10%, rgba(46,88,180,0.28), transparent 55%);
+    --card-bg: #0c1324;
+    --card-bg-soft: #0a0f1e;
+    --text: #eaf0ff;
+    --text-muted: #7c8ba8;
+    --border: rgba(90,130,220,0.28);
+    --border-soft: rgba(90,130,220,0.15);
+    --accent: #3b7dfa;
+    --accent-strong: #5b93ff;
+    --accent-soft: rgba(59,125,250,0.14);
+    --orange: #ff7a3d;
+    --orange-soft: rgba(255,122,61,0.14);
+    --success-bg: rgba(60,200,140,0.12);
+    --success-text: #5be3a4;
+    --warn-bg: rgba(255,110,90,0.14);
+    --warn-text: #ff9a85;
+    --input-bg: #0a1120;
+    --header-bg: #0d1526;
+    --shadow: 0 12px 30px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.3);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-sizing: border-box;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); height: 100%; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: ui-monospace, "SFMono-Regular", "JetBrains Mono", "Fira Code", Menlo, Consolas, "Courier New", monospace;
+    background-color: var(--bg);
+    background-image: var(--bg-glow);
+    background-attachment: fixed;
+    color: var(--text);
+    min-height: 100%;
+    line-height: 1.5;
+  }
+  .wrap {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 32px 16px 60px;
+  }
+  header.page-head {
+    margin-bottom: 24px;
+  }
+  header.page-head h1 {
+    font-size: 1.6rem;
+    letter-spacing: 0.03em;
+    margin: 0 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-transform: uppercase;
+    font-weight: 800;
+  }
+  header.page-head h1 .arrow {
+    color: var(--orange);
+  }
+  header.page-head p.eyebrow {
+    margin: 0 0 6px;
+    color: var(--accent-strong);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  header.page-head p.sub {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 20px 22px;
+    margin-bottom: 20px;
+  }
+  .card h2 {
+    font-size: 0.82rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent-strong);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 14px;
+  }
+  label {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  input[type="number"], select {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text);
+    font-size: 0.92rem;
+    font-family: inherit;
+  }
+  input[type="number"]:focus, select:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+  .field-hint {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .table-scroll {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 760px;
+    font-size: 0.82rem;
+  }
+  thead th {
+    background: var(--header-bg);
+    text-align: left;
+    padding: 10px 10px;
+    font-weight: 700;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    color: var(--accent-strong);
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  tbody td {
+    padding: 7px 8px;
+    border-bottom: 1px solid var(--border-soft);
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: rgba(59,125,250,0.06); }
+  tbody td input[type="number"], tbody td select {
+    padding: 6px 7px;
+    font-size: 0.82rem;
+    min-width: 78px;
+  }
+  .row-out {
+    color: var(--text-muted);
+  }
+  .row-target {
+    background: var(--orange-soft) !important;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+    color: var(--text);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(59,125,250,0.35);
+  }
+  .btn.danger {
+    color: var(--warn-text);
+  }
+  .btn:hover { border-color: var(--accent-strong); }
+  .btn:active { transform: translateY(1px); }
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .remove-btn {
+    background: transparent;
+    border: none;
+    color: var(--warn-text);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 2px 6px;
+    line-height: 1;
+  }
+  .result-banner {
+    border-radius: 10px;
+    padding: 18px 20px;
+    font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    border: 1px solid;
+  }
+  .result-banner.success { background: var(--success-bg); color: var(--success-text); border-color: rgba(91,227,164,0.35); }
+  .result-banner.warn { background: var(--warn-bg); color: var(--warn-text); border-color: rgba(255,154,133,0.35); }
+  .result-banner .big {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--orange);
+    letter-spacing: 0.02em;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .summary-item {
+    background: var(--header-bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .summary-item .label { font-size: 0.68rem; color: var(--text-muted); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .summary-item .value { font-size: 1.05rem; font-weight: 700; margin-top: 4px; color: var(--accent-strong); }
+  footer.notes {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    line-height: 1.7;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="page-head">
+    <p class="eyebrow">Geotechnical · Client-side calculator · No upload required</p>
+    <h1>PILE <span class="arrow">⇄</span> LENGTH</h1>
+    <p class="sub">SPT (N60) based shaft friction &amp; end bearing method. Enter your soil layers and find the pile length that meets your required load. Runs entirely in your browser.</p>
+  </header>
+
+  <section class="card">
+    <h2>⚙️ Pile & Safety Inputs</h2>
+    <div class="grid">
+      <div>
+        <label for="diameter">Pile diameter, D (m)</label>
+        <input type="number" id="diameter" value="0.5" step="0.05" min="0.1">
+      </div>
+      <div>
+        <label for="fs">Factor of Safety (design)</label>
+        <input type="number" id="fs" value="3" step="0.1" min="1">
+      </div>
+      <div>
+        <label for="targetLoad">Required allowable load, Q (kN)</label>
+        <input type="number" id="targetLoad" value="600" step="10" min="0">
+        <div class="field-hint">Used to find the minimum pile length that satisfies this load.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>🧱 Soil Layers</h2>
+    <div class="table-scroll">
+      <table id="layerTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Bottom Depth (m)</th>
+            <th>Soil Type</th>
+            <th>Corrected SPT, N60</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="layerBody"></tbody>
+      </table>
+    </div>
+    <div class="toolbar">
+      <button class="btn" id="addRow" type="button">➕ Add layer</button>
+      <button class="btn primary" id="calcBtn" type="button">▶ Calculate</button>
+    </div>
+  </section>
+
+  <section class="card" id="resultSection" style="display:none;">
+    <h2>📏 Result</h2>
+    <div id="resultBanner"></div>
+    <div class="summary-grid" id="summaryGrid"></div>
+  </section>
+
+  <section class="card">
+    <h2>📊 Capacity at Each Depth</h2>
+    <div class="table-scroll">
+      <table id="outputTable">
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>Top (m)</th>
+            <th>Bottom (m)</th>
+            <th>Soil</th>
+            <th>N60</th>
+            <th>fs (kPa)</th>
+            <th>Qs cum. (kN)</th>
+            <th>fb (kPa)</th>
+            <th>Qb (kN)</th>
+            <th>Qult (kN)</th>
+            <th>Qallow (kN)</th>
+          </tr>
+        </thead>
+        <tbody id="outputBody"></tbody>
+      </table>
+    </div>
+    <footer class="notes">
+      Clay: fs = 1.2·N60 kPa (≤70) · fb = 25·N60 kPa (≤4000)<br>
+      Sand: fs = 1.0·N60 kPa (≤60) · fb = min(15·N60·(L/D), 150·N60) kPa (≤4000), L = depth to tip<br>
+      Qult at a given tip depth = cumulative shaft resistance above it + end bearing at that depth. Qallow = Qult / FS.<br>
+      This tool implements a simplified SPT-based method for preliminary estimates only — verify against your project's geotechnical report and local code before design use.
+    </footer>
+  </section>
+</div>
+
+<script>
+(function () {
+  const body = document.getElementById('layerBody');
+  const outputBody = document.getElementById('outputBody');
+  const resultSection = document.getElementById('resultSection');
+  const resultBanner = document.getElementById('resultBanner');
+  const summaryGrid = document.getElementById('summaryGrid');
+  let rowCounter = 0;
+
+  const defaultLayers = [
+    { depth: 1.5, soil: 'Clay', n60: 6 },
+    { depth: 3,   soil: 'Clay', n60: 8 },
+    { depth: 4.5, soil: 'Clay', n60: 10 },
+    { depth: 6,   soil: 'Clay', n60: 12 },
+    { depth: 9,   soil: 'Sand', n60: 18 },
+    { depth: 12,  soil: 'Sand', n60: 22 },
+    { depth: 15,  soil: 'Sand', n60: 26 },
+    { depth: 18,  soil: 'Sand', n60: 30 }
+  ];
+
+  function addRow(data) {
+    rowCounter += 1;
+    const tr = document.createElement('tr');
+    tr.dataset.id = rowCounter;
+    tr.innerHTML = `
+      <td class="row-index">${rowCounter}</td>
+      <td><input type="number" class="depth-in" step="0.5" min="0" value="${data && data.depth !== undefined ? data.depth : ''}"></td>
+      <td>
+        <select class="soil-in">
+          <option value="Clay" ${data && data.soil === 'Clay' ? 'selected' : ''}>Clay</option>
+          <option value="Sand" ${data && data.soil === 'Sand' ? 'selected' : ''}>Sand</option>
+        </select>
+      </td>
+      <td><input type="number" class="n60-in" step="1" min="0" value="${data && data.n60 !== undefined ? data.n60 : ''}"></td>
+      <td><button class="remove-btn" type="button" title="Remove layer">✕</button></td>
+    `;
+    tr.querySelector('.remove-btn').addEventListener('click', function () {
+      tr.remove();
+      renumber();
+    });
+    body.appendChild(tr);
+  }
+
+  function renumber() {
+    Array.from(body.children).forEach((tr, i) => {
+      tr.querySelector('.row-index').textContent = i + 1;
+    });
+  }
+
+  function fmt(n, d) {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    return n.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+
+  function calculate() {
+    const D = parseFloat(document.getElementById('diameter').value);
+    const FS = parseFloat(document.getElementById('fs').value);
+    const target = parseFloat(document.getElementById('targetLoad').value);
+
+    if (!D || D <= 0 || !FS || FS <= 0) {
+      alert('Please enter a valid pile diameter and Factor of Safety.');
+      return;
+    }
+
+    const rows = Array.from(body.children).map(tr => ({
+      depth: parseFloat(tr.querySelector('.depth-in').value),
+      soil: tr.querySelector('.soil-in').value,
+      n60: parseFloat(tr.querySelector('.n60-in').value)
+    })).filter(r => !isNaN(r.depth) && !isNaN(r.n60));
+
+    // sort by bottom depth ascending, just in case
+    rows.sort((a, b) => a.depth - b.depth);
+
+    outputBody.innerHTML = '';
+    let prevDepth = 0;
+    let cumQs = 0;
+    let results = [];
+    let firstMeetingTarget = null;
+
+    rows.forEach((r, i) => {
+      const top = prevDepth;
+      const bottom = r.depth;
+      const thickness = Math.max(0, bottom - top);
+      const shaftArea = Math.PI * D * thickness;
+
+      let fs, fb;
+      if (r.soil === 'Clay') {
+        fs = Math.min(1.2 * r.n60, 70);
+        fb = Math.min(25 * r.n60, 4000);
+      } else {
+        fs = Math.min(1.0 * r.n60, 60);
+        fb = Math.min(15 * r.n60 * (bottom / D), 150 * r.n60, 4000);
+      }
+
+      const qsLayer = fs * shaftArea;
+      cumQs += qsLayer;
+      const qb = fb * Math.PI * D * D / 4;
+      const qult = cumQs + qb;
+      const qallow = qult / FS;
+
+      results.push({ layer: i + 1, top, bottom, soil: r.soil, n60: r.n60, fs, cumQs, fb, qb, qult, qallow });
+
+      if (firstMeetingTarget === null && !isNaN(target) && qallow >= target) {
+        firstMeetingTarget = { bottom, qallow };
+      }
+
+      prevDepth = bottom;
+    });
+
+    results.forEach(res => {
+      const tr = document.createElement('tr');
+      if (firstMeetingTarget && res.bottom === firstMeetingTarget.bottom) {
+        tr.classList.add('row-target');
+      }
+      tr.innerHTML = `
+        <td>${res.layer}</td>
+        <td>${fmt(res.top, 2)}</td>
+        <td>${fmt(res.bottom, 2)}</td>
+        <td>${res.soil}</td>
+        <td>${fmt(res.n60, 0)}</td>
+        <td class="row-out">${fmt(res.fs, 1)}</td>
+        <td class="row-out">${fmt(res.cumQs, 1)}</td>
+        <td class="row-out">${fmt(res.fb, 1)}</td>
+        <td class="row-out">${fmt(res.qb, 1)}</td>
+        <td class="row-out">${fmt(res.qult, 1)}</td>
+        <td class="row-out"><strong>${fmt(res.qallow, 1)}</strong></td>
+      `;
+      outputBody.appendChild(tr);
+    });
+
+    resultSection.style.display = 'block';
+    const last = results[results.length - 1];
+
+    if (!isNaN(target) && target > 0) {
+      if (firstMeetingTarget) {
+        resultBanner.className = 'result-banner success';
+        resultBanner.innerHTML = `
+          <span>Minimum pile length to reach ${fmt(target, 0)} kN allowable capacity:</span>
+          <span class="big">${fmt(firstMeetingTarget.bottom, 2)} m</span>
+          <span>Allowable capacity at that depth: ${fmt(firstMeetingTarget.qallow, 1)} kN (FS = ${fmt(FS, 1)})</span>
+        `;
+      } else {
+        resultBanner.className = 'result-banner warn';
+        resultBanner.innerHTML = `
+          <span>⚠ Target of ${fmt(target, 0)} kN is not reached within the entered layers.</span>
+          <span class="big">Add deeper / stronger layers</span>
+          <span>Max allowable capacity reached so far: ${last ? fmt(last.qallow, 1) : '—'} kN at ${last ? fmt(last.bottom, 2) : '—'} m</span>
+        `;
+      }
+    } else {
+      resultBanner.className = 'result-banner success';
+      resultBanner.innerHTML = `
+        <span>Capacity at deepest entered layer:</span>
+        <span class="big">${last ? fmt(last.bottom, 2) : '—'} m</span>
+        <span>Allowable capacity: ${last ? fmt(last.qallow, 1) : '—'} kN (FS = ${fmt(FS, 1)})</span>
+      `;
+    }
+
+    summaryGrid.innerHTML = last ? `
+      <div class="summary-item"><div class="label">Shaft resistance, Qs</div><div class="value">${fmt(last.cumQs, 1)} kN</div></div>
+      <div class="summary-item"><div class="label">End bearing, Qb</div><div class="value">${fmt(last.qb, 1)} kN</div></div>
+      <div class="summary-item"><div class="label">Ultimate capacity, Qult</div><div class="value">${fmt(last.qult, 1)} kN</div></div>
+      <div class="summary-item"><div class="label">Allowable capacity</div><div class="value">${fmt(last.qallow, 1)} kN</div></div>
+    ` : '';
+  }
+
+  document.getElementById('addRow').addEventListener('click', () => addRow());
+  document.getElementById('calcBtn').addEventListener('click', calculate);
+
+  defaultLayers.forEach(addRow);
+  calculate();
+
+  // theme toggle (per-viewer convenience only, not shared)
+  const root = document.documentElement;
+  const themeToggle = document.getElementById('themeToggle');
+  function applyStoredTheme() {
+    try {
+      const t = localStorage.getItem('pileCalcTheme');
+      if (t === 'dark' || t === 'light') root.setAttribute('data-theme', t);
+    } catch (e) { /* storage unavailable, ignore */ }
+  }
+  applyStoredTheme();
+  themeToggle.addEventListener('click', () => {
+    const current = root.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : (current === 'light' ? null : 'dark');
+    if (next) root.setAttribute('data-theme', next); else root.removeAttribute('data-theme');
+    try { localStorage.setItem('pileCalcTheme', next || ''); } catch (e) { /* ignore */ }
+  });
+})();
+</script>
+
+</body>
+</html>

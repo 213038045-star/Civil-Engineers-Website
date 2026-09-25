@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Background Remover + Replacer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 6px;
+      background: linear-gradient(90deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      color: #94a3b8;
+      margin-bottom: 28px;
+      font-size: 0.95rem;
+    }
+    .upload-box {
+      border: 2px dashed #334155;
+      border-radius: 16px;
+      padding: 36px 20px;
+      text-align: center;
+      background: #1e293b;
+      cursor: pointer;
+      transition: 0.2s;
+      margin-bottom: 20px;
+    }
+    .upload-box:hover, .upload-box.dragover {
+      border-color: #60a5fa;
+      background: #1e3a5f;
+    }
+    .upload-box input { display: none; }
+    .btn {
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 6px;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn:disabled {
+      background: #475569;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    .btn-secondary { background: #334155; }
+    #status {
+      margin: 12px 0 16px;
+      font-weight: 500;
+      color: #60a5fa;
+      min-height: 24px;
+    }
+    .preview {
+      display: none;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .preview.active { display: flex; }
+    .preview-card {
+      flex: 1;
+      min-width: 280px;
+      background: #1e293b;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #334155;
+    }
+    .preview-card h3 {
+      padding: 12px 16px;
+      background: #0f172a;
+      font-size: 0.95rem;
+      color: #94a3b8;
+    }
+    .preview-card img {
+      width: 100%;
+      display: block;
+      max-height: 420px;
+      object-fit: contain;
+      background: 
+        linear-gradient(45deg, #334155 25%, transparent 25%),
+        linear-gradient(-45deg, #334155 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #334155 75%),
+        linear-gradient(-45deg, transparent 75%, #334155 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    }
+    .options {
+      display: none;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 16px;
+    }
+    .options.active { display: block; }
+    .options label {
+      display: block;
+      margin-bottom: 6px;
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+    .options select, .options input[type="color"] {
+      background: #0f172a;
+      color: #e2e8f0;
+      border: 1px solid #475569;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+      width: 100%;
+      max-width: 280px;
+    }
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 10px;
+      margin: 12px 0 16px;
+    }
+    .preset {
+      height: 60px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      background-size: cover;
+      background-position: center;
+    }
+    .preset:hover, .preset.active {
+      border-color: #60a5fa;
+    }
+    .info {
+      margin-top: 24px;
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Background Remover + Replacer</h1>
+    <p class="subtitle">High quality background removal + change background (color / scenery)</p>
+
+    <div class="upload-box" id="dropZone">
+      <p style="font-size: 1.15rem; margin-bottom: 8px;">📁 Drop an image here</p>
+      <p style="color:#64748b; font-size:0.9rem; margin-bottom:16px;">or click to select</p>
+      <input type="file" id="fileInput" accept="image/*">
+      <button class="btn" id="chooseBtn">Choose Image</button>
+    </div>
+
+    <div style="text-align:center; margin-bottom: 12px;">
+      <button class="btn" id="removeBtn" disabled>Remove Background</button>
+      <button class="btn btn-secondary" id="downloadBtn" style="display:none;">Download PNG</button>
+    </div>
+
+    <div id="status"></div>
+
+    <!-- Background Options (shown after removal) -->
+    <div class="options" id="optionsBox">
+      <label>Choose New Background</label>
+      <select id="bgType">
+        <option value="transparent">Transparent</option>
+        <option value="color">Solid Color</option>
+        <option value="preset">Scenic Preset</option>
+        <option value="upload">Upload Custom Background</option>
+      </select>
+
+      <div id="colorBox" style="display:none; margin-top:10px;">
+        <label>Background Color</label>
+        <input type="color" id="bgColor" value="#ffffff">
+      </div>
+
+      <div id="presetBox" style="display:none; margin-top:10px;">
+        <label>Scenic Presets</label>
+        <div class="preset-grid">
+          <div class="preset" data-preset="sky" style="background: linear-gradient(#87CEEB, #E0F7FA);" title="Sky"></div>
+          <div class="preset" data-preset="hill" style="background: linear-gradient(#90EE90, #228B22);" title="Hill / Grass"></div>
+          <div class="preset" data-preset="water" style="background: linear-gradient(#00BFFF, #1E90FF);" title="Water"></div>
+          <div class="preset" data-preset="sunset" style="background: linear-gradient(#FF7F50, #FF4500, #4B0082);" title="Sunset"></div>
+          <div class="preset" data-preset="beach" style="background: linear-gradient(#F4A460, #87CEEB);" title="Beach"></div>
+          <div class="preset" data-preset="mountain" style="background: linear-gradient(#A9A9A9, #708090, #87CEEB);" title="Mountain"></div>
+        </div>
+      </div>
+
+      <div id="uploadBgBox" style="display:none; margin-top:10px;">
+        <label>Upload Background Image</label>
+        <input type="file" id="bgFileInput" accept="image/*">
+      </div>
+
+      <button class="btn" id="applyBgBtn" style="margin-top:12px;">Apply Background</button>
+    </div>
+
+    <div class="preview" id="preview">
+      <div class="preview-card">
+        <h3>Original</h3>
+        <img id="originalImg" alt="Original">
+      </div>
+      <div class="preview-card">
+        <h3>Result</h3>
+        <img id="resultImg" alt="Result">
+      </div>
+    </div>
+
+    <div class="info">
+      <strong>Tips for best quality:</strong><br>
+      • Output is always lossless PNG<br>
+      • First run downloads the AI model (~40-80 MB) then caches it<br>
+      • After removing background you can change it to any color or scenery
+    </div>
+  </div>
+
+  <script type="module">
+    import { removeBackground } from "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/+esm";
+
+    let originalFile = null;
+    let originalURL = null;
+    let subjectURL = null;      // transparent subject
+    let finalURL = null;        // final composited image
+    let customBgURL = null;
+    let selectedPreset = 'sky';
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const chooseBtn = document.getElementById('chooseBtn');
+    const statusEl = document.getElementById('status');
+    const preview = document.getElementById('preview');
+    const originalImg = document.getElementById('originalImg');
+    const resultImg = document.getElementById('resultImg');
+    const removeBtn = document.getElementById('removeBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const optionsBox = document.getElementById('optionsBox');
+    const bgType = document.getElementById('bgType');
+    const colorBox = document.getElementById('colorBox');
+    const presetBox = document.getElementById('presetBox');
+    const uploadBgBox = document.getElementById('uploadBgBox');
+    const bgColor = document.getElementById('bgColor');
+    const bgFileInput = document.getElementById('bgFileInput');
+    const applyBgBtn = document.getElementById('applyBgBtn');
+
+    // ========== Upload ==========
+    chooseBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      fileInput.click();
+    });
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => {
+      if (e.target.files?.[0]) handleFile(e.target.files[0]);
+    });
+
+    dropZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files?.[0]) handleFile(e.dataTransfer.files[0]);
+    });
+
+    function handleFile(file) {
+      if (!file.type.startsWith('image/')) {
+        statusEl.textContent = 'Please select an image file.';
+        return;
+      }
+      originalFile = file;
+      if (originalURL) URL.revokeObjectURL(originalURL);
+      if (subjectURL) URL.revokeObjectURL(subjectURL);
+      if (finalURL) URL.revokeObjectURL(finalURL);
+
+      originalURL = URL.createObjectURL(file);
+      originalImg.src = originalURL;
+      resultImg.src = '';
+      subjectURL = null;
+      finalURL = null;
+
+      removeBtn.disabled = false;
+      downloadBtn.style.display = 'none';
+      optionsBox.classList.remove('active');
+      preview.classList.add('active');
+      statusEl.textContent = 'Image loaded. Click “Remove Background”.';
+    }
+
+    // ========== Remove Background (high quality) ==========
+    removeBtn.addEventListener('click', async () => {
+      if (!originalFile) return;
+      removeBtn.disabled = true;
+      statusEl.textContent = 'Removing background (high quality)… first time may take 20-60s';
+
+      try {
+        const blob = await removeBackground(originalFile, {
+          // Use best quality settings
+          model: 'medium',          // better quality
+          output: {
+            format: 'image/png',    // lossless
+            quality: 1
+          },
+          progress: (key, current, total) => {
+            if (total > 0) {
+              statusEl.textContent = `Processing ${key}: ${Math.round(current/total*100)}%`;
+            } else {
+              statusEl.textContent = `Loading ${key}…`;
+            }
+          }
+        });
+
+        if (subjectURL) URL.revokeObjectURL(subjectURL);
+        subjectURL = URL.createObjectURL(blob);
+        resultImg.src = subjectURL;
+        finalURL = subjectURL;
+
+        statusEl.textContent = 'Background removed! Now you can change the background.';
+        optionsBox.classList.add('active');
+        downloadBtn.style.display = 'inline-block';
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Error: ' + (err.message || err);
+      } finally {
+        removeBtn.disabled = false;
+      }
+    });
+
+    // ========== Background options UI ==========
+    bgType.addEventListener('change', () => {
+      colorBox.style.display = bgType.value === 'color' ? 'block' : 'none';
+      presetBox.style.display = bgType.value === 'preset' ? 'block' : 'none';
+      uploadBgBox.style.display = bgType.value === 'upload' ? 'block' : 'none';
+    });
+
+    document.querySelectorAll('.preset').forEach(el => {
+      el.addEventListener('click', () => {
+        document.querySelectorAll('.preset').forEach(p => p.classList.remove('active'));
+        el.classList.add('active');
+        selectedPreset = el.dataset.preset;
+      });
+    });
+
+    bgFileInput.addEventListener('change', e => {
+      if (e.target.files?.[0]) {
+        if (customBgURL) URL.revokeObjectURL(customBgURL);
+        customBgURL = URL.createObjectURL(e.target.files[0]);
+      }
+    });
+
+    // ========== Apply new background ==========
+    applyBgBtn.addEventListener('click', async () => {
+      if (!subjectURL) return;
+      statusEl.textContent = 'Applying new background…';
+
+      try {
+        const subject = await loadImage(subjectURL);
+        const canvas = document.createElement('canvas');
+        canvas.width = subject.naturalWidth;
+        canvas.height = subject.naturalHeight;
+        const ctx = canvas.getContext('2d');
+
+        // Draw background first
+        const type = bgType.value;
+
+        if (type === 'transparent') {
+          // do nothing – leave transparent
+        }
+        else if (type === 'color') {
+          ctx.fillStyle = bgColor.value;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        else if (type === 'preset') {
+          drawPresetBackground(ctx, canvas.width, canvas.height, selectedPreset);
+        }
+        else if (type === 'upload' && customBgURL) {
+          const bgImg = await loadImage(customBgURL);
+          // cover the canvas
+          const scale = Math.max(canvas.width / bgImg.width, canvas.height / bgImg.height);
+          const w = bgImg.width * scale;
+          const h = bgImg.height * scale;
+          const x = (canvas.width - w) / 2;
+          const y = (canvas.height - h) / 2;
+          ctx.drawImage(bgImg, x, y, w, h);
+        }
+
+        // Draw the subject on top (keeps original quality)
+        ctx.drawImage(subject, 0, 0);
+
+        // Export as high quality PNG
+        if (finalURL && finalURL !== subjectURL) URL.revokeObjectURL(finalURL);
+        finalURL = canvas.toDataURL('image/png');
+        resultImg.src = finalURL;
+
+        statusEl.textContent = 'Background applied successfully!';
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Error applying background: ' + err.message;
+      }
+    });
+
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+      });
+    }
+
+    function drawPresetBackground(ctx, w, h, name) {
+      const grd = ctx.createLinearGradient(0, 0, 0, h);
+      if (name === 'sky') {
+        grd.addColorStop(0, '#87CEEB');
+        grd.addColorStop(1, '#E0F7FA');
+      } else if (name === 'hill') {
+        grd.addColorStop(0, '#90EE90');
+        grd.addColorStop(0.6, '#32CD32');
+        grd.addColorStop(1, '#228B22');
+      } else if (name === 'water') {
+        grd.addColorStop(0, '#00BFFF');
+        grd.addColorStop(1, '#1E90FF');
+      } else if (name === 'sunset') {
+        grd.addColorStop(0, '#FF7F50');
+        grd.addColorStop(0.5, '#FF4500');
+        grd.addColorStop(1, '#4B0082');
+      } else if (name === 'beach') {
+        grd.addColorStop(0, '#87CEEB');
+        grd.addColorStop(0.55, '#F4A460');
+        grd.addColorStop(1, '#DEB887');
+      } else if (name === 'mountain') {
+        grd.addColorStop(0, '#87CEEB');
+        grd.addColorStop(0.4, '#A9A9A9');
+        grd.addColorStop(1, '#708090');
+      }
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    // ========== Download ==========
+    downloadBtn.addEventListener('click', () => {
+      if (!finalURL) return;
+      const a = document.createElement('a');
+      a.href = finalURL;
+      a.download = 'background-changed.png';
+      a.click();
+    });
+  </script>
+</body>
+</html>

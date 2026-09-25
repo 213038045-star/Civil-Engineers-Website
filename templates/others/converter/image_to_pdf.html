@@ -101,7 +101,6 @@
 
   .section-divider { border: none; border-top: 1px solid var(--panel-border); margin: 30px 0; }
 
-  /* image thumbnail list */
   .thumb-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
   .thumb-row {
     display: flex; align-items: center; gap: 14px;
@@ -153,7 +152,7 @@
 <div class="wrap">
   <div class="panel">
     <h1>IMAGE <span class="accent">⇄</span> PDF</h1>
-    <p class="tagline">CLIENT-SIDE CONVERTER &middot; NO UPLOAD REQUIRED</p>
+    <p class="tagline">CLIENT-SIDE CONVERTER · NO UPLOAD REQUIRED</p>
 
     <div class="tabs">
       <div class="tab active" id="tab-i2p" onclick="switchTab('i2p')">Image → PDF</div>
@@ -176,11 +175,21 @@
       <div class="field">
         <label for="pageSizeSelect">Page size</label>
         <select id="pageSizeSelect">
-          <option value="fit" selected>Match each image's own size</option>
+          <option value="fit" selected>Match image size (sharp)</option>
           <option value="a4">A4 — fit image inside, centered</option>
           <option value="letter">Letter — fit image inside, centered</option>
         </select>
-        <div class="hint" id="pageSizeHint">Each PDF page will exactly match its image's pixel dimensions — no borders.</div>
+        <div class="hint" id="pageSizeHint">Page size is calculated from the image pixels using the DPI below → text stays sharp.</div>
+      </div>
+
+      <!-- NEW: DPI control (this is the key to sharpness) -->
+      <div class="field" id="dpiField">
+        <label for="dpiInput">Target DPI (for “Match image size”)</label>
+        <input type="number" id="dpiInput" value="150" min="72" max="600" step="1">
+        <div class="hint">
+          Higher = sharper but larger file.<br>
+          150 DPI = good balance · 200–300 DPI = very sharp · 72 DPI = soft (old behaviour)
+        </div>
       </div>
 
       <div class="field" id="marginField" style="display:none;">
@@ -258,12 +267,15 @@ const pageSizeSelect = document.getElementById('pageSizeSelect');
 const pageSizeHint = document.getElementById('pageSizeHint');
 const marginField = document.getElementById('marginField');
 const marginInput = document.getElementById('marginInput');
+const dpiField = document.getElementById('dpiField');
+const dpiInput = document.getElementById('dpiInput');
 
 pageSizeSelect.addEventListener('change', () => {
   const fit = pageSizeSelect.value === 'fit';
   marginField.style.display = fit ? 'none' : 'block';
+  dpiField.style.display = fit ? 'block' : 'none';
   pageSizeHint.textContent = fit
-    ? "Each PDF page will exactly match its image's pixel dimensions — no borders."
+    ? 'Page size is calculated from the image pixels using the DPI below → text stays sharp.'
     : 'The image is scaled to fit inside the page (keeping its proportions) and centered.';
 });
 
@@ -308,9 +320,7 @@ function removeImage(i) {
 }
 function escapeHtml(s) { return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 
-// Decode any image file to raw pixel bytes via canvas, returning
-// { bytes, width, height, isPng } — used as a universal fallback so
-// formats pdf-lib can't embed directly (webp, gif, bmp) still work.
+// Decode any image → lossless PNG via canvas (high quality)
 function decodeViaCanvas(url) {
   return new Promise((resolve, reject) => {
     const im = new Image();
@@ -319,21 +329,15 @@ function decodeViaCanvas(url) {
       canvas.width = im.naturalWidth;
       canvas.height = im.naturalHeight;
       const ctx = canvas.getContext('2d');
+      // high quality scaling
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(im, 0, 0);
       canvas.toBlob(async (blob) => {
         const bytes = new Uint8Array(await blob.arrayBuffer());
         resolve({ bytes, width: canvas.width, height: canvas.height });
-      }, 'image/png');
+      }, 'image/png'); // always lossless
     };
-    im.onerror = reject;
-    im.src = url;
-  });
-}
-
-function getNaturalSize(url) {
-  return new Promise((resolve, reject) => {
-    const im = new Image();
-    im.onload = () => resolve({ width: im.naturalWidth, height: im.naturalHeight });
     im.onerror = reject;
     im.src = url;
   });
@@ -351,6 +355,8 @@ async function convertImagesToPdf() {
     const doc = await PDFDocument.create();
     const mode = pageSizeSelect.value;
     const margin = parseFloat(marginInput.value) || 0;
+    const dpi = Math.max(72, parseFloat(dpiInput.value) || 150); // default 150
+
     let targetSize = null;
     if (mode === 'a4') targetSize = PageSizes.A4;
     if (mode === 'letter') targetSize = PageSizes.Letter;
@@ -358,6 +364,7 @@ async function convertImagesToPdf() {
     for (const img of images) {
       const bytes = new Uint8Array(await img.file.arrayBuffer());
       let embedded;
+
       try {
         if (img.file.type === 'image/png') {
           embedded = await doc.embedPng(bytes);
@@ -368,24 +375,37 @@ async function convertImagesToPdf() {
           embedded = await doc.embedPng(decoded.bytes);
         }
       } catch (e) {
-        // fallback: force through canvas if direct embed failed (e.g. malformed jpeg)
         const decoded = await decodeViaCanvas(img.url);
         embedded = await doc.embedPng(decoded.bytes);
       }
 
-      const iw = embedded.width, ih = embedded.height;
+      const iw = embedded.width;   // pixels
+      const ih = embedded.height;  // pixels
 
       if (mode === 'fit') {
-        const page = doc.addPage([iw, ih]);
-        page.drawImage(embedded, { x: 0, y: 0, width: iw, height: ih });
+        // ===== KEY FIX FOR SHARPNESS =====
+        // Convert pixels → points using the chosen DPI
+        // 1 inch = 72 points, so page size in points = pixels * 72 / DPI
+        const pageW = (iw * 72) / dpi;
+        const pageH = (ih * 72) / dpi;
+
+        const page = doc.addPage([pageW, pageH]);
+        page.drawImage(embedded, {
+          x: 0,
+          y: 0,
+          width: pageW,
+          height: pageH
+        });
       } else {
         const [pw, ph] = targetSize;
         const page = doc.addPage([pw, ph]);
         const availW = pw - margin * 2;
         const availH = ph - margin * 2;
         const scale = Math.min(availW / iw, availH / ih);
-        const w = iw * scale, h = ih * scale;
-        const x = (pw - w) / 2, y = (ph - h) / 2;
+        const w = iw * scale;
+        const h = ih * scale;
+        const x = (pw - w) / 2;
+        const y = (ph - h) / 2;
         page.drawImage(embedded, { x, y, width: w, height: h });
       }
     }
@@ -401,7 +421,7 @@ async function convertImagesToPdf() {
     a.remove();
     URL.revokeObjectURL(url);
 
-    i2pStatus.textContent = `Done — downloaded a ${images.length}-page PDF.`;
+    i2pStatus.textContent = `Done — downloaded a ${images.length}-page PDF (${dpi} DPI).`;
     i2pStatus.className = 'success';
   } catch (err) {
     i2pStatus.textContent = 'Error: ' + err.message;
@@ -497,7 +517,7 @@ async function convertPdfToImages() {
       : parsePageRanges(rangeText, pdfTotalPages);
 
     const scale = parseFloat(qualitySelect.value);
-    const format = formatSelect.value; // 'png' | 'jpeg'
+    const format = formatSelect.value;
     const mime = format === 'png' ? 'image/png' : 'image/jpeg';
     const ext = format === 'png' ? 'png' : 'jpg';
 
