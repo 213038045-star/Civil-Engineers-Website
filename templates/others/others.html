@@ -8,197 +8,265 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* ============ Design tokens — dark console theme ============ */
         :root{
-            --red-600:#e0472f;
-            --red-700:#c33a24;
-            --amber-500:#b97a24;
-            --amber-050:#f7ede0;
-            --ink-900:#1c1f26;
-            --ink-700:#454b55;
-            --grey-500:#71767e;
-            --grey-200:#e4e1da;
-            --paper:#ffffff;
-            --wash:#f6f4ef;
+            --bg-950:#080c16;
+            --bg-900:#0c1220;
+            --panel-800:#101a2c;
+            --panel-700:#16223a;
+            --grid-line:rgba(255,255,255,.05);
+            --border:#1f2c47;
+            --border-soft:#233252;
+
+            --text-100:#eef2f8;
+            --text-300:#aebbd0;
+            --text-500:#7c8aa3;
+
+            --orange-500:#f0632f;
+            --orange-050:rgba(240,99,47,.12);
+
+            --blue-500:#2f6fed;
+            --blue-600:#265cc4;
+            --blue-050:rgba(47,111,237,.14);
+
+            --teal-400:#39d6ae;
+            --teal-050:rgba(57,214,174,.12);
+
+            --shadow-md:0 12px 30px rgba(0,0,0,.35);
+            --shadow-lg:0 24px 55px rgba(0,0,0,.45);
+            --radius:12px;
         }
 
         html{scroll-behavior:smooth;}
-        body{
-            background:var(--paper);
-            color:var(--ink-900);
+        html body{
+            background:
+                linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0/34px 34px,
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0/34px 34px,
+                var(--bg-950) !important;
+            color:var(--text-300) !important;
             font-family:'Inter',system-ui,sans-serif;
             font-weight:400;
+            -webkit-font-smoothing:antialiased;
         }
-        a{color:var(--red-600); text-decoration:none;}
-        a:hover{color:var(--red-700);}
-        :focus-visible{outline:2px solid var(--red-600); outline-offset:3px;}
-
+        a{color:var(--blue-500); text-decoration:none;}
+        a:hover{color:#5b8ff5;}
+        :focus-visible{outline:2px solid var(--blue-500); outline-offset:3px;}
         .display{font-family:'Space Grotesk',sans-serif;}
 
         /* ---------- Navbar ---------- */
         .navbar{
-            background:var(--paper) !important;
-            border-bottom:1px solid var(--grey-200);
+            background:rgba(8,12,22,.85) !important;
+            background-image:none !important;
+            backdrop-filter:saturate(160%) blur(10px);
+            border-bottom:1px solid var(--border) !important;
             padding-top:1rem; padding-bottom:1rem;
+            position:sticky; top:0; z-index:1030;
         }
         .navbar-brand{
             font-family:'Space Grotesk',sans-serif;
             font-weight:700;
-            font-size:1.3rem;
-            color:var(--ink-900) !important;
+            font-size:1.25rem;
+            color:var(--text-100) !important;
             display:flex; align-items:center; gap:.4rem;
-            letter-spacing:.01em;
+            letter-spacing:.02em;
         }
-        .navbar-brand .heart{ color:var(--red-600); }
+        .navbar-brand .heart{ color:var(--orange-500); }
         .navbar-nav .nav-link,
         .navbar-nav .nav-item .nav-link.dropdown-toggle{
-            background:var(--paper) !important;
+            background:transparent !important;
+            background-image:none !important;
             font-family:'Inter',sans-serif;
             font-weight:500;
             font-size:.92rem;
-            color:var(--ink-700) !important;
+            color:var(--text-300) !important;
             padding:.5rem 1rem !important;
-            border-radius:6px;
+            border-radius:8px;
+            border:none !important;
             transition:background .15s ease, color .15s ease;
         }
         .navbar-nav .nav-link:hover{
-            background:var(--wash) !important;
-            color:var(--ink-900) !important;
+            background:var(--panel-700) !important;
+            color:var(--text-100) !important;
         }
         .navbar-nav .nav-link.active{
-            color:var(--red-600) !important;
+            color:#fff !important;
             font-weight:600;
+            background:var(--blue-500) !important;
+            background-image:none !important;
         }
 
         /* ---------- Converter dropdown ---------- */
         .dropdown-menu{
-            background:var(--paper);
-            border:1px solid var(--grey-200);
-            border-radius:10px;
-            box-shadow:0 16px 34px rgba(28,31,38,.12);
-            padding:.5rem;
-            margin-top:.5rem;
+            background:var(--panel-800) !important;
+            background-image:none !important;
+            border:1px solid var(--border) !important;
+            border-radius:12px;
+            box-shadow:var(--shadow-lg);
+            padding:.55rem;
+            margin-top:.6rem;
             min-width:15.5rem;
         }
         .dropdown-menu .dropdown-header{
             font-family:'Inter',sans-serif;
             font-weight:600;
-            font-size:.72rem;
-            color:var(--grey-500);
+            font-size:.7rem;
+            letter-spacing:.06em;
+            text-transform:uppercase;
+            color:var(--text-500);
             padding:.5rem .8rem .3rem;
         }
         .dropdown-menu .dropdown-item{
             font-family:'Inter',sans-serif;
             font-weight:500;
             font-size:.9rem;
-            color:var(--ink-700);
-            border-radius:7px;
-            padding:.5rem .8rem;
+            background:transparent !important;
+            color:var(--text-300) !important;
+            border-radius:8px;
+            padding:.55rem .8rem;
+            transition:background .12s ease, color .12s ease;
         }
         .dropdown-menu .dropdown-item:hover,
         .dropdown-menu .dropdown-item:focus{
-            background:var(--wash);
-            color:var(--red-600);
+            background:var(--blue-050) !important;
+            color:#8fb4ff !important;
         }
         .dropdown-menu .dropdown-divider{
-            border-color:var(--grey-200);
-            margin:.35rem .4rem;
+            border-color:var(--border) !important;
+            margin:.4rem .4rem;
         }
-        .dropdown-toggle::after{
-            vertical-align:.15em;
-        }
+        .dropdown-toggle::after{ vertical-align:.15em; }
 
         /* ---------- Hero ---------- */
         .hero-section{
-            background:var(--wash);
-            padding:3.75rem 0 3.25rem;
-            border-bottom:1px solid var(--grey-200);
+            position:relative;
+            overflow:hidden;
+            padding:4.5rem 0 4rem;
             text-align:center;
+            background:var(--bg-950) !important;
+            background-image:none !important;
+            border-bottom:1px solid var(--border) !important;
         }
+        .hero-section::before{
+            content:"";
+            position:absolute; inset:0;
+            background:
+                radial-gradient(55% 90% at 15% -10%, rgba(47,111,237,.18), transparent 60%),
+                radial-gradient(45% 80% at 100% 0%, rgba(240,99,47,.14), transparent 60%) !important;
+            pointer-events:none;
+        }
+        .hero-section .container{ position:relative; }
         .hero-section .kicker{
+            display:inline-flex; align-items:center; gap:.5rem;
             font-family:'Inter',sans-serif;
-            font-weight:500;
-            font-size:.85rem;
-            color:var(--red-600);
-            margin-bottom:.6rem;
+            font-weight:600;
+            font-size:.78rem;
+            letter-spacing:.06em;
+            text-transform:uppercase;
+            color:var(--teal-400);
+            background:var(--teal-050);
+            border:1px solid rgba(57,214,174,.3);
+            padding:.4rem .9rem;
+            border-radius:999px;
+            margin-bottom:1.1rem;
         }
         .hero-section h1{
             font-family:'Space Grotesk',sans-serif;
             font-weight:700;
-            font-size:clamp(2.1rem, 4.5vw, 2.85rem);
+            font-size:clamp(2.2rem, 4.5vw, 2.95rem);
             line-height:1.15;
-            color:var(--ink-900);
-            margin:0 0 .9rem;
+            color:var(--text-100);
+            margin:0 0 1rem;
         }
+        .hero-section h1 .accent{ color:var(--orange-500); }
         .hero-section p.lead{
-            max-width:520px;
+            max-width:540px;
             margin:0 auto;
-            color:var(--grey-500);
-            font-size:1.05rem;
+            color:var(--text-500);
+            font-size:1.06rem;
             line-height:1.65;
         }
 
         /* ---------- Tool directory ---------- */
-        .tools-wrap{ padding:3.5rem 0 4.5rem; }
-        .tools-wrap .container{ max-width:760px; }
+        .tools-wrap{ padding:3.75rem 0 4.75rem; }
+        .tools-wrap .container{ max-width:800px; }
 
         .group-heading{
             display:flex;
             align-items:baseline;
-            gap:.6rem;
+            gap:.65rem;
             margin-bottom:.4rem;
         }
         .group-heading h2{
             font-family:'Space Grotesk',sans-serif;
             font-weight:600;
-            font-size:1.2rem;
-            color:var(--ink-900);
+            font-size:1.15rem;
+            letter-spacing:.02em;
+            text-transform:uppercase;
+            color:var(--teal-400);
             margin:0;
         }
         .group-heading .count{
-            font-size:.85rem;
-            color:var(--grey-500);
+            font-size:.8rem;
+            font-weight:500;
+            color:var(--text-500);
+            background:var(--panel-700);
+            border:1px solid var(--border);
+            padding:.15rem .55rem;
+            border-radius:999px;
         }
         .group-note{
-            color:var(--grey-500);
+            color:var(--text-500);
             font-size:.92rem;
-            margin-bottom:1.4rem;
+            margin-bottom:1.5rem;
         }
         .group{ margin-bottom:3rem; }
         .group:last-child{ margin-bottom:0; }
 
         .tool-list{
-            border-top:1px solid var(--grey-200);
+            display:flex;
+            flex-direction:column;
+            gap:.7rem;
         }
         .tool-row{
             display:flex;
             align-items:center;
             gap:1.1rem;
-            padding:1.15rem 0;
-            border-bottom:1px solid var(--grey-200);
+            padding:1.1rem 1.2rem;
+            background:var(--panel-800) !important;
+            background-image:none !important;
+            border:1px solid var(--border) !important;
+            border-radius:var(--radius);
+            box-shadow:var(--shadow-md);
+            transition:box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+        }
+        .tool-row:hover{
+            border-color:var(--blue-500) !important;
+            transform:translateY(-2px);
+            box-shadow:var(--shadow-lg);
         }
         .tool-row .icon{
-            width:42px; height:42px;
+            width:44px; height:44px;
             flex:0 0 auto;
-            border-radius:10px;
+            border-radius:11px;
             display:flex; align-items:center; justify-content:center;
             transition:background .15s ease, color .15s ease;
         }
-        .group-pdf .tool-row .icon{ background:rgba(224,71,47,.09); color:var(--red-600); }
-        .group-util .tool-row .icon{ background:var(--amber-050); color:var(--amber-500); }
-        .tool-row .icon svg{ width:20px; height:20px; }
+        .group-pdf .tool-row .icon{ background:var(--orange-050); color:var(--orange-500); }
+        .group-util .tool-row .icon{ background:var(--blue-050); color:#6f9dff; }
+        .tool-row .icon svg{ width:21px; height:21px; }
 
         .tool-row .copy{ flex:1 1 auto; min-width:0; }
         .tool-row h3{
             font-family:'Space Grotesk',sans-serif;
             font-weight:600;
             font-size:1rem;
-            color:var(--ink-900);
+            color:var(--text-100);
             margin:0 0 .2rem;
         }
         .tool-row p{
-            color:var(--grey-500);
+            color:var(--text-500);
             font-size:.88rem;
             line-height:1.5;
             margin:0;
@@ -208,39 +276,40 @@
             font-family:'Inter',sans-serif;
             font-weight:600;
             font-size:.85rem;
-            color:var(--ink-700);
-            padding:.5rem .9rem;
-            border:1px solid var(--grey-200);
-            border-radius:7px;
+            color:var(--text-300);
+            padding:.55rem 1rem;
+            border:1px solid var(--border-soft);
+            border-radius:8px;
             transition:border-color .15s ease, color .15s ease, background .15s ease;
         }
-        .tool-row:hover .go{
-            border-color:var(--red-600);
-            color:var(--red-600);
-            background:rgba(224,71,47,.06);
+        .group-pdf .tool-row:hover .go{
+            border-color:var(--orange-500);
+            color:var(--orange-500);
+            background:var(--orange-050);
         }
         .group-util .tool-row:hover .go{
-            border-color:var(--amber-500);
-            color:var(--amber-500);
-            background:var(--amber-050);
+            border-color:var(--blue-500);
+            color:#8fb4ff;
+            background:var(--blue-050);
         }
 
         @media (max-width:576px){
             .tool-row{ flex-wrap:wrap; }
-            .tool-row .go{ margin-left:calc(42px + 1.1rem); }
+            .tool-row .go{ margin-left:calc(44px + 1.1rem); }
         }
 
         /* ---------- Footer ---------- */
         footer{
-            border-top:1px solid var(--grey-200);
-            background:var(--wash);
-            padding:1.5rem 0;
+            border-top:1px solid var(--border) !important;
+            background:var(--bg-900) !important;
+            background-image:none !important;
+            padding:1.6rem 0;
         }
         footer .footer-inner{
             display:flex; flex-wrap:wrap; justify-content:space-between; gap:.75rem;
             font-family:'Inter',sans-serif;
             font-size:.85rem;
-            color:var(--grey-500);
+            color:var(--text-500);
         }
     </style>
 </head>
@@ -286,8 +355,8 @@
 
     <section class="hero-section">
         <div class="container">
-            <p class="kicker">Free tools, no sign-up</p>
-            <h1>Handy tools, all in one place</h1>
+            <span class="kicker">&#9679; Free tools, no sign-up</span>
+            <h1>Handy tools, all in <span class="accent">one</span> place</h1>
             <p class="lead">
                 Merge, split, compress, and convert your PDFs — plus a few other useful utilities. Simple, fast, and free to use.
             </p>
@@ -300,14 +369,14 @@
             <div class="group group-pdf">
                 <div class="group-heading">
                     <h2>PDF tools</h2>
-                    <span class="count">4 tools</span>
+                    <span class="count">5 tools</span>
                 </div>
                 <p class="group-note">Everything you need to reshape and clean up a PDF file.</p>
 
                 <div class="tool-list">
                     <div class="tool-row">
                         <span class="icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h5l5 5v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M13 4v5h5"/><path d="M9 13h1.5a1.5 1.5 0 1 1 0 3H9v3"/><path d="M14 13v6h1.5a1.5 1.5 0 0 0 1.5-1.5v-3a1.5 1.5 0 0 0-1.5-1.5H14Z"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h4l6 6v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M13 3v6h6"/><path d="M9.5 15.5h1.2a1.3 1.3 0 1 0 0-2.6H9.5v5.2"/><path d="M13.5 12.9v5.2h1.4a1.6 1.6 0 0 0 1.6-1.6v-2a1.6 1.6 0 0 0-1.6-1.6h-1.4Z"/></svg>
                         </span>
                         <span class="copy">
                             <h3>Scientific Calculator</h3>
@@ -317,7 +386,7 @@
                     </div>
                     <div class="tool-row">
                         <span class="icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h5l5 5v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M13 4v5h5"/><path d="M9 13h1.5a1.5 1.5 0 1 1 0 3H9v3"/><path d="M14 13v6h1.5a1.5 1.5 0 0 0 1.5-1.5v-3a1.5 1.5 0 0 0-1.5-1.5H14Z"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h4l6 6v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M13 3v6h6"/><path d="M9.5 15h1.4a1.3 1.3 0 1 1 0 2.6H9.5v2.6"/><path d="M14 15v6h1.4a1.3 1.3 0 0 0 1.3-1.3v-3.3a1.3 1.3 0 0 0-1.3-1.3H14Z"/></svg>
                         </span>
                         <span class="copy">
                             <h3>Merge PDF</h3>
@@ -328,7 +397,7 @@
 
                     <div class="tool-row">
                         <span class="icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h5l5 5v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M13 4v5h5"/><path d="M9 15h6"/><path d="M9 18h6"/><path d="M12 12v0"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h4l6 6v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M13 3v6h6"/><path d="M9 15.5h6"/><path d="M9 18.5h6"/></svg>
                         </span>
                         <span class="copy">
                             <h3>Split PDF</h3>
@@ -339,7 +408,7 @@
 
                     <div class="tool-row">
                         <span class="icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h5l5 5v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M13 4v5h5"/><path d="m9 12 2 2-2 2"/><path d="m15 12-2 2 2 2"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h4l6 6v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M13 3v6h6"/><path d="m9.5 14 2 2.4-2 2.4"/><path d="m14.5 14-2 2.4 2 2.4"/></svg>
                         </span>
                         <span class="copy">
                             <h3>Compress PDF</h3>
@@ -350,7 +419,7 @@
 
                     <div class="tool-row">
                         <span class="icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h5l5 5v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M13 4v5h5"/><path d="M9 17.5 11 15l1.2 1.4L15 13"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h4l6 6v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M13 3v6h6"/><path d="M9.5 18 11.5 15l1.5 1.8L16.5 13"/></svg>
                         </span>
                         <span class="copy">
                             <h3>PDF Editor</h3>
@@ -371,7 +440,7 @@
                 <div class="tool-list">
                     <div class="tool-row">
                         <span class="icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/><path d="m9 10 2 2-2 2"/><path d="m15 14-2-2 2-2"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="16" rx="1.6"/><rect x="13" y="4" width="8" height="16" rx="1.6"/><path d="m9 10 2 2-2 2"/><path d="m15 14-2-2 2-2"/></svg>
                         </span>
                         <span class="copy">
                             <h3>PDF to Word</h3>
@@ -382,7 +451,7 @@
 
                     <div class="tool-row">
                         <span class="icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="1.5"/><circle cx="8.5" cy="10" r="1.5"/><path d="m5 17 4.5-5 3 3L18 9"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="1.6"/><circle cx="8.5" cy="10" r="1.5"/><path d="m5 17 4.5-5 3 3L18 9"/></svg>
                         </span>
                         <span class="copy">
                             <h3>All File Converters</h3>

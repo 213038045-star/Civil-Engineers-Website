@@ -7,158 +7,112 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-  :root{
-    --ink:#1b2420;
-    --paper:#f6f4ee;
-    --sheet:#ffffff;
-    --line:#d8d3c4;
-    --moss:#3c5a48;
-    --moss-dark:#2b4235;
-    --clay:#b5623a;
-    --muted:#6b7268;
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0;
-    font-family:'Iowan Old Style','Palatino Linotype',Georgia,serif;
-    background:var(--paper);
-    color:var(--ink);
-    min-height:100vh;
-    display:flex;
-    justify-content:center;
-    padding:48px 20px;
-  }
-  .sheet{ width:100%; max-width:900px; }
-  header{
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    border-bottom:2px solid var(--ink);
-    padding-bottom:14px;
-    margin-bottom:24px;
-  }
-  h1{ font-size:26px; font-weight:600; margin:0; letter-spacing:0.2px; }
-  .tag{ font-family:'Courier New',monospace; font-size:12px; color:var(--muted); }
-  .note{
-    font-size:13px;
-    color:var(--muted);
-    margin-bottom:20px;
-    line-height:1.5;
-    border-left:2px solid var(--line);
-    padding-left:12px;
-  }
-  .dropzone{
-    border:1.5px dashed var(--line);
-    background:var(--sheet);
-    padding:40px 24px;
-    text-align:center;
-    cursor:pointer;
-    transition:border-color .15s ease, background .15s ease;
-  }
-  .dropzone.drag{ border-color:var(--moss); background:#eef1ec; }
-  .dropzone p{ margin:0 0 6px; font-size:16px; }
-  .dropzone .sub{ font-size:13px; color:var(--muted); font-family:'Courier New',monospace; }
-  input[type=file]{ display:none; }
-  .filebar{
-    display:none;
-    align-items:center;
-    justify-content:space-between;
-    margin-top:16px;
-    padding:12px 16px;
-    background:var(--sheet);
-    border:1px solid var(--line);
-    font-size:14px;
-  }
-  .filebar.show{ display:flex; }
-  .filebar .name{ font-weight:600; }
-  .filebar button{
-    border:none; background:none; color:var(--clay);
-    font-family:'Courier New',monospace; font-size:12px;
-    cursor:pointer; text-decoration:underline;
-  }
-  .tabs{ display:flex; gap:2px; margin-top:22px; flex-wrap:wrap; }
-  .tab{
-    padding:8px 14px; background:var(--sheet); border:1px solid var(--line);
-    border-bottom:none; font-size:13px; cursor:pointer; color:var(--muted);
-  }
-  .tab.active{ color:var(--ink); font-weight:600; border-top:2px solid var(--moss); }
-  .preview-wrap{
-    border:1px solid var(--line);
-    background:#e9e6da;
-    max-height:460px;
-    overflow:auto;
-    display:none;
-    padding:16px;
-  }
-  .preview-wrap.show{ display:block; }
-  .preview-inner{ display:inline-block; }
-  .actions{
-    display:none;
-    flex-direction:column;
-    gap:12px;
-    margin-top:22px;
-  }
-  .actions.show{ display:flex; }
-  .opts-section{ display:flex; flex-direction:column; gap:8px; }
-  .opts-label{ font-size:12px; color:var(--muted); }
-  .opts{
-    font-size:13px; color:var(--muted);
-    display:flex; gap:18px; flex-wrap:wrap;
-    align-items:center;
-  }
-  .opts label{ display:flex; align-items:center; gap:6px; cursor:pointer; }
-  .opts select{
-    font-family:inherit;
-    font-size:13px;
-    color:var(--ink);
-    background:var(--sheet);
-    border:1px solid var(--line);
-    padding:4px 6px;
-  }
-  .row-go{ display:flex; justify-content:flex-end; }
-  .go{
-    background:var(--moss); color:#fff; border:none;
-    padding:12px 22px; font-size:14px; font-weight:600;
-    cursor:pointer; font-family:inherit; letter-spacing:0.2px;
-  }
-  .go:hover{ background:var(--moss-dark); }
-  .go:disabled{ background:#a9b3ac; cursor:wait; }
-  .status{
-    margin-top:14px; font-size:13px;
-    font-family:'Courier New',monospace; color:var(--muted); min-height:18px;
-  }
-  .status.err{ color:var(--clay); }
-
-  /* rendered excel table */
-  table.xl{
-    border-collapse:collapse;
-    background:#fff;
-    table-layout:fixed;
-  }
-  table.xl td{
-    border:1px solid var(--gridline-color, #d0d0d0);
-    padding:2px 4px;
-    font-size:12px;
-    font-family:Calibri, Arial, sans-serif;
-    overflow:hidden;
-    vertical-align:middle;
-    white-space:nowrap;
-  }
-  table.xl.no-gridlines{ --gridline-color: transparent; }
+:root{
+  --ink:#172033; --paper:#f3f6fb; --sheet:#ffffff; --line:#dce4ef;
+  --moss:#2563eb; --moss-dark:#1d4ed8; --clay:#dc4c64; --muted:#64748b;
+  --navy:#101a30; --soft-blue:#eff6ff; --shadow:0 18px 50px rgba(20,39,74,.08);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:radial-gradient(ellipse at top left,#e7efff 0,transparent 42%),var(--paper);
+  color:var(--ink); min-height:100vh; display:flex; justify-content:center;
+  padding:42px 22px;
+}
+.sheet{width:100%;max-width:1080px}
+header{
+  display:flex;align-items:center;justify-content:space-between;gap:20px;
+  border:1px solid rgba(220,228,239,.9);border-radius:22px;background:rgba(255,255,255,.88);
+  padding:24px 30px;margin-bottom:22px;box-shadow:var(--shadow);backdrop-filter:blur(12px)
+}
+.brand{display:flex;align-items:center;gap:16px}
+.brand-mark{
+  display:grid;place-items:center;width:52px;height:52px;border-radius:16px;
+  color:#fff;background:linear-gradient(145deg,#3b82f6,#1e40af);
+  box-shadow:0 8px 20px rgba(37,99,235,.25);font-size:25px;font-weight:800
+}
+h1{font-size:clamp(23px,3vw,31px);font-weight:780;margin:0;letter-spacing:-1.1px;line-height:1.15}
+.tag{font-size:12px;color:#52627a;background:#f1f5f9;border:1px solid #e2e8f0;padding:8px 12px;border-radius:999px;white-space:nowrap}
+.note{
+  font-size:14px;color:#52627a;margin:0 0 24px;line-height:1.75;
+  background:#fff;border:1px solid var(--line);border-radius:16px;padding:17px 20px;
+  box-shadow:0 5px 18px rgba(20,39,74,.035)
+}
+.dropzone{
+  position:relative;border:2px dashed #b9c9e2;background:rgba(255,255,255,.82);
+  border-radius:22px;padding:46px 24px;text-align:center;cursor:pointer;
+  transition:all .2s ease;box-shadow:var(--shadow)
+}
+.dropzone:hover,.dropzone.drag{border-color:var(--moss);background:#eff6ff;transform:translateY(-2px)}
+.upload-icon{width:58px;height:58px;margin:0 auto 16px;border-radius:18px;display:grid;place-items:center;
+  background:#eaf1ff;color:#2563eb;font-size:28px;font-weight:700}
+.dropzone p{margin:0 0 8px;font-size:18px;font-weight:700;color:#172033}
+.dropzone .sub{font-size:13px;color:var(--muted)}
+input[type=file]{display:none}
+.filebar{
+  display:none;align-items:center;justify-content:space-between;gap:16px;margin-top:16px;
+  padding:14px 18px;background:#fff;border:1px solid var(--line);border-radius:14px;font-size:14px;
+  box-shadow:0 5px 18px rgba(20,39,74,.04)
+}
+.filebar.show{display:flex}.filebar .name{font-weight:650;overflow-wrap:anywhere}
+.filebar button{border:0;background:#fff1f2;color:#be123c;border-radius:9px;padding:9px 13px;font-weight:650;cursor:pointer}
+.tabs{display:flex;gap:8px;margin-top:24px;flex-wrap:wrap}
+.tab{padding:11px 17px;background:#e9eef6;border:1px solid #dce4ef;border-radius:12px 12px 0 0;font-size:13px;font-weight:600;cursor:pointer;color:#64748b;transition:.15s}
+.tab:hover{background:#fff;color:#1e40af}
+.tab.active{color:#1d4ed8;background:#fff;border-color:#cbd8ec;border-bottom:2px solid #2563eb;box-shadow:0 -3px 12px rgba(37,99,235,.06)}
+.preview-wrap{border:1px solid var(--line);border-radius:0 16px 16px 16px;background:#e8edf5;max-height:500px;overflow:auto;display:none;padding:20px;box-shadow:inset 0 1px 3px rgba(15,23,42,.04)}
+.preview-wrap.show{display:block}.preview-inner{display:inline-block;background:#fff;box-shadow:0 8px 24px rgba(15,23,42,.1)}
+.actions{display:none;flex-direction:column;gap:18px;margin-top:24px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:var(--shadow)}
+.actions.show{display:flex}
+.opts-section{display:flex;flex-direction:column;gap:12px}
+.opts-label{font-size:11px;color:#64748b;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.opts{font-size:13px;color:#334155;display:flex;gap:14px 22px;flex-wrap:wrap;align-items:center}
+.opts label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.opts select,.opts input[type=text]{
+  font:inherit;color:var(--ink);background:#f8fafc;border:1px solid #cbd5e1;border-radius:9px;padding:9px 11px;outline:none;transition:.15s
+}
+.opts select:focus,.opts input[type=text]:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.13)}
+.opts input[type=text]{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-transform:uppercase}
+.opts input[type=checkbox]{accent-color:#2563eb;width:16px;height:16px}
+.row-go{display:flex;justify-content:flex-end;border-top:1px solid #edf1f7;padding-top:20px}
+.go{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:0;border-radius:12px;padding:13px 23px;font-size:14px;font-weight:750;cursor:pointer;font-family:inherit;letter-spacing:.1px;box-shadow:0 7px 16px rgba(37,99,235,.2);transition:all .18s}
+.go:hover{background:linear-gradient(135deg,#1d4ed8,#1e40af);transform:translateY(-1px);box-shadow:0 10px 22px rgba(37,99,235,.26)}
+.go:disabled{background:#94a3b8;cursor:wait;transform:none;box-shadow:none}
+.status{margin-top:16px;font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#64748b;min-height:18px;padding-left:3px}
+.status.err{color:#be123c}
+#downloadLinkWrap{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;padding:14px 18px}
+#downloadLink{font-family:inherit!important;font-size:14px!important;font-weight:700;color:#047857!important}
+table.xl{border-collapse:collapse;background:#fff;table-layout:fixed}
+table.xl td{border:1px solid var(--gridline-color,#d0d0d0);padding:2px 4px;font-size:15px;font-family:Calibri,Arial,sans-serif;color:#000;text-align:left;overflow:hidden;vertical-align:bottom;white-space:nowrap}
+table.xl.no-gridlines{--gridline-color:transparent}
+@media(max-width:640px){
+ body{padding:18px 12px}header{padding:19px;align-items:flex-start;flex-direction:column;border-radius:17px}
+ .tag{white-space:normal}.dropzone{padding:34px 16px}.actions{padding:18px}.opts{gap:12px}
+ .row-go .go{width:100%}.preview-wrap{padding:12px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
 </style>
 </head>
 <body>
 <div class="sheet">
   <header>
-    <h1>Excel → PDF</h1>
-    <div class="tag">runs in your browser, no upload</div>
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">↗</div>
+      <div>
+        <h1>Excel <span style="color:#2563eb">→</span> PDF</h1>
+        <div style="margin-top:7px;color:#64748b;font-size:13px">A precise spreadsheet-to-PDF workspace</div>
+      </div>
+    </div>
+    <div class="tag">🔒 Private · Runs in your browser</div>
   </header>
 
-  <div class="note">Reads the workbook's actual fonts, fill colors, borders, merged cells and column widths, then captures that rendering into the PDF — so the output matches what you see below rather than a plain re-typed table.</div>
+  <div class="note">Reads the workbook's actual fonts, fill colors, borders, merged cells and column widths, then captures that rendering into the PDF. If Excel contains very tall blank rows or wide empty columns, use <b>compact empty rows</b> / <b>compact empty columns</b> below to remove that unwanted space without changing cells that contain actual content.</div>
 
-  <div class="dropzone" id="dropzone">
-    <p>Drop a spreadsheet here, or click to choose one</p>
-    <div class="sub">.xlsx</div>
+  <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Choose an Excel workbook">
+    <div class="upload-icon" aria-hidden="true">↑</div>
+    <p>Drop your Excel workbook here</p>
+    <div class="sub">or click to browse your files · XLSX format</div>
     <input type="file" id="fileInput" accept=".xlsx">
   </div>
 
@@ -206,6 +160,41 @@
       <div class="opts">
         <label><input type="checkbox" id="allSheets"> convert all sheets</label>
         <label><input type="checkbox" id="gridlines" checked> show cell gridlines</label>
+        <label><input type="checkbox" id="compactBlankRows" checked> compact empty rows</label>
+        <label><input type="checkbox" id="compactBlankCols" checked> compact empty columns</label>
+        <label><input type="checkbox" id="customRangeToggle"> export only a portion</label>
+      </div>
+    </div>
+
+    <div class="opts-section" id="compactSection">
+      <div class="opts-label">Blank space control</div>
+      <div class="opts">
+        <label>empty row height
+          <select id="blankRowHeight">
+            <option value="15">15 px</option>
+            <option value="18" selected>18 px</option>
+            <option value="22">22 px</option>
+            <option value="28">28 px</option>
+          </select>
+        </label>
+        <label>empty column width
+          <select id="blankColWidth">
+            <option value="6">6 px</option>
+            <option value="8" selected>8 px</option>
+            <option value="12">12 px</option>
+            <option value="18">18 px</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="opts-section" id="rangeSection" style="display:none;">
+      <div class="opts-label">Portion to export (applies to the open tab)</div>
+      <div class="opts">
+        <label>from cell <input type="text" id="rangeFrom" placeholder="A1" style="width:64px;"></label>
+        <label>to cell <input type="text" id="rangeTo" placeholder="H20" style="width:64px;"></label>
+        <button type="button" class="go" id="rangeApply" style="padding:6px 14px;font-size:13px;">Preview this range</button>
+        <button type="button" id="rangeReset" style="border:none;background:none;color:var(--clay);font-family:'Courier New',monospace;font-size:12px;cursor:pointer;text-decoration:underline;">reset to auto</button>
       </div>
     </div>
 
@@ -240,12 +229,31 @@ const pageSizeSelect = document.getElementById('pageSize');
 const marginPresetSelect = document.getElementById('marginPreset');
 const downloadLinkWrap = document.getElementById('downloadLinkWrap');
 const downloadLink = document.getElementById('downloadLink');
+const customRangeToggle = document.getElementById('customRangeToggle');
+const compactBlankRowsBox = document.getElementById('compactBlankRows');
+const compactBlankColsBox = document.getElementById('compactBlankCols');
+const blankRowHeightSelect = document.getElementById('blankRowHeight');
+const blankColWidthSelect = document.getElementById('blankColWidth');
+const rangeSection = document.getElementById('rangeSection');
+const rangeFrom = document.getElementById('rangeFrom');
+const rangeTo = document.getElementById('rangeTo');
+const rangeApplyBtn = document.getElementById('rangeApply');
+const rangeResetBtn = document.getElementById('rangeReset');
+
+// Maps sheet index -> {minCol,minRow,maxCol,maxRow} for any sheet where the
+// person has chosen a specific portion to export, instead of the auto-detected table.
+let customRanges = {};
 
 const MARGIN_PRESETS = { normal: 36, narrow: 18, wide: 54, none: 6 }; // points
 
-gridlinesBox.addEventListener('change', () => {
-  if (workbook) selectSheet(currentSheetIndex); // re-render preview with new gridline setting
-});
+function rerenderIfWorkbook(){
+  if (workbook) selectSheet(currentSheetIndex);
+}
+gridlinesBox.addEventListener('change', rerenderIfWorkbook);
+compactBlankRowsBox.addEventListener('change', rerenderIfWorkbook);
+compactBlankColsBox.addEventListener('change', rerenderIfWorkbook);
+blankRowHeightSelect.addEventListener('change', rerenderIfWorkbook);
+blankColWidthSelect.addEventListener('change', rerenderIfWorkbook);
 
 let workbook = null;
 let currentSheetIndex = 0;
@@ -253,6 +261,9 @@ let originalFileName = 'converted';
 const ROW_CAP = 400; // safety cap for very large sheets
 
 dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+});
 dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
 dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
 dropzone.addEventListener('drop', e => {
@@ -266,6 +277,12 @@ clearBtn.addEventListener('click', reset);
 function reset(){
   workbook = null;
   currentSheetIndex = 0;
+  customRanges = {};
+  customRangeToggle.checked = false;
+  rangeSection.style.display = 'none';
+  allSheetsBox.disabled = false;
+  rangeFrom.value = '';
+  rangeTo.value = '';
   fileInput.value = '';
   filebar.classList.remove('show');
   tabsEl.innerHTML = '';
@@ -316,9 +333,79 @@ function selectSheet(index){
   [...tabsEl.children].forEach((t, i) => t.classList.toggle('active', i === index));
   const ws = workbook.worksheets[index];
   previewEl.innerHTML = '';
-  previewEl.appendChild(renderSheetTable(ws));
+  previewEl.appendChild(renderSheetTable(ws, undefined, customRanges[index]));
   previewWrap.classList.add('show');
+  if (customRangeToggle.checked) prefillRangeInputs();
 }
+
+function colNumToLetter(num){
+  let s = '';
+  while (num > 0){
+    const rem = (num - 1) % 26;
+    s = String.fromCharCode(65 + rem) + s;
+    num = Math.floor((num - 1) / 26);
+  }
+  return s;
+}
+
+function parseCellRef(ref){
+  const m = String(ref || '').trim().toUpperCase().match(/^([A-Z]+)(\d+)$/);
+  if (!m) return null;
+  return { col: colLetterToNum(m[1]), row: parseInt(m[2], 10) };
+}
+
+function prefillRangeInputs(){
+  if (!workbook) return;
+  const ws = workbook.worksheets[currentSheetIndex];
+  const range = customRanges[currentSheetIndex] || getUsedRange(ws);
+  rangeFrom.value = colNumToLetter(range.minCol) + range.minRow;
+  rangeTo.value = colNumToLetter(range.maxCol) + range.maxRow;
+}
+
+customRangeToggle.addEventListener('change', () => {
+  const on = customRangeToggle.checked;
+  rangeSection.style.display = on ? 'flex' : 'none';
+  allSheetsBox.disabled = on;
+  if (on){
+    if (allSheetsBox.checked) allSheetsBox.checked = false;
+    if (workbook) prefillRangeInputs();
+  } else {
+    customRanges = {};
+    setStatus('');
+    if (workbook) selectSheet(currentSheetIndex);
+  }
+});
+
+function applyCustomRange(){
+  if (!workbook) return;
+  const from = parseCellRef(rangeFrom.value);
+  const to = parseCellRef(rangeTo.value);
+  if (!from || !to){
+    setStatus('enter valid cell references, e.g. A1 and H20', true);
+    return;
+  }
+  customRanges[currentSheetIndex] = {
+    minCol: Math.min(from.col, to.col),
+    maxCol: Math.max(from.col, to.col),
+    minRow: Math.min(from.row, to.row),
+    maxRow: Math.max(from.row, to.row)
+  };
+  setStatus('');
+  selectSheet(currentSheetIndex);
+}
+rangeApplyBtn.addEventListener('click', applyCustomRange);
+[rangeFrom, rangeTo].forEach(inp => inp.addEventListener('keydown', e => {
+  if (e.key === 'Enter') applyCustomRange();
+}));
+
+rangeResetBtn.addEventListener('click', () => {
+  delete customRanges[currentSheetIndex];
+  setStatus('');
+  if (workbook){
+    prefillRangeInputs();
+    selectSheet(currentSheetIndex);
+  }
+});
 
 // ---- style helpers ----
 // Default Office theme palette, in the index order Excel uses for theme color refs.
@@ -361,13 +448,50 @@ function resolveColor(colorObj){
   }
   return null;
 }
-function colWidthPx(width){
-  const w = (width === undefined || width === null) ? 8.43 : width;
+function colWidthPx(width, ws){
+  const fallback = (ws && ws.properties && ws.properties.defaultColWidth) || 8.43;
+  const w = (width === undefined || width === null) ? fallback : width;
   return Math.round(w * 7 + 5);
 }
-function rowHeightPx(height){
-  const h = (height === undefined || height === null) ? 15 : height;
+function rowHeightPx(height, ws){
+  const fallback = (ws && ws.properties && ws.properties.defaultRowHeight) || 15;
+  const h = (height === undefined || height === null) ? fallback : height;
   return Math.round(h * 1.333);
+}
+// Excel's "General" alignment: text left, numbers/dates right, booleans centered —
+// used only when the cell has no explicit horizontal alignment set.
+function cellValueType(cell){
+  let v = cell.value;
+  if (v && typeof v === 'object' && 'result' in v) v = v.result;
+  if (v === null || v === undefined || v === '') return 'blank';
+  if (v instanceof Date) return 'date';
+  if (typeof v === 'number') return 'number';
+  if (typeof v === 'boolean') return 'boolean';
+  return 'text';
+}
+// Best-effort re-creation of Excel's number formatting (thousands separators,
+// fixed decimals, %, and a leading currency symbol) so displayed numbers match
+// what the cell actually shows in Excel rather than a raw JS number.
+function formatNumberValue(value, numFmt){
+  if (typeof value !== 'number' || !numFmt || numFmt === 'General') return String(value);
+  try{
+    if (/%/.test(numFmt)){
+      const dec = (numFmt.match(/0\.(0+)%/) || [,''])[1].length;
+      return (value * 100).toFixed(dec) + '%';
+    }
+    const decMatch = numFmt.match(/0\.(0+)/);
+    const decimals = decMatch ? decMatch[1].length : (Number.isInteger(value) ? 0 : 2);
+    const hasThousands = /#,#|0,0/.test(numFmt);
+    let out = value.toFixed(decimals);
+    if (hasThousands){
+      const parts = out.split('.');
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      out = parts.join('.');
+    }
+    const currency = numFmt.match(/[$€£¥]/);
+    if (currency) out = currency[0] + out;
+    return out;
+  }catch(e){ return String(value); }
 }
 function borderSideCss(side){
   if (!side || !side.style) return '1px solid #e3e3e3';
@@ -387,10 +511,52 @@ function cellDisplayText(cell){
     else return '';
   }
   if (v instanceof Date) return v.toLocaleDateString();
+  if (typeof v === 'number') return formatNumberValue(v, cell.numFmt);
   return String(v);
 }
 
-function renderSheetTable(ws, showGridlines){
+function cellHasValue(cell){
+  return cell.value !== null && cell.value !== undefined && cell.value !== '';
+}
+
+function cellHasVisibleFill(cell){
+  const fill = cell.fill;
+  return !!(fill && fill.type === 'pattern' && fill.pattern === 'solid' && fill.fgColor);
+}
+
+function rowHasRealContent(ws, rowNum, minCol, maxCol){
+  const row = ws.getRow(rowNum);
+  for (let c=minCol; c<=maxCol; c++){
+    const cell = row.getCell(c);
+    // A value or a visible fill means the row is intentionally used.
+    // (A blank row that's merely part of a vertical merge — e.g. a tall "SL No"
+    // cell spanning many otherwise-empty rows — still has no value/fill of its
+    // own here, so it correctly counts as blank and gets compacted below. If the
+    // merge itself carries a fill, Excel writes that fill onto every underlying
+    // cell in the range, so this check still protects genuinely decorative merges.)
+    if (cellHasValue(cell) || cellHasVisibleFill(cell)) return true;
+  }
+  return false;
+}
+
+function columnHasRealContent(ws, colNum, minRow, maxRow){
+  for (let r=minRow; r<=maxRow; r++){
+    const cell = ws.getRow(r).getCell(colNum);
+    if (cellHasValue(cell) || cellHasVisibleFill(cell)) return true;
+  }
+  return false;
+}
+
+function colIsInsideMerge(ws, colNum){
+  return (ws.model.merges || []).some(rangeStr => {
+    const m = rangeStr.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
+    if (!m) return false;
+    const c1 = colLetterToNum(m[1]), c2 = colLetterToNum(m[3]);
+    return colNum >= c1 && colNum <= c2;
+  });
+}
+
+function renderSheetTable(ws, showGridlines, overrideRange){
   if (showGridlines === undefined) showGridlines = gridlinesBox.checked;
   const merges = {}; // key "r-c" -> {rowspan, colspan} for master, or 'skip' for covered cells
   (ws.model.merges || []).forEach(rangeStr => {
@@ -407,42 +573,67 @@ function renderSheetTable(ws, showGridlines){
     }
   });
 
+  const range = overrideRange || getUsedRange(ws);
+
   const table = document.createElement('table');
   table.className = 'xl' + (showGridlines ? '' : ' no-gridlines');
 
-  let colCount = ws.columnCount || 1;
+  // Limit the rendered rows before calculating compact column widths.
+  // This must be declared before the column loop; otherwise JavaScript's
+  // temporal-dead-zone causes: "Cannot access 'rowCount' before initialization".
+  const rowCount = Math.min(range.maxRow, range.minRow + ROW_CAP - 1);
+
   const colgroup = document.createElement('colgroup');
-  for (let c=1; c<=colCount; c++){
+  for (let c=range.minCol; c<=range.maxCol; c++){
     const col = ws.getColumn(c);
     const cEl = document.createElement('col');
-    cEl.style.width = colWidthPx(col.width) + 'px';
+    let colPx = colWidthPx(col.width, ws);
+    // Excel can carry very wide formatted-but-empty columns. Keep them tiny
+    // unless they contain actual values/fills or participate in a merge.
+    if (compactBlankColsBox.checked &&
+        !columnHasRealContent(ws, c, range.minRow, rowCount) &&
+        !colIsInsideMerge(ws, c)){
+      colPx = Math.min(colPx, parseInt(blankColWidthSelect.value, 10));
+    }
+    cEl.style.width = colPx + 'px';
     colgroup.appendChild(cEl);
   }
   table.appendChild(colgroup);
 
-  const rowCount = Math.min(ws.rowCount || 0, ROW_CAP);
-  for (let r=1; r<=rowCount; r++){
+  for (let r=range.minRow; r<=rowCount; r++){
     const row = ws.getRow(r);
     const tr = document.createElement('tr');
-    tr.style.height = rowHeightPx(row.height) + 'px';
-    for (let c=1; c<=colCount; c++){
+    let rowPx = rowHeightPx(row.height, ws);
+    // Main fix for large blank vertical areas: Excel may store a huge height on
+    // an otherwise empty row, and this is also what a vertical merge (e.g. a
+    // tall "SL No" data cell) spans across. Previously rows inside ANY merge
+    // were skipped here, which is exactly why that merged cell stayed huge —
+    // now we compact any row with no value/fill of its own, merge or not.
+    if (compactBlankRowsBox.checked &&
+        !rowHasRealContent(ws, r, range.minCol, range.maxCol)){
+      rowPx = Math.min(rowPx, parseInt(blankRowHeightSelect.value, 10));
+    }
+    tr.style.height = rowPx + 'px';
+    for (let c=range.minCol; c<=range.maxCol; c++){
       const key = r+'-'+c;
       if (merges[key] === 'skip') continue;
       const cell = row.getCell(c);
       const td = document.createElement('td');
-      if (merges[key]){
-        if (merges[key].rowspan > 1) td.rowSpan = merges[key].rowspan;
-        if (merges[key].colspan > 1) td.colSpan = merges[key].colspan;
+      const mergeInfo = merges[key];
+      const isMergeMaster = !!mergeInfo && (mergeInfo.rowspan > 1 || mergeInfo.colspan > 1);
+      if (mergeInfo){
+        if (mergeInfo.rowspan > 1) td.rowSpan = mergeInfo.rowspan;
+        if (mergeInfo.colspan > 1) td.colSpan = mergeInfo.colspan;
       }
       td.textContent = cellDisplayText(cell);
 
       const font = cell.font || {};
       if (font.bold) td.style.fontWeight = 'bold';
       if (font.italic) td.style.fontStyle = 'italic';
-      if (font.size) td.style.fontSize = Math.round(font.size * 1.15) + 'px';
+      if (font.size) td.style.fontSize = Math.round(font.size * 1.3333) + 'px';
       if (font.name) td.style.fontFamily = font.name + ', Calibri, Arial, sans-serif';
       const fontColor = resolveColor(font.color);
-      if (fontColor) td.style.color = fontColor;
+      td.style.color = fontColor || '#000000';
       if (font.underline) td.style.textDecoration = 'underline';
 
       const fill = cell.fill;
@@ -452,8 +643,17 @@ function renderSheetTable(ws, showGridlines){
       }
 
       const align = cell.alignment || {};
-      if (align.horizontal) td.style.textAlign = align.horizontal;
-      if (align.vertical) td.style.verticalAlign = ({top:'top',middle:'middle',bottom:'bottom'})[align.vertical] || 'middle';
+      const valueType = cellValueType(cell);
+      const defaultHAlign = valueType === 'number' || valueType === 'date' ? 'right'
+        : valueType === 'boolean' ? 'center' : 'left';
+      // Merged cells (like a "SL No" label or a data cell spanning several rows)
+      // read far more naturally centered when Excel didn't set an explicit
+      // alignment, so that's the default here instead of falling back to the
+      // per-type default / bottom.
+      td.style.textAlign = align.horizontal || (isMergeMaster ? 'center' : defaultHAlign);
+      td.style.verticalAlign = align.vertical
+        ? (({top:'top',middle:'middle',bottom:'bottom'})[align.vertical] || 'bottom')
+        : (isMergeMaster ? 'middle' : 'bottom');
       if (align.wrapText){ td.style.whiteSpace = 'normal'; td.style.wordBreak = 'break-word'; }
 
       const b = cell.border || {};
@@ -467,8 +667,8 @@ function renderSheetTable(ws, showGridlines){
     table.appendChild(tr);
   }
 
-  if ((ws.rowCount || 0) > ROW_CAP){
-    setStatus('note: "' + ws.name + '" has more than ' + ROW_CAP + ' rows — only the first ' + ROW_CAP + ' are shown/exported for performance');
+  if ((range.maxRow - range.minRow + 1) > ROW_CAP){
+    setStatus('note: "' + ws.name + '" has more than ' + ROW_CAP + ' rows of content — only the first ' + ROW_CAP + ' are shown/exported for performance');
   }
 
   return table;
@@ -480,6 +680,48 @@ function colLetterToNum(letters){
     n = n * 26 + (letters.charCodeAt(i) - 64);
   }
   return n;
+}
+
+// A cell "counts" toward the used range if it has a value, a fill, or a border —
+// this catches colored header bars / boxes even when they hold no text.
+function isCellSignificant(cell){
+  if (cell.value !== null && cell.value !== undefined && cell.value !== '') return true;
+  const fill = cell.fill;
+  if (fill && fill.type === 'pattern' && fill.pattern === 'solid' && fill.fgColor) return true;
+  const b = cell.border || {};
+  if (b.top || b.bottom || b.left || b.right) return true;
+  return false;
+}
+
+// Excel worksheets often report a rowCount/columnCount far bigger than the actual
+// content (e.g. from a stray formatted row/column), which is what was producing
+// all the blank margin around the real table. This finds the tight bounding box
+// of actual content instead — or honors an explicit print area if one is set.
+function getUsedRange(ws){
+  if (ws.pageSetup && ws.pageSetup.printArea){
+    const m = ws.pageSetup.printArea.match(/([A-Z]+)(\d+):([A-Z]+)(\d+)/);
+    if (m){
+      return { minCol: colLetterToNum(m[1]), minRow: parseInt(m[2],10), maxCol: colLetterToNum(m[3]), maxRow: parseInt(m[4],10) };
+    }
+  }
+  let minRow = Infinity, maxRow = 0, minCol = Infinity, maxCol = 0;
+  const rowCount = ws.rowCount || 0;
+  const colCount = ws.columnCount || 0;
+  for (let r=1; r<=rowCount; r++){
+    const row = ws.getRow(r);
+    for (let c=1; c<=colCount; c++){
+      if (isCellSignificant(row.getCell(c))){
+        if (r < minRow) minRow = r;
+        if (r > maxRow) maxRow = r;
+        if (c < minCol) minCol = c;
+        if (c > maxCol) maxCol = c;
+      }
+    }
+  }
+  if (minRow === Infinity){
+    return { minCol:1, minRow:1, maxCol:Math.max(colCount,1), maxRow:Math.max(rowCount,1) };
+  }
+  return { minCol, minRow, maxCol, maxRow };
 }
 
 goBtn.addEventListener('click', async () => {
@@ -506,7 +748,7 @@ goBtn.addEventListener('click', async () => {
       holder.style.left = '-99999px';
       holder.style.top = '0';
       holder.style.background = '#ffffff';
-      const table = renderSheetTable(ws);
+      const table = renderSheetTable(ws, undefined, customRanges[indices[idx]]);
       holder.appendChild(table);
       document.body.appendChild(holder);
 
@@ -541,9 +783,8 @@ goBtn.addEventListener('click', async () => {
       }
 
       if (idx > 0) doc.addPage(undefined, orientation);
-      doc.setFontSize(11);
-      doc.text(ws.name, margin, margin - 8 > 10 ? margin - 8 : 14);
-
+      // Do not add the worksheet name as a separate PDF header.
+      // This avoids an unwanted label (for example, "INPUT") appearing above the exported sheet.
       if (drawH <= availH){
         doc.addImage(imgData, 'PNG', offsetX, offsetY, drawW, drawH);
       } else {
