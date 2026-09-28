@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Working PDF Editor</title>
+<title>PDF Editor - Cell Resize and Side Erase</title>
 
 <style>
 *{box-sizing:border-box}
@@ -60,7 +60,7 @@ body{
 .page canvas{display:block}
 .layer{position:absolute;inset:0}
 .textitem{
-  position:absolute;white-space:pre;cursor:pointer;border:1px solid transparent;line-height:1.08;
+  position:absolute;white-space:pre;cursor:pointer;border:1px solid transparent;line-height:1;
   transform-origin:left top;transform-box:border-box;color:transparent;background:transparent;overflow:visible;
 }
 .textitem:hover{border-color:var(--cyan)}
@@ -72,6 +72,11 @@ body{
 .lineitem.sel{box-shadow:0 0 0 3px #2f6fed66}
 .whiteitem{position:absolute;background:#fff;cursor:pointer;z-index:2;border:1px dashed #b9c3d0}
 .whiteitem.sel{box-shadow:0 0 0 3px #2f6fed66;border-color:var(--blue)}
+.rectangleitem{position:absolute;cursor:pointer;z-index:2;border:2px solid #000;box-sizing:border-box}
+.griditem{position:absolute;cursor:pointer;z-index:2;box-sizing:border-box;border:0;background-color:transparent;background-image:linear-gradient(to right,#000 1px,transparent 1px),linear-gradient(to bottom,#000 1px,transparent 1px);background-repeat:repeat;background-position:0 0;}
+.griditem .grid-side-mask{position:absolute;background:#fff;pointer-events:none;z-index:5;}
+.griditem.sel{box-shadow:0 0 0 3px #2f6fed66;}
+.rectangleitem.sel{box-shadow:0 0 0 3px #2f6fed66;border-color:var(--blue)}
 .imageitem,.signatureitem{
   position:absolute;display:block;max-width:none;height:auto;cursor:pointer;user-select:none;
   -webkit-user-drag:none;touch-action:none;z-index:4;box-sizing:border-box;
@@ -133,6 +138,38 @@ label{color:var(--text-dim);display:flex;align-items:center;gap:6px;font-size:13
 <input id="imageFile" type="file" accept="image/png,image/jpeg,image/jpg" hidden>
 <input id="signatureFile" type="file" accept="image/png,image/jpeg,image/jpg" hidden>
 <button id="white">Whiteout</button>
+<button id="rect" title="Draw a filled rectangle using the Color picker">Rectangle</button>
+<button id="grid" title="Draw an Excel-like cell grid">Excel Grid</button>
+
+<label>Rows
+<input id="gridRows" type="number" value="4" min="1" max="50" step="1" style="width:48px">
+</label>
+<label>Cols
+<input id="gridCols" type="number" value="4" min="1" max="50" step="1" style="width:48px">
+</label>
+
+<label>Cell/Rect Border
+<input id="borderWidth" type="number" value="1.5" min="0.25" max="20" step="0.25" style="width:65px">
+</label>
+
+<label>Grid Side
+<select id="gridSide">
+  <option value="top">Top</option>
+  <option value="right">Right</option>
+  <option value="bottom">Bottom</option>
+  <option value="left">Left</option>
+</select>
+</label>
+<button id="eraseGridSide" title="Erase one outside side of the selected cell grid">Erase Cell Side</button>
+<button id="restoreGridSides" title="Restore all outside sides of the selected cell grid">Restore Sides</button>
+
+<label>Text Align
+<select id="textAlign">
+  <option value="left">Left</option>
+  <option value="center">Middle</option>
+  <option value="right">Right</option>
+</select>
+</label>
 
 <label>
 Size
@@ -160,6 +197,14 @@ Font
 </label>
 
 <button id="move">Move Text</button>
+<label>X
+<input id="posX" type="number" value="0" step="0.5" style="width:70px">
+</label>
+<label>Y
+<input id="posY" type="number" value="0" step="0.5" style="width:70px">
+</label>
+<button id="setPos" title="Apply X/Y position to selected edited text">Set Position</button>
+<button id="resetPos" title="Return selected edited text to its original position">Reset Position</button>
 <button id="newbox">New Text Box</button>
 <button id="line">Draw Line</button>
 <button id="erase">Erase Text</button>
@@ -180,7 +225,9 @@ Download PDF
 <div id="status" class="info">
 Open a PDF. Select/Edit Text edits existing text.
 Add Text creates a new editable text box.
-Move Text lets you drag text.
+Move Text lets you drag text, cells/grids, rectangles, images or signatures.
+Resize an Excel Grid by selecting it and dragging its blue handles.
+Erase Cell Side removes one outside border side of the selected grid.
 Draw Line lets you click-drag a straight line.
 Whiteout lets you click-drag a rectangle to cover an area.
 Crop lets you crop a selected picture or signature.
@@ -238,6 +285,7 @@ let cropSession=null;
 let pageCtx=null;
 let lineDraw=null;
 let whiteDraw=null;
+let gridDraw=null;
 
 let pendingGraphic=null;
 
@@ -420,7 +468,7 @@ async function render(){
 
     const font=Math.max(Math.hypot(tx[0],tx[1]),Math.hypot(tx[2],tx[3]),1);
     const w=Math.max(it.width*scale,4);
-    const h=Math.max(font*1.08,7);
+    const h=Math.max(font,7);
 
     /* SCREEN rotation (includes page /Rotate). Correct for the CSS overlay
        but NOT for pdf-lib, which needs contentAngle below. */
@@ -516,32 +564,20 @@ async function render(){
         layer.appendChild(cover);
       }
 
-      /*
-         IMPORTANT: the browser selection box is not the same thing as the
-         visible glyph box in the PDF. PDF fonts have ascenders/descenders
-         outside the simple font-size rectangle. Give the white cover a
-         small, controlled safety margin on ALL sides so the old glyph can
-         never leak through after saving.
-      */
-      const coverPadX=Math.max(1.0,(base.font||12)*0.035);
-      const coverPadY=Math.max(1.0,(base.font||12)*0.10);
-      const descentPad=Math.max(2.0,(base.font||12)*0.38);
-      const ascentPad=Math.max(1.0,(base.font||12)*0.06);
+      /* Keep the on-screen cover identical to the saved replacement image.
+         Do not add a large descent area: that was causing the white mask to
+         reach the next sentence. */
+      const coverPadX=Math.min(2.5,Math.max(1.2,base.w*0.01));
+      const coverPadY=Math.min(2.5,Math.max(1.2,base.h*0.10));
+      const displaySize=(c.size!==undefined ? c.size : base.font/(scale||1))*(scale||1);
+      const renderedWidth=measureTextWidthPx(c.text||'',displaySize,normalizeFamily(c.family||base.family),!!c.bold,!!c.italic);
+      const coverW=Math.max(base.w,renderedWidth)+coverPadX*2;
+      const coverH=Math.max(base.h,displaySize*1.35)+coverPadY*2;
 
-      let coverW=base.w;
-      let coverH=base.h;
-      let coverTop=base.y-coverPadY-ascentPad;
-
-      if(Math.abs(Math.abs(base.angle||0)-90)<2){
-        coverW=base.h;
-        coverH=base.w;
-        coverTop=base.y-coverPadX;
-      }
-
-      cover.style.left=Math.max(0,base.x-coverPadX)+'px';
-      cover.style.top=Math.max(0,coverTop)+'px';
-      cover.style.width=(coverW+coverPadX*2)+'px';
-      cover.style.height=(coverH+coverPadY*2+descentPad+ascentPad)+'px';
+      cover.style.left=Math.max(0,(c.x!==undefined?c.x:base.x)-coverPadX)+'px';
+      cover.style.top=Math.max(0,(c.y!==undefined?c.y:base.y)-coverPadY)+'px';
+      cover.style.width=coverW+'px';
+      cover.style.height=coverH+'px';
 
       const el=layer.querySelector('.textitem[data-i="'+c.i+'"]');
       if(!el) continue;
@@ -648,6 +684,74 @@ async function render(){
   });
 
 
+  /* ===== DRAW SAVED RECTANGLES ===== */
+  (changes[n]||[]).forEach((c,i)=>{
+    if(c.rect && !c.deleted){
+      const el=document.createElement('div');
+      el.className='rectangleitem';
+      el.dataset.rectIndex=i;
+      el.style.left=(c.x||0)+'px';
+      el.style.top=(c.y||0)+'px';
+      el.style.width=(c.w||0)+'px';
+      el.style.height=(c.h||0)+'px';
+      el.style.background=c.color||'#000000';
+      el.title='Rectangle — click to select, then change Color or Delete Edit';
+      el.onclick=e=>{
+        e.stopPropagation();
+        selected={kind:'rect',index:i,el};
+        document.querySelectorAll('.textitem,.lineitem,.whiteitem,.rectangleitem,.imageitem,.signatureitem').forEach(x=>x.classList.remove('sel'));
+        el.classList.add('sel');
+        $('color').value=c.color||'#000000';
+        $('borderWidth').value=c.borderWidth||1.5;
+      };
+      layer.appendChild(el);
+    }
+  });
+
+  /* ===== DRAW SAVED EXCEL-LIKE GRIDS ===== */
+  (changes[n]||[]).forEach((c,i)=>{
+    if(c.grid && !c.deleted){
+      const el=document.createElement('div');
+      el.className='griditem';
+      el.dataset.gridIndex=i;
+      el.style.left=(c.x||0)+'px';
+      el.style.top=(c.y||0)+'px';
+      el.style.width=(c.w||0)+'px';
+      el.style.height=(c.h||0)+'px';
+      const rows=Math.max(1,Math.round(c.rows||4));
+      const cols=Math.max(1,Math.round(c.cols||4));
+      const bw=Math.max(0.25,parseFloat(c.borderWidth)||1.5);
+      el.style.backgroundSize=(100/cols)+'% '+(100/rows)+'%';
+      el.style.backgroundImage='linear-gradient(to right,#000 '+bw+'px,transparent '+bw+'px),linear-gradient(to bottom,#000 '+bw+'px,transparent '+bw+'px)';
+      el.style.border='0';
+      el.title='Excel-like grid '+rows+' × '+cols+' — Move Text to move, drag handles to resize';
+
+      // Hide any requested outside sides without affecting the internal cell lines.
+      const sides=Object.assign({top:true,right:true,bottom:true,left:true},c.sides||{});
+      const addMask=(side)=>{
+        if(sides[side]!==false) return;
+        const m=document.createElement('div');
+        m.className='grid-side-mask';
+        if(side==='top'){m.style.left='0';m.style.top='0';m.style.width='100%';m.style.height=Math.max(2,bw+1)+'px';}
+        if(side==='bottom'){m.style.left='0';m.style.bottom='0';m.style.width='100%';m.style.height=Math.max(2,bw+1)+'px';}
+        if(side==='left'){m.style.left='0';m.style.top='0';m.style.width=Math.max(2,bw+1)+'px';m.style.height='100%';}
+        if(side==='right'){m.style.right='0';m.style.top='0';m.style.width=Math.max(2,bw+1)+'px';m.style.height='100%';}
+        el.appendChild(m);
+      };
+      ['top','right','bottom','left'].forEach(addMask);
+
+      el.onclick=e=>{
+        e.stopPropagation();
+        selected={kind:'grid',index:i,el};
+        document.querySelectorAll('.textitem,.lineitem,.whiteitem,.rectangleitem,.griditem,.imageitem,.signatureitem').forEach(x=>x.classList.remove('sel'));
+        el.classList.add('sel');
+        $('borderWidth').value=bw;
+        createGridResizeHandles(i,el);
+      };
+      layer.appendChild(el);
+    }
+  });
+
   /* ===== DRAW SAVED LINES ===== */
 
   (changes[n]||[]).forEach((c,i)=>{
@@ -739,6 +843,8 @@ function setButtons(){
   $('select').classList.toggle('active',mode==='select');
   $('add').classList.toggle('active',mode==='add');
   $('white').classList.toggle('active',mode==='white');
+  $('rect').classList.toggle('active',mode==='rect');
+  $('grid').classList.toggle('active',mode==='grid');
   $('addImage').classList.toggle('active',mode==='image');
   $('addSignature').classList.toggle('active',mode==='signature');
   $('rotateGraphic').disabled=!(selected && selected.kind==='graphic');
@@ -772,11 +878,45 @@ function closeOpenPopups(){
    EDIT EXISTING TEXT
 ========================================================= */
 
+function syncPositionControls(x,y){
+  $('posX').value=Number.isFinite(+x)?(+x).toFixed(1):'0';
+  $('posY').value=Number.isFinite(+y)?(+y).toFixed(1):'0';
+}
+
+function getSelectedExistingChange(){
+  if(!selected || selected.kind!=='existing') return null;
+  const arr=changes[n]||[];
+  return arr.find(c=>c.i===selected.i && !c.delete) || null;
+}
+
+function applySelectedPosition(reset=false){
+  if(!selected || selected.kind!=='existing') { msg('Select an existing edited text first.'); return; }
+  const base=pageItems[n] && pageItems[n][selected.i];
+  if(!base) return;
+  changes[n]=changes[n]||[];
+  let q=findChange(selected.i);
+  if(!q){
+    q={i:selected.i,text:base.str,size:base.font/(scale||1),color:'#000000',bold:!!base.boldGuess,italic:!!base.italicGuess,family:base.family,align:'left',x:base.x,y:base.y,angle:base.angle||0,contentAngle:base.contentAngle||0};
+    changes[n].push(q);
+  }
+  if(reset){ q.x=base.x; q.y=base.y; q.manualPos=false; syncPositionControls(base.x,base.y); }
+  else { q.x=parseFloat($('posX').value)||0; q.y=parseFloat($('posY').value)||0; q.manualPos=true; }
+  pushHistory();
+  render();
+  msg(reset?'Text position reset to original.':'Text position updated. You can use X/Y to align a smaller word inside the original sentence.');
+}
+
+$('setPos').onclick=()=>applySelectedPosition(false);
+$('resetPos').onclick=()=>applySelectedPosition(true);
+
 function editExisting(i,el){
 
   closeOpenPopups();
 
   selected={kind:'existing',i,el};
+
+  const existingChange=findChange(i);
+  syncPositionControls(existingChange && existingChange.x!==undefined ? existingChange.x : pageItems[n][i].x, existingChange && existingChange.y!==undefined ? existingChange.y : pageItems[n][i].y);
 
   document.querySelectorAll('.textitem').forEach(x=>x.classList.remove('sel'));
   el.classList.add('sel');
@@ -809,12 +949,15 @@ function editExisting(i,el){
   if(c){
     $('size').value=c.size||base.font/(scale||1);
     $('color').value=c.color||'#000000';
+    $('textAlign').value=c.align||'left';
     bold=!!c.bold;
     italic=!!c.italic;
     $('font').value=normalizeFamily(c.family||base.family);
     setButtons();
   }else{
     $('size').value=base.font/(scale||1);
+    $('color').value=c && c.color ? c.color : '#000000';
+    $('textAlign').value='left';
     bold=!!base.boldGuess;
     italic=!!base.italicGuess;
     $('font').value=normalizeFamily(base.family);
@@ -856,11 +999,18 @@ function editExisting(i,el){
     q.bold=bold;
     q.italic=italic;
     q.family=family;
+    q.align=$('textAlign').value||'left';
     q.angle=q.angle!==undefined ? q.angle : angle;
     q.contentAngle=q.contentAngle!==undefined ? q.contentAngle : (base.contentAngle||0);
 
     /* Keep the ORIGINAL position unless the user dragged it (manualPos). */
-    if(!q.manualPos){
+    const px=parseFloat($('posX').value);
+    const py=parseFloat($('posY').value);
+    if(Number.isFinite(px) && Number.isFinite(py) && (Math.abs(px-base.x)>0.05 || Math.abs(py-base.y)>0.05)){
+      q.x=px;
+      q.y=py;
+      q.manualPos=true;
+    }else if(!q.manualPos){
       q.x=base.x;
       q.y=base.y;
     }
@@ -1515,6 +1665,7 @@ function finishDrag(){
         bold:!!base.boldGuess,
         italic:!!base.italicGuess,
         family:base.family,
+        align:'left',
         x:base.x,
         y:base.y,
         angle:base.angle||0,
@@ -1568,7 +1719,72 @@ $('white').onclick=()=>{
 $('move').onclick=()=>{
   mode='move';
   setButtons();
-  msg('Move Text: drag an existing or added text.');
+  msg('Move: drag text, cells/grids, rectangles, images or signatures.');
+};
+
+$('rect').onclick=()=>{
+  mode='rect';
+  setButtons();
+  msg('Rectangle mode: drag to draw a filled rectangle. Fill uses Color; border is a solid black line.');
+};
+
+$('grid').onclick=()=>{
+  mode='grid';
+  setButtons();
+  msg('Excel Grid mode: drag an area. Rows and Cols set the number of cells.');
+};
+
+$('color').addEventListener('input',()=>{
+  if(selected && selected.kind==='rect' && changes[n] && changes[n][selected.index]){
+    const c=changes[n][selected.index];
+    c.color=$('color').value;
+    if(selected.el) selected.el.style.background=c.color;
+  }
+});
+
+$('borderWidth').addEventListener('input',()=>{
+  if(!selected || !changes[n] || !changes[n][selected.index]) return;
+  const c=changes[n][selected.index];
+  if(selected.kind!=='rect' && selected.kind!=='grid') return;
+  c.borderWidth=Math.max(0.25,Math.min(20,parseFloat($('borderWidth').value)||1.5));
+  if(selected.el){
+    selected.el.style.borderWidth=c.borderWidth+'px';
+    if(selected.kind==='grid'){
+      const bw=c.borderWidth;
+      selected.el.style.backgroundImage='linear-gradient(to right,#000 '+bw+'px,transparent '+bw+'px),linear-gradient(to bottom,#000 '+bw+'px,transparent '+bw+'px)';
+      // Rebuild side masks at the new thickness.
+      const oldMasks=selected.el.querySelectorAll('.grid-side-mask');
+      oldMasks.forEach(m=>m.remove());
+      const sides=Object.assign({top:true,right:true,bottom:true,left:true},c.sides||{});
+      ['top','right','bottom','left'].forEach(side=>{
+        if(sides[side]!==false)return;
+        const m=document.createElement('div');m.className='grid-side-mask';
+        if(side==='top'){m.style.left='0';m.style.top='0';m.style.width='100%';m.style.height=Math.max(2,bw+1)+'px';}
+        if(side==='bottom'){m.style.left='0';m.style.bottom='0';m.style.width='100%';m.style.height=Math.max(2,bw+1)+'px';}
+        if(side==='left'){m.style.left='0';m.style.top='0';m.style.width=Math.max(2,bw+1)+'px';m.style.height='100%';}
+        if(side==='right'){m.style.right='0';m.style.top='0';m.style.width=Math.max(2,bw+1)+'px';m.style.height='100%';}
+        selected.el.appendChild(m);
+      });
+    }
+  }
+});
+
+$('eraseGridSide').onclick=()=>{
+  if(!selected || selected.kind!=='grid' || !changes[n] || !changes[n][selected.index]){
+    msg('Select an Excel Grid first.'); return;
+  }
+  const c=changes[n][selected.index];
+  c.sides=Object.assign({top:true,right:true,bottom:true,left:true},c.sides||{});
+  c.sides[$('gridSide').value]=false;
+  pushHistory();render();msg('Grid '+$('gridSide').value+' side erased.');
+};
+
+$('restoreGridSides').onclick=()=>{
+  if(!selected || selected.kind!=='grid' || !changes[n] || !changes[n][selected.index]){
+    msg('Select an Excel Grid first.'); return;
+  }
+  changes[n][selected.index].sides={top:true,right:true,bottom:true,left:true};
+  pushHistory();render();msg('All grid outside sides restored.');
 };
 
 $('line').onclick=()=>{
@@ -1846,8 +2062,152 @@ function finishWhite(){
 
 
 /* =========================================================
+   RESIZE CELL / GRID
+========================================================= */
+function hideGridResizeHandles(){
+  document.querySelectorAll('.grid-resize-handle').forEach(h=>h.remove());
+}
+
+function createGridResizeHandles(index,el){
+  hideGridResizeHandles();
+  if(!el) return;
+  ['nw','n','ne','e','se','s','sw','w'].forEach(pos=>{
+    const h=document.createElement('div');
+    h.className='resize-handle grid-resize-handle show '+pos;
+    h.dataset.gridIndex=index;
+    h.dataset.resize=pos;
+    h.title='Resize cell grid';
+    h.addEventListener('pointerdown',ev=>beginGridResize(ev,el,pos,index),true);
+    layer.appendChild(h);
+  });
+  updateGridResizeHandles(el);
+}
+
+function updateGridResizeHandles(el){
+  if(!el) return;
+  const x=el.offsetLeft,y=el.offsetTop,w=el.offsetWidth,h=el.offsetHeight;
+  const pts={nw:[x,y],n:[x+w/2,y],ne:[x+w,y],e:[x+w,y+h/2],se:[x+w,y+h],s:[x+w/2,y+h],sw:[x,y+h],w:[x,y+h/2]};
+  document.querySelectorAll('.grid-resize-handle').forEach(handle=>{
+    const pt=pts[handle.dataset.resize];
+    if(pt){handle.style.left=pt[0]+'px';handle.style.top=pt[1]+'px';}
+  });
+}
+
+let gridResizeDrag=null;
+function beginGridResize(e,el,pos,index){
+  e.preventDefault(); e.stopPropagation();
+  const r=layer.getBoundingClientRect();
+  selected={kind:'grid',index,el};
+  gridResizeDrag={el,index,pos,pointerId:e.pointerId,startX:el.offsetLeft,startY:el.offsetTop,startW:el.offsetWidth,startH:el.offsetHeight,startClientX:e.clientX,startClientY:e.clientY,maxW:r.width,maxH:r.height};
+  try{e.target.setPointerCapture(e.pointerId)}catch(_){}
+  document.addEventListener('pointermove',gridResizeMove,true);
+  document.addEventListener('pointerup',finishGridResize,true);
+  document.addEventListener('pointercancel',finishGridResize,true);
+}
+
+function gridResizeMove(e){
+  if(!gridResizeDrag)return;
+  e.preventDefault();
+  const d=gridResizeDrag,dx=e.clientX-d.startClientX,dy=e.clientY-d.startClientY;
+  let x=d.startX,y=d.startY,w=d.startW,h=d.startH;
+  const minW=30,minH=30;
+  if(d.pos.includes('e')) w=Math.max(minW,d.startW+dx);
+  if(d.pos.includes('s')) h=Math.max(minH,d.startH+dy);
+  if(d.pos.includes('w')){w=Math.max(minW,d.startW-dx);x=d.startX+d.startW-w;}
+  if(d.pos.includes('n')){h=Math.max(minH,d.startH-dy);y=d.startY+d.startH-h;}
+  w=Math.min(w,d.maxW-x);h=Math.min(h,d.maxH-y);
+  x=Math.max(0,Math.min(x,d.maxW-w));y=Math.max(0,Math.min(y,d.maxH-h));
+  d.el.style.left=x+'px';d.el.style.top=y+'px';d.el.style.width=w+'px';d.el.style.height=h+'px';
+  updateGridResizeHandles(d.el);
+}
+
+function finishGridResize(){
+  if(!gridResizeDrag)return;
+  document.removeEventListener('pointermove',gridResizeMove,true);
+  document.removeEventListener('pointerup',finishGridResize,true);
+  document.removeEventListener('pointercancel',finishGridResize,true);
+  const d=gridResizeDrag,c=changes[n]&&changes[n][d.index];
+  try{if(d.pointerId!=null)document.querySelector('.grid-resize-handle')?.releasePointerCapture(d.pointerId)}catch(_){}
+  if(c){
+    c.x=parseFloat(d.el.style.left)||0;c.y=parseFloat(d.el.style.top)||0;
+    c.w=parseFloat(d.el.style.width)||d.startW;c.h=parseFloat(d.el.style.height)||d.startH;
+    c.manualSize=true;c.manualPos=true;
+    pushHistory();render();msg('Cell grid resized.');
+  }
+  gridResizeDrag=null;
+}
+
+/* =========================================================
+   DRAG CELLS / RECTANGLES
+========================================================= */
+let shapeDrag=null;
+function beginShapeDrag(e,el){
+  e.preventDefault(); e.stopPropagation();
+  try{ layer.setPointerCapture(e.pointerId); }catch(_){}
+  const kind=el.classList.contains('griditem')?'grid':'rect';
+  const index=+(el.dataset.gridIndex!==undefined?el.dataset.gridIndex:el.dataset.rectIndex);
+  selected={kind,index,el};
+  document.querySelectorAll('.textitem,.lineitem,.whiteitem,.rectangleitem,.griditem,.imageitem,.signatureitem').forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel');
+  const r=layer.getBoundingClientRect();
+  shapeDrag={el,pointerId:e.pointerId,kind,index,startLeft:el.offsetLeft,startTop:el.offsetTop,dx:e.clientX-r.left-el.offsetLeft,dy:e.clientY-r.top-el.offsetTop};
+}
+function shapeDragMove(e){
+  if(!shapeDrag)return;
+  const r=layer.getBoundingClientRect();
+  shapeDrag.el.style.left=Math.max(0,e.clientX-r.left-shapeDrag.dx)+'px';
+  shapeDrag.el.style.top=Math.max(0,e.clientY-r.top-shapeDrag.dy)+'px';
+}
+function finishShapeDrag(){
+  if(!shapeDrag)return;
+  try{layer.releasePointerCapture(shapeDrag.pointerId)}catch(_){}
+  const x=parseFloat(shapeDrag.el.style.left)||0, y=parseFloat(shapeDrag.el.style.top)||0;
+  const moved=Math.hypot(x-shapeDrag.startLeft,y-shapeDrag.startTop)>2;
+  if(moved){
+    changes[n]=changes[n]||[];
+    const c=changes[n][shapeDrag.index];
+    if(c){c.x=x;c.y=y;}
+    pushHistory(); render(); msg(shapeDrag.kind==='grid'?'Cell grid moved.':'Rectangle moved.');
+  }
+  shapeDrag=null;
+}
+
+/* =========================================================
    PAGE POINTER EVENTS
 ========================================================= */
+
+let rectDrag=null;
+function beginRect(x,y){ rectDrag={x,y}; const el=document.createElement('div'); el.className='whitepreview'; el.style.left=x+'px'; el.style.top=y+'px'; el.style.width='0px'; el.style.height='0px'; layer.appendChild(el); rectDrag.el=el; }
+function updateRectPreview(e){ if(!rectDrag)return; const r=layer.getBoundingClientRect(); const x=e.clientX-r.left,y=e.clientY-r.top; const x0=Math.min(rectDrag.x,x),y0=Math.min(rectDrag.y,y),w=Math.abs(x-rectDrag.x),h=Math.abs(y-rectDrag.y); rectDrag.el.style.left=x0+'px';rectDrag.el.style.top=y0+'px';rectDrag.el.style.width=w+'px';rectDrag.el.style.height=h+'px'; }
+function finishRect(){ if(!rectDrag)return; const r=rectDrag.el.getBoundingClientRect(), lr=layer.getBoundingClientRect(); const x=r.left-lr.left,y=r.top-lr.top,w=r.width,h=r.height; rectDrag.el.remove(); if(w<2||h<2){rectDrag=null;return;} changes[n]=changes[n]||[]; changes[n].push({rect:true,x,y,w,h,color:$('color').value,borderColor:'#000000',borderWidth:Math.max(0.25,Math.min(20,parseFloat($('borderWidth').value)||1.5))}); pushHistory(); rectDrag=null; render(); msg('Colored rectangle added with a solid black border.'); }
+
+function beginGrid(x,y){
+  gridDraw={x1:x,y1:y,x2:x,y2:y};
+  const el=document.createElement('div');
+  el.className='griditem';
+  el.style.left=x+'px'; el.style.top=y+'px'; el.style.width='0px'; el.style.height='0px';
+  el.style.backgroundSize=(100/Math.max(1,+$('gridCols').value||4))+'% '+(100/Math.max(1,+$('gridRows').value||4))+'%';
+  layer.appendChild(el); gridDraw.el=el;
+}
+function updateGridPreview(e){
+  if(!gridDraw)return;
+  const r=layer.getBoundingClientRect(); const x=e.clientX-r.left,y=e.clientY-r.top;
+  const x0=Math.min(gridDraw.x1,x), y0=Math.min(gridDraw.y1,y), w=Math.abs(x-gridDraw.x1), h=Math.abs(y-gridDraw.y1);
+  gridDraw.el.style.left=x0+'px'; gridDraw.el.style.top=y0+'px'; gridDraw.el.style.width=w+'px'; gridDraw.el.style.height=h+'px';
+  gridDraw.x2=x; gridDraw.y2=y;
+}
+function finishGrid(){
+  if(!gridDraw)return;
+  const r=gridDraw.el.getBoundingClientRect(), lr=layer.getBoundingClientRect();
+  const x=r.left-lr.left,y=r.top-lr.top,w=r.width,h=r.height;
+  gridDraw.el.remove(); gridDraw=null;
+  if(w<3||h<3)return;
+  const rows=Math.max(1,Math.min(50,Math.round(+$('gridRows').value||4)));
+  const cols=Math.max(1,Math.min(50,Math.round(+$('gridCols').value||4)));
+  changes[n]=changes[n]||[];
+  changes[n].push({grid:true,x,y,w,h,rows,cols,borderColor:'#000000',borderWidth:Math.max(0.25,Math.min(20,parseFloat($('borderWidth').value)||1.5))});
+  pushHistory(); render(); msg('Excel-like '+rows+' × '+cols+' cell grid added.');
+}
 
 $('layer').addEventListener('pointerdown',e=>{
 
@@ -1855,6 +2215,13 @@ $('layer').addEventListener('pointerdown',e=>{
     if(e.target.classList.contains('crop-handle')) return;
     if(e.target.closest && e.target.closest('.crop-frame')) return;
     e.preventDefault();
+    return;
+  }
+
+  if(e.target.classList.contains('grid-resize-handle')){
+    const idx=+e.target.dataset.gridIndex;
+    const grid=layer.querySelector('.griditem[data-grid-index="'+idx+'"]');
+    if(grid) beginGridResize(e,grid,e.target.dataset.resize,idx);
     return;
   }
 
@@ -1871,6 +2238,11 @@ $('layer').addEventListener('pointerdown',e=>{
     e.target.classList.contains('signatureitem')
   ){
     if(mode==='move') beginDrag(e,e.target);
+    return;
+  }
+
+  if(e.target.classList.contains('griditem') || e.target.classList.contains('rectangleitem')){
+    if(mode==='move') beginShapeDrag(e,e.target);
     return;
   }
 
@@ -1899,24 +2271,39 @@ $('layer').addEventListener('pointerdown',e=>{
   else if(mode==='line'){
     beginLine(x,y);
   }
+  else if(mode==='rect'){
+    beginRect(x,y);
+  }
+  else if(mode==='grid'){
+    beginGrid(x,y);
+  }
 });
 
 $('layer').addEventListener('pointermove',e=>{
+  shapeDragMove(e);
   dragMove(e);
   updateLinePreview(e);
   updateWhitePreview(e);
+  updateRectPreview(e);
+  updateGridPreview(e);
 });
 
 $('layer').addEventListener('pointerup',()=>{
+  finishShapeDrag();
   finishDrag();
   finishLine();
   finishWhite();
+  finishRect();
+  finishGrid();
 });
 
 $('layer').addEventListener('pointercancel',()=>{
+  finishShapeDrag();
   finishDrag();
   finishLine();
   finishWhite();
+  finishRect();
+  finishGrid();
 });
 
 
@@ -1954,7 +2341,7 @@ $('del').onclick=()=>{
   }
   else if(
     (selected.kind==='add' || selected.kind==='line' ||
-     selected.kind==='white' || selected.kind==='graphic') &&
+     selected.kind==='white' || selected.kind==='rect' || selected.kind==='grid' || selected.kind==='graphic') &&
     changes[n][selected.index]
   ){
     changes[n][selected.index].deleted=true;
@@ -2061,7 +2448,7 @@ $('save').onclick=async()=>{
 
     function coverScreenRect(pg,vp,x,y,w,h){
 
-      const pad=0.8;
+      const pad=0.3;
 
       const pts=[
         inverseViewportPoint(vp,x-pad,y-pad),
@@ -2128,7 +2515,7 @@ $('save').onclick=async()=>{
         const x=tx[4];
         const baselineY=tx[5];
         const w=Math.max(it.width*scale,4);
-        const h=Math.max(fontScreen*1.08,7);
+        const h=Math.max(fontScreen,7);
 
         /* SCREEN-space rotation: used only for the whiteout cover math. */
         let angle=Math.atan2(tx[1],tx[0])*180/Math.PI;
@@ -2171,87 +2558,85 @@ $('save').onclick=async()=>{
 
           const newt=c.text||'';
 
-          /*
-             Use the SAME enlarged cover geometry used by the on-screen
-             editor. The previous exporter only covered the nominal font
-             height, so descenders and anti-aliased glyph pixels could remain
-             visible underneath the replacement text.
-          */
-          const padX=Math.max(1.0,(it.font||12)*0.035);
-          const padY=Math.max(1.0,(it.font||12)*0.10);
-          const descentPad=Math.max(2.0,(it.font||12)*0.38);
-          const ascentPad=Math.max(1.0,(it.font||12)*0.06);
-
-          let coverW=it.w;
-          let coverH=it.h;
-          let coverTop=it.y-padY-ascentPad;
-
-          if(Math.abs(Math.abs(it.angle)-90)<2){
-            coverW=it.h;
-            coverH=it.w;
-            coverTop=it.y-padX;
+          /* Deleted text is covered with a small, glyph-safe rectangle.
+             Edited text is covered by the replacement image below, so we do
+             not create a second oversized white rectangle here. */
+          if(c.delete || !newt){
+            const padX=Math.min(2,Math.max(0.8,it.w*0.01));
+            const padY=Math.min(2,Math.max(0.8,it.h*0.08));
+            coverScreenRect(pg,vp,it.x-padX,it.y-padY,it.w+padX*2,it.h+padY*2);
+            if(c.delete || !newt) continue;
           }
 
-          coverScreenRect(
-            pg,vp,
-            it.x-padX,
-            coverTop,
-            coverW+padX*2,
-            coverH+padY*2+descentPad+ascentPad
-          );
-
-          if(c.delete || !newt) continue;
-
-          /* c.size is already in PDF points. */
+          /*
+             IMPORTANT: do not redraw edited existing PDF text with pdf-lib's
+             StandardFonts.  A source PDF may use a different embedded font,
+             and the different ascent/descent/character metrics can make the
+             replacement jump vertically or leave pieces of the old glyphs
+             visible.  Instead, make one high-resolution image containing the
+             white cover AND the replacement text.  The image is positioned at
+             the exact original screen rectangle, so the visual position cannot
+             change when the font is replaced.
+          */
           const fontSize=c.size!==undefined ? c.size : (it.font/(scale||1));
-
           const q=hex(c.color||'#000000');
-
-          /* CONTENT-space angle (not screen angle). */
           const rotation=c.contentAngle!==undefined ? c.contentAngle : (it.contentAngle||0);
 
-          const drawFont=pickFont(c.family||'arial',!!c.bold,!!c.italic);
+          const padX=Math.min(2.5,Math.max(1.2,it.w*0.01));
+          const padY=Math.min(2.5,Math.max(1.2,it.h*0.10));
 
-          let posX,posY;
+          /* Use the original text width as the minimum cover width.  If the
+             user explicitly enlarged the font, extend the cover only as far
+             as the new text actually needs. */
+          const requestedPx=fontSize*(scale||1);
+          const renderedWidth=measureTextWidthPx(newt,requestedPx,normalizeFamily(c.family||'arial'),!!c.bold,!!c.italic);
+          const coverW=Math.max(it.w,renderedWidth)+padX*2;
+          const coverH=Math.max(it.h,requestedPx*1.35)+padY*2;
 
-          if(c.manualPos){
+          const imgCanvas=document.createElement('canvas');
+          const imageScale=3;
+          imgCanvas.width=Math.max(1,Math.ceil(coverW*imageScale));
+          imgCanvas.height=Math.max(1,Math.ceil(coverH*imageScale));
+          const ictx=imgCanvas.getContext('2d');
+          ictx.setTransform(imageScale,0,0,imageScale,0,0);
+          ictx.fillStyle='#ffffff';
+          ictx.fillRect(0,0,coverW,coverH);
+          ictx.fillStyle=c.color||'#000000';
+          ictx.textBaseline='top';
+          ictx.font=(c.italic?'italic ':'')+(c.bold?'700 ':'400 ')+requestedPx+'px '+familyCss(c.family||'arial');
+          ictx.textAlign=c.align==='center' ? 'center' : (c.align==='right' ? 'right' : 'left');
+          const textBoxW=Math.max(it.w,renderedWidth);
+          const textX=c.align==='center' ? (textBoxW/2) : (c.align==='right' ? textBoxW : padX);
+          ictx.fillText(newt,textX,padY);
 
-            const dx=c.x-it.x;
-            const dy=c.y-it.y;
+          const replacementData=imgCanvas.toDataURL('image/png');
+          const replacementImage=await embedGraphic(replacementData);
 
-            const p=inverseViewportPoint(vp,it.x+dx,it.baselineY+dy);
+          /* c.x/c.y are screen coordinates.  For normal edits they are the
+             original position; if the user moved the text, manualPos is used.
+             Never recompute y from font metrics. */
+          const sx=(c.manualPos && c.x!==undefined) ? c.x : it.x;
+          const sy=(c.manualPos && c.y!==undefined) ? c.y : it.y;
 
-            posX=p.x;
-            posY=p.y;
+          /* Map the image's screen rectangle to PDF content space.  This keeps
+             the exact same top-left visual anchor on the page. */
+          const pBL=inverseViewportPoint(vp,sx,sy+coverH);
+          const pBR=inverseViewportPoint(vp,sx+coverW,sy+coverH);
+          const pTL=inverseViewportPoint(vp,sx,sy);
 
-          }else{
+          const drawW=Math.hypot(pBR.x-pBL.x,pBR.y-pBL.y);
+          const drawH=Math.hypot(pTL.x-pBL.x,pTL.y-pBL.y);
+          // The three mapped screen corners already include page/text orientation.
+          // Do NOT add the source text rotation again; that double-rotates the
+          // replacement image (for example horizontal text becomes vertical).
+          const imgAngle=Math.atan2(pBR.y-pBL.y,pBR.x-pBL.x)*180/Math.PI;
 
-            /* KEEP ORIGINAL VISUAL TOP POSITION */
-            posX=it.raw.transform[4];
-
-            const originalBaseline=it.raw.transform[5];
-            const originalFontPt=it.font/(scale||1);
-            const originalTop=originalBaseline-originalFontPt;
-
-            let replacementHeight=fontSize;
-            try{
-              if(drawFont && typeof drawFont.heightAtSize==='function'){
-                replacementHeight=drawFont.heightAtSize(fontSize);
-              }
-            }catch(_){
-              replacementHeight=fontSize;
-            }
-
-            posY=originalTop+replacementHeight;
-          }
-
-          pg.drawText(newt,{
-            x:posX,
-            y:posY,
-            size:fontSize,
-            font:drawFont,
-            color:rgb(q.r,q.g,q.b),
-            rotate:degrees(rotation)
+          pg.drawImage(replacementImage,{
+            x:pBL.x,
+            y:pBL.y,
+            width:drawW,
+            height:drawH,
+            rotate:degrees(imgAngle)
           });
         }
 
@@ -2315,6 +2700,44 @@ $('save').onclick=async()=>{
         }
 
 
+        /* ---------- COLORED RECTANGLE ---------- */
+        else if(c.rect && !c.deleted){
+          const pts=[inverseViewportPoint(vp,c.x,c.y),inverseViewportPoint(vp,c.x+c.w,c.y),inverseViewportPoint(vp,c.x+c.w,c.y+c.h),inverseViewportPoint(vp,c.x,c.y+c.h)];
+          const xs=pts.map(p=>p.x), ys=pts.map(p=>p.y);
+          const minX=Math.max(0,Math.min(...xs)), maxX=Math.min(pg.getWidth(),Math.max(...xs));
+          const minY=Math.max(0,Math.min(...ys)), maxY=Math.min(pg.getHeight(),Math.max(...ys));
+          if(maxX>minX && maxY>minY){ const q=hex(c.color||'#000000'); pg.drawRectangle({x:minX,y:minY,width:maxX-minX,height:maxY-minY,color:rgb(q.r,q.g,q.b),opacity:1,borderColor:rgb(0,0,0),borderWidth:c.borderWidth||1.5,borderOpacity:1}); }
+        }
+
+        /* ---------- EXCEL-LIKE GRID ---------- */
+        else if(c.grid && !c.deleted){
+          const pts=[inverseViewportPoint(vp,c.x,c.y),inverseViewportPoint(vp,c.x+c.w,c.y),inverseViewportPoint(vp,c.x+c.w,c.y+c.h),inverseViewportPoint(vp,c.x,c.y+c.h)];
+          const xs=pts.map(p=>p.x), ys=pts.map(p=>p.y);
+          const minX=Math.max(0,Math.min(...xs)), maxX=Math.min(pg.getWidth(),Math.max(...xs));
+          const minY=Math.max(0,Math.min(...ys)), maxY=Math.min(pg.getHeight(),Math.max(...ys));
+          if(maxX>minX && maxY>minY){
+            const rows=Math.max(1,Math.round(c.rows||4)), cols=Math.max(1,Math.round(c.cols||4));
+            const q=hex(c.borderColor||'#000000');
+            const col=rgb(q.r,q.g,q.b);
+            const bw=c.borderWidth||1.5;
+            const sides=Object.assign({top:true,right:true,bottom:true,left:true},c.sides||{});
+            const cellW=(maxX-minX)/cols, cellH=(maxY-minY)/rows;
+            if(sides.left!==false) pg.drawLine({start:{x:minX,y:minY},end:{x:minX,y:maxY},thickness:bw,color:col,opacity:1});
+            if(sides.right!==false) pg.drawLine({start:{x:maxX,y:minY},end:{x:maxX,y:maxY},thickness:bw,color:col,opacity:1});
+            if(sides.top!==false) pg.drawLine({start:{x:minX,y:maxY},end:{x:maxX,y:maxY},thickness:bw,color:col,opacity:1});
+            if(sides.bottom!==false) pg.drawLine({start:{x:minX,y:minY},end:{x:maxX,y:minY},thickness:bw,color:col,opacity:1});
+            for(let cc=1;cc<cols;cc++){
+              const xx=minX+cellW*cc;
+              pg.drawLine({start:{x:xx,y:minY},end:{x:xx,y:maxY},thickness:bw,color:col,opacity:1});
+            }
+            for(let rr=1;rr<rows;rr++){
+              const yy=minY+cellH*rr;
+              pg.drawLine({start:{x:minX,y:yy},end:{x:maxX,y:yy},thickness:bw,color:col,opacity:1});
+            }
+          }
+        }
+
+
         /* ---------- WHITEOUT ---------- */
 
         else if(c.white && !c.deleted){
@@ -2343,7 +2766,7 @@ $('save').onclick=async()=>{
 
     /* ===== CREATE OUTPUT ===== */
 
-    const result=await out.save();
+    const result=await out.save({useObjectStreams:false, addDefaultPage:false});
 
     const blob=new Blob([result],{type:'application/pdf'});
     const url=URL.createObjectURL(blob);
