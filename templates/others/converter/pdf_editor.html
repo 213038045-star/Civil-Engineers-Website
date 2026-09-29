@@ -21,7 +21,7 @@ body{
   font:14px "Segoe UI",Arial,sans-serif;color:var(--text)
 }
 .bar{
-  position:sticky;top:0;z-index:10;background:var(--panel);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100000;isolation:isolate;background:var(--panel);border-bottom:1px solid var(--border);
   padding:10px;display:flex;gap:7px;align-items:center;flex-wrap:wrap;box-shadow:0 2px 12px #0008
 }
 .bar button,.bar input,.bar select{
@@ -71,8 +71,8 @@ body{
 .danger{background:#b91c1c!important;color:#fff;font-weight:700;border-color:#ef4444!important}
 .active{background:#0f766e!important;color:#fff!important;border-color:#14b8a6!important;box-shadow:0 0 0 1px #3b82f6,0 2px 8px #0005}
 .info{background:var(--panel);border-bottom:1px solid var(--border);padding:8px 14px;color:var(--text-dim);letter-spacing:.2px}
-.stage{padding:25px;text-align:center}
-.page{position:relative;display:inline-block;background:white;box-shadow:0 0 0 1px var(--border-soft),0 10px 40px #000a}
+.stage{position:relative;z-index:0;padding:25px;text-align:center}
+.page{position:relative;display:inline-block;z-index:0;isolation:isolate;background:white;box-shadow:0 0 0 1px var(--border-soft),0 10px 40px #000a}
 .page canvas{display:block}
 .layer{position:absolute;inset:0;z-index:20;pointer-events:auto}
 .textitem{
@@ -81,6 +81,7 @@ body{
 }
 .textitem:hover{border-color:var(--cyan)}
 .textitem.sel{border:1px dashed var(--blue);background:#14b8a61a}
+/* Edited text remains visible/selectable, but drawing tools bypass it in the pointer handler. */
 .coveritem{position:absolute;background:#fff;pointer-events:none;z-index:1}
 .textitem{z-index:2}
 .addedtext{user-select:none;z-index:2}
@@ -323,6 +324,7 @@ body{
       <button id="crop">Crop</button>
       <button id="rotateGraphic">Rotate Picture ↻</button>
       <button id="moveImage">Move Image</button>
+      <button id="deleteGraphic" class="danger">Delete Picture</button>
       <button id="cancelCrop" style="display:none">Cancel Crop</button>
       <input id="imageFile" type="file" accept="image/png,image/jpeg,image/jpg" hidden>
       <input id="signatureFile" type="file" accept="image/png,image/jpeg,image/jpg" hidden>
@@ -1049,6 +1051,7 @@ function setButtons(){
   $('addImage').classList.toggle('active',mode==='image');
   $('addSignature').classList.toggle('active',mode==='signature');
   $('rotateGraphic').disabled=!(selected && selected.kind==='graphic');
+  $('deleteGraphic').disabled=!(selected && selected.kind==='graphic');
   $('move').classList.toggle('active',mode==='move');
   $('moveShape').classList.toggle('active',mode==='move');
   $('moveImage').classList.toggle('active',mode==='move');
@@ -1934,6 +1937,22 @@ $('moveImage').onclick=()=>{
   setButtons();
   msg('Move Image: select and drag an image or signature.');
 };
+$('deleteGraphic').onclick=()=>{
+  if(!selected || selected.kind!=='graphic'){
+    msg('Select an image or signature first.');
+    return;
+  }
+  changes[n]=changes[n]||[];
+  const c=changes[n][selected.index];
+  if(!c){ msg('Selected picture could not be found.'); return; }
+  c.deleted=true;
+  const wasSignature=!!c.signature;
+  pushHistory();
+  selected=null;
+  render();
+  setButtons();
+  msg((wasSignature?'Signature':'Picture')+' deleted. Use Undo to restore it.');
+};
 
 $('rect').onclick=()=>{
   mode='rect';
@@ -2507,17 +2526,33 @@ $('layer').addEventListener('pointerdown',e=>{
     return;
   }
 
-  // GRID DRAWING MUST TAKE PRIORITY: start a new grid anywhere on the page,
-  // including over existing editor objects. This prevents overlay elements
-  // from swallowing the pointer-down event and making Excel Grid appear dead.
-  if(mode==='grid'){
-    const r=layer.getBoundingClientRect();
-    const x=e.clientX-r.left;
-    const y=e.clientY-r.top;
-    if(x>=0 && y>=0 && x<=r.width && y<=r.height){
-      beginGrid(x,y,e);
-      return;
-    }
+  /*
+     DRAWING MODES MUST TAKE PRIORITY OVER EDITED-TEXT OVERLAYS.
+     An edited text item is an interactive DOM element.  Previously,
+     clicking on edited text returned early from this handler, so tools
+     such as Rectangle, Line, Whiteout and Excel Grid could not start when
+     the pointer was over an edited sentence.
+  */
+  const pageRect=layer.getBoundingClientRect();
+  const px=e.clientX-pageRect.left;
+  const py=e.clientY-pageRect.top;
+  const insidePage=px>=0 && py>=0 && px<=pageRect.width && py<=pageRect.height;
+
+  if(insidePage && (mode==='grid' || mode==='rect' || mode==='line' || mode==='white')){
+    e.preventDefault();
+    if(mode==='grid') beginGrid(px,py,e);
+    else if(mode==='rect') beginRect(px,py);
+    else if(mode==='line') beginLine(px,py);
+    else if(mode==='white') beginWhite(px,py);
+    return;
+  }
+
+  /* Add/image/signature should also work over an edited-text overlay. */
+  if(insidePage && (mode==='add' || mode==='image' || mode==='signature')){
+    e.preventDefault();
+    if(mode==='add') createNewTextBox(px,py);
+    else placePendingGraphic(px,py);
+    return;
   }
 
   if(
@@ -2549,24 +2584,8 @@ $('layer').addEventListener('pointerdown',e=>{
   let x=e.clientX-r.left;
   let y=e.clientY-r.top;
 
-  if(mode==='add'){
-    createNewTextBox(x,y);
-  }
-  else if(mode==='image' || mode==='signature'){
-    placePendingGraphic(x,y);
-  }
-  else if(mode==='white'){
-    beginWhite(x,y);
-  }
-  else if(mode==='line'){
-    beginLine(x,y);
-  }
-  else if(mode==='rect'){
-    beginRect(x,y);
-  }
-  else if(mode==='grid'){
-    beginGrid(x,y,e);
-  }
+  /* Drawing/add modes are handled above before object hit-testing so
+     edited text cannot block them. */
 });
 
 $('layer').addEventListener('pointermove',e=>{
