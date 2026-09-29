@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PDF Editor - Cell Resize and Side Erase</title>
+<title>PDF Editor - Professional PDF Editor</title>
 
 <style>
 *{box-sizing:border-box}
 :root{
-  --bg:#0a0e17;--panel:#0d1420;--panel-2:#0f1826;--border:#1e2a3a;--border-soft:#22344a;
-  --text:#c7d3e0;--text-dim:#7d90a8;--cyan:#4fd1e5;--green:#22e5a0;--green-dark:#0fae7c;
-  --blue:#2f6fed;--red:#ef4a5f;--grid:#111a28;
+  --bg:#0b1220;--panel:#111827;--panel-2:#172033;--border:#263449;--border-soft:#314158;
+  --text:#e5e7eb;--text-dim:#94a3b8;--cyan:#99f6e4;--green:#22c55e;--green-dark:#15803d;
+  --blue:#14b8a6;--red:#ef4444;--grid:#162033;
 }
 body{
   margin:0;
@@ -25,8 +25,8 @@ body{
   padding:10px;display:flex;gap:7px;align-items:center;flex-wrap:wrap;box-shadow:0 2px 12px #0008
 }
 .bar button,.bar input,.bar select{
-  height:34px;border:1px solid var(--border-soft);border-radius:6px;background:var(--panel-2);
-  color:var(--text);padding:0 10px;font:13px "Segoe UI",Arial,sans-serif;
+  height:34px;border:1px solid var(--border-soft);border-radius:7px;background:#182234;
+  color:var(--text);padding:0 11px;font:13px "Segoe UI",Arial,sans-serif;
 }
 .bar input[type="file"]{
   color:var(--text-dim);height:44px;padding:0 14px 0 4px;font-size:14px;border:1px solid var(--border-soft);
@@ -35,7 +35,7 @@ body{
 }
 .bar input[type="file"][hidden]{display:none !important}
 .bar input[type="file"]:hover{
-  border-color:var(--cyan);box-shadow:0 0 0 3px #4fd1e526,0 4px 14px #0006;transform:translateY(-1px);
+  border-color:#2f8f87;box-shadow:0 2px 10px #0005;transform:translateY(-1px);
 }
 .bar input[type="file"]::file-selector-button,
 .bar input[type="file"]::-webkit-file-upload-button{
@@ -49,34 +49,50 @@ body{
 .bar input[type="file"]::file-selector-button:active{transform:translateY(0);filter:brightness(.95)}
 .bar input[type="color"]{padding:2px;width:44px}
 .bar button{cursor:pointer;transition:border-color .18s ease,box-shadow .18s ease,transform .12s ease,background .15s ease}
-.bar button:hover{border-color:var(--cyan);box-shadow:0 0 0 3px #4fd1e526,0 4px 14px #0006;transform:translateY(-1px)}
+.bar button:hover{border-color:#2f8f87;box-shadow:0 2px 10px #0005;transform:translateY(-1px)}
 .bar button:active{transform:translateY(0)}
-.primary{background:linear-gradient(180deg,#2be3a8,var(--green-dark))!important;color:#04140e;font-weight:700;border-color:var(--green-dark)!important}
-.danger{background:linear-gradient(180deg,#ff6b7a,var(--red))!important;color:#210007;font-weight:700;border-color:var(--red)!important}
-.active{background:linear-gradient(180deg,#5b8dff,var(--blue))!important;color:#fff!important;border-color:var(--blue)!important;box-shadow:0 0 0 1px var(--blue),0 0 10px #2f6fed66}
+.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:2px 0 10px}
+.brand{font-size:18px;font-weight:800;color:#f8fafc;margin-right:auto}.brand span{font-size:11px;color:#9fb4cf;font-weight:600;margin-left:6px}
+.page-nav{display:flex;align-items:center;gap:6px}.page-nav button{min-width:38px}.page-nav #pages{min-width:65px;text-align:center}
+.tool-tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding:0 0 9px}
+.tool-tab{border-radius:7px!important;padding:0 15px!important;font-weight:700!important;background:#182234!important;color:#9aa9bd!important;border:1px solid #2b3a50!important;box-shadow:none!important}
+.tool-tab:hover{background:#202d42!important;color:#e5e7eb!important;border-color:#40536e!important}
+.tool-tab.active{background:#0f766e!important;color:#fff!important;border-color:#14b8a6!important;box-shadow:0 2px 8px #0005!important}
+.tool-panels{padding-top:9px}.tool-panel{display:none;align-items:center;gap:7px;flex-wrap:wrap;min-height:42px}.tool-panel.active{display:flex}
+.group-title{font-size:11px;text-transform:uppercase;letter-spacing:.75px;color:#9fb4cf;font-weight:800;margin-right:2px}
+.divider{width:1px;height:28px;background:var(--border-soft);margin:0 3px}.tip{font-size:12px;color:var(--text-dim);max-width:520px}
+.page-readout{padding:8px 12px;border:1px solid var(--border-soft);border-radius:6px;background:var(--panel-2);font-weight:700}
+.layer{overflow:visible}
+.page{overflow:visible}
+.griditem{overflow:visible}
+.grid-line{position:absolute;background:#000;pointer-events:none;z-index:6}.grid-border-line{position:absolute;background:#000;pointer-events:none;z-index:6}
+
+.primary{background:#15803d!important;color:#fff;font-weight:700;border-color:#22c55e!important}
+.danger{background:#b91c1c!important;color:#fff;font-weight:700;border-color:#ef4444!important}
+.active{background:#0f766e!important;color:#fff!important;border-color:#14b8a6!important;box-shadow:0 0 0 1px #3b82f6,0 2px 8px #0005}
 .info{background:var(--panel);border-bottom:1px solid var(--border);padding:8px 14px;color:var(--text-dim);letter-spacing:.2px}
 .stage{padding:25px;text-align:center}
 .page{position:relative;display:inline-block;background:white;box-shadow:0 0 0 1px var(--border-soft),0 10px 40px #000a}
 .page canvas{display:block}
-.layer{position:absolute;inset:0}
+.layer{position:absolute;inset:0;z-index:20;pointer-events:auto}
 .textitem{
   position:absolute;white-space:pre;cursor:pointer;border:1px solid transparent;line-height:1;
   transform-origin:left top;transform-box:border-box;color:transparent;background:transparent;overflow:visible;
 }
 .textitem:hover{border-color:var(--cyan)}
-.textitem.sel{border:1px dashed var(--blue);background:#2f6fed1a}
+.textitem.sel{border:1px dashed var(--blue);background:#14b8a61a}
 .coveritem{position:absolute;background:#fff;pointer-events:none;z-index:1}
 .textitem{z-index:2}
 .addedtext{user-select:none;z-index:2}
 .lineitem{position:absolute;cursor:pointer;z-index:3}
-.lineitem.sel{box-shadow:0 0 0 3px #2f6fed66}
+.lineitem.sel{box-shadow:0 0 0 3px #14b8a666}
 .whiteitem{position:absolute;background:#fff;cursor:pointer;z-index:2;border:1px dashed #b9c3d0}
-.whiteitem.sel{box-shadow:0 0 0 3px #2f6fed66;border-color:var(--blue)}
+.whiteitem.sel{box-shadow:0 0 0 3px #14b8a666;border-color:var(--blue)}
 .rectangleitem{position:absolute;cursor:pointer;z-index:2;border:2px solid #000;box-sizing:border-box}
-.griditem{position:absolute;cursor:pointer;z-index:2;box-sizing:border-box;border:0;background-color:transparent;background-image:linear-gradient(to right,#000 1px,transparent 1px),linear-gradient(to bottom,#000 1px,transparent 1px);background-repeat:repeat;background-position:0 0;}
-.griditem .grid-side-mask{position:absolute;background:#fff;pointer-events:none;z-index:5;}
-.griditem.sel{box-shadow:0 0 0 3px #2f6fed66;}
-.rectangleitem.sel{box-shadow:0 0 0 3px #2f6fed66;border-color:var(--blue)}
+.griditem{position:absolute;cursor:pointer;z-index:2;box-sizing:border-box;border:0;background-color:transparent;touch-action:none;user-select:none;background-image:linear-gradient(to right,#000 1px,transparent 1px),linear-gradient(to bottom,#000 1px,transparent 1px);background-repeat:repeat;background-position:0 0;}
+.griditem .grid-side-mask{display:none!important;}
+.griditem.sel{box-shadow:0 0 0 3px #14b8a666;}
+.rectangleitem.sel{box-shadow:0 0 0 3px #14b8a666;border-color:var(--blue)}
 .imageitem,.signatureitem{
   position:absolute;display:block;max-width:none;height:auto;cursor:pointer;user-select:none;
   -webkit-user-drag:none;touch-action:none;z-index:4;box-sizing:border-box;
@@ -115,111 +131,223 @@ body{
 #pages{color:var(--text-dim);padding:0 4px;font-weight:600}
 label{color:var(--text-dim);display:flex;align-items:center;gap:6px;font-size:13px}
 ::selection{background:#4fd1e555}
+
+/* Screenshot-inspired professional dark navy / steel-blue theme */
+:root{
+  --bg:#070b14;
+  --panel:#0b111d;
+  --panel-2:#101827;
+  --border:#1c2738;
+  --border-soft:#26364d;
+  --text:#e7edf6;
+  --text-dim:#8190a6;
+  --cyan:#7ea4d8;
+  --green:#22c55e;
+  --green-dark:#15803d;
+  --blue:#3b82f6;
+  --red:#ef4444;
+  --grid:#121a29;
+}
+body{
+  background:
+    linear-gradient(var(--grid) 1px,transparent 1px) 0 0/28px 28px,
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/28px 28px,
+    var(--bg);
+  color:var(--text);
+}
+.bar{
+  background:rgba(8,13,23,.97);
+  border-bottom:1px solid #1c2738;
+  box-shadow:0 4px 18px rgba(0,0,0,.45);
+}
+.brand{color:#edf3fb}.brand span{color:#71829a}
+.bar button,.bar input,.bar select{
+  background:#0f1725;
+  border-color:#26364d;
+  color:#dbe5f1;
+}
+.bar button:hover{border-color:#3b82f6;box-shadow:0 2px 10px rgba(0,0,0,.45)}
+.bar input[type="file"]{background:#0e1624;border-color:#26364d;color:#8190a6}
+.bar input[type="file"]:hover{border-color:#3b82f6}
+.bar input[type="file"]::file-selector-button,
+.bar input[type="file"]::-webkit-file-upload-button{
+  background:#101b2c;
+  border:1px solid #315b9d;
+  color:#8db7f7;
+  box-shadow:none;
+}
+.bar input[type="file"]::file-selector-button:hover{background:#14243b;box-shadow:0 0 10px rgba(59,130,246,.18)}
+.tool-tabs{border-bottom-color:#1c2738}
+.tool-tab{background:#0d1523!important;color:#8190a6!important;border-color:#24344b!important}
+.tool-tab:hover{background:#111d2e!important;color:#dbe5f1!important;border-color:#35527a!important}
+.tool-tab.active{
+  background:#101a2b!important;
+  color:#8db7f7!important;
+  border-color:#315b9d!important;
+  box-shadow:0 0 0 1px rgba(59,130,246,.10)!important;
+}
+.group-title{color:#7186a3}
+.divider{background:#26364d}
+.tip{color:#71829a}
+.page-readout{background:#0e1725;border-color:#26364d}
+.primary{background:#14532d!important;border-color:#22c55e!important}
+.danger{background:#5f1d24!important;border-color:#ef4444!important}
+.active{
+  background:#13233b!important;
+  color:#dceaff!important;
+  border-color:#3b82f6!important;
+  box-shadow:0 0 0 1px rgba(59,130,246,.16),0 2px 8px rgba(0,0,0,.45)!important;
+}
+.info{background:#0a101b;border-bottom-color:#1c2738;color:#71829a}
+.textitem:hover{border-color:#7ea4d8}
+.textitem.sel{border-color:#3b82f6;background:rgba(59,130,246,.08)}
+.lineitem.sel{box-shadow:0 0 0 3px rgba(59,130,246,.20)}
+.whiteitem.sel{box-shadow:0 0 0 3px rgba(59,130,246,.18);border-color:#3b82f6}
+.rectangleitem.sel{box-shadow:0 0 0 3px rgba(59,130,246,.20);border-color:#3b82f6}
+.imageitem:hover,.signatureitem:hover{outline-color:#7ea4d8}
+.imageitem.sel,.signatureitem.sel{outline-color:#3b82f6}
+.resize-handle{background:#3b82f6;border-color:#e8f1ff}
+.whitepreview{border-color:#7ea4d8}
+.editbox{background:#0b111d;border-color:#3b82f6;box-shadow:0 6px 24px #000a,0 0 0 1px rgba(59,130,246,.14)}
+.editbox input,.editbox textarea{background:#101827;border-color:#26364d}
+.editbox button{background:#0f1725;border-color:#26364d}
+.editbox button:hover{border-color:#3b82f6}
+.editbox .eb-ok,.editbox .nt-apply{background:#14532d;color:#ecfdf5;border-color:#22c55e}
+::selection{background:rgba(59,130,246,.28)}
+
 </style>
 </head>
 
 <body>
 
 <div class="bar">
+  <div class="topbar">
+    <div class="brand">PDF Editor <span>Professional</span></div>
+    <input id="pdf" type="file" accept="application/pdf">
+    <div class="page-nav">
+      <button id="prev">◀</button>
+      <span id="pages">0 / 0</span>
+      <button id="next">▶</button>
+    </div>
+  </div>
 
-<input id="pdf" type="file" accept="application/pdf">
+  <div class="tool-tabs" role="tablist" aria-label="PDF Editor tools">
+    <button class="tool-tab active" data-tab="textTab">Text</button>
+    <button class="tool-tab" data-tab="cellTab">Cells / Grid</button>
+    <button class="tool-tab" data-tab="shapeTab">Shapes</button>
+    <button class="tool-tab" data-tab="mediaTab">Images / Signature</button>
+    <button class="tool-tab" data-tab="pageTab">Page</button>
+    <button class="tool-tab" data-tab="historyTab">History / Save</button>
+  </div>
 
-<button id="prev">◀</button>
-<span id="pages">0 / 0</span>
-<button id="next">▶</button>
+  <div class="tool-panels">
+    <section class="tool-panel active" id="textTab">
+      <div class="group-title">Edit & Create</div>
+      <button id="select" class="active">Select/Edit Text</button>
+      <button id="add">Add Text</button>
+      <button id="newbox">New Text Box</button>
+      <button id="move">Move Text</button>
+      <button id="erase">Erase Text</button>
+      <div class="divider"></div>
+      <div class="group-title">Text Style</div>
+      <label>Size <input id="size" type="number" value="12" min="4" max="100" step="1"></label>
+      <label>Color <input id="color" type="color" value="#000000"></label>
+      <button id="bold" title="Toggle bold text"><b>B</b></button>
+      <button id="italic" title="Toggle italic text"><i>I</i></button>
+      <label>Font
+        <select id="font">
+          <option value="arial">Arial / Helvetica</option>
+          <option value="verdana">Verdana</option>
+          <option value="calibri">Calibri</option>
+          <option value="times">Times New Roman</option>
+          <option value="georgia">Georgia</option>
+          <option value="courier">Courier New</option>
+        </select>
+      </label>
+      <label>Align
+        <select id="textAlign">
+          <option value="left">Left</option>
+          <option value="center">Middle</option>
+          <option value="right">Right</option>
+        </select>
+      </label>
+      <div class="divider"></div>
+      <div class="group-title">Exact Position</div>
+      <label>X <input id="posX" type="number" value="0" step="0.5"></label>
+      <label>Y <input id="posY" type="number" value="0" step="0.5"></label>
+      <button id="setPos">Set Position</button>
+      <button id="resetPos">Reset Position</button>
+    </section>
 
-<button id="select" class="active">Select/Edit Text</button>
-<button id="add">Add Text</button>
-<button id="addImage">Add Image</button>
-<button id="addSignature">Add Signature</button>
-<button id="crop" title="Crop selected picture or signature">Crop</button>
-<button id="rotateGraphic" title="Rotate selected picture or signature 90° clockwise">Rotate Picture ↻</button>
-<button id="cancelCrop" style="display:none">Cancel Crop</button>
-<input id="imageFile" type="file" accept="image/png,image/jpeg,image/jpg" hidden>
-<input id="signatureFile" type="file" accept="image/png,image/jpeg,image/jpg" hidden>
-<button id="white">Whiteout</button>
-<button id="rect" title="Draw a filled rectangle using the Color picker">Rectangle</button>
-<button id="grid" title="Draw an Excel-like cell grid">Excel Grid</button>
+    <section class="tool-panel" id="cellTab">
+      <div class="group-title">Excel-like Cells</div>
+      <button id="grid" title="Draw an Excel-like cell grid">Excel Grid</button>
+      <label>Rows <input id="gridRows" type="number" value="4" min="1" max="50" step="1"></label>
+      <label>Cols <input id="gridCols" type="number" value="4" min="1" max="50" step="1"></label>
+      <div class="divider"></div>
+      <div class="group-title">Border & Size</div>
+      <label>Border <input id="borderWidth" type="number" value="1.5" min="0.25" max="20" step="0.25"></label>
+      <button id="moveCell" title="Move the selected cell/grid">Move Cell</button>
+      <button id="resizeCell" title="Select a grid and drag its blue handles">Resize Cell</button>
+      <div class="divider"></div>
+      <div class="group-title">Remove One Outside Side</div>
+      <label>Side
+        <select id="gridSide">
+          <option value="top">Top</option><option value="right">Right</option>
+          <option value="bottom">Bottom</option><option value="left">Left</option>
+        </select>
+      </label>
+      <button id="eraseGridSide">Erase Cell Side</button>
+      <button id="restoreGridSides">Restore Sides</button>
+      <div class="tip">Select a grid, then use Move Cell or Resize Cell. Erasing a side removes only its border; it will not cover the PDF underneath.</div>
+    </section>
 
-<label>Rows
-<input id="gridRows" type="number" value="4" min="1" max="50" step="1" style="width:48px">
-</label>
-<label>Cols
-<input id="gridCols" type="number" value="4" min="1" max="50" step="1" style="width:48px">
-</label>
+    <section class="tool-panel" id="shapeTab">
+      <div class="group-title">Shapes & Markup</div>
+      <button id="white">Whiteout</button>
+      <button id="rect">Rectangle</button>
+      <button id="line">Draw Line</button>
+      <button id="moveShape">Move Shape</button>
+      <div class="divider"></div>
+      <div class="group-title">Rectangle</div>
+      <label>Fill Color <input id="shapeColor" type="color" value="#000000"></label>
+      <label>Shape Border / Line <input id="shapeBorderWidth" type="number" value="1.5" min="0.25" max="20" step="0.25"></label>
+      <button id="applyShapeWidth">Apply Thickness</button>
+      <div class="tip">Set the border/line thickness, select a rectangle or line, then click Apply Thickness. Move Shape lets you drag either one.</div>
+    </section>
 
-<label>Cell/Rect Border
-<input id="borderWidth" type="number" value="1.5" min="0.25" max="20" step="0.25" style="width:65px">
-</label>
+    <section class="tool-panel" id="mediaTab">
+      <div class="group-title">Pictures & Signature</div>
+      <button id="addImage">Add Image</button>
+      <button id="addSignature">Add Signature</button>
+      <button id="crop">Crop</button>
+      <button id="rotateGraphic">Rotate Picture ↻</button>
+      <button id="moveImage">Move Image</button>
+      <button id="cancelCrop" style="display:none">Cancel Crop</button>
+      <input id="imageFile" type="file" accept="image/png,image/jpeg,image/jpg" hidden>
+      <input id="signatureFile" type="file" accept="image/png,image/jpeg,image/jpg" hidden>
+      <div class="tip">Use Move Image to drag pictures/signatures. Select one to show resize handles.</div>
+    </section>
 
-<label>Grid Side
-<select id="gridSide">
-  <option value="top">Top</option>
-  <option value="right">Right</option>
-  <option value="bottom">Bottom</option>
-  <option value="left">Left</option>
-</select>
-</label>
-<button id="eraseGridSide" title="Erase one outside side of the selected cell grid">Erase Cell Side</button>
-<button id="restoreGridSides" title="Restore all outside sides of the selected cell grid">Restore Sides</button>
+    <section class="tool-panel" id="pageTab">
+      <div class="group-title">Page Controls</div>
+      <button id="pagePrev">Previous Page</button>
+      <button id="pageNext">Next Page</button>
+      <span class="page-readout" id="pageReadout">0 / 0</span>
+      <div class="tip">Page navigation is also available in the top bar.</div>
+    </section>
 
-<label>Text Align
-<select id="textAlign">
-  <option value="left">Left</option>
-  <option value="center">Middle</option>
-  <option value="right">Right</option>
-</select>
-</label>
-
-<label>
-Size
-<input id="size" type="number" value="12" min="4" max="100" step="1" style="width:65px">
-</label>
-
-<label>
-Color
-<input id="color" type="color" value="#000000">
-</label>
-
-<button id="bold" title="Toggle bold text"><b>B</b></button>
-<button id="italic" title="Toggle italic text"><i>I</i></button>
-
-<label>
-Font
-<select id="font">
-  <option value="arial">Arial / Helvetica</option>
-  <option value="verdana">Verdana</option>
-  <option value="calibri">Calibri</option>
-  <option value="times">Times New Roman</option>
-  <option value="georgia">Georgia</option>
-  <option value="courier">Courier New</option>
-</select>
-</label>
-
-<button id="move">Move Text</button>
-<label>X
-<input id="posX" type="number" value="0" step="0.5" style="width:70px">
-</label>
-<label>Y
-<input id="posY" type="number" value="0" step="0.5" style="width:70px">
-</label>
-<button id="setPos" title="Apply X/Y position to selected edited text">Set Position</button>
-<button id="resetPos" title="Return selected edited text to its original position">Reset Position</button>
-<button id="newbox">New Text Box</button>
-<button id="line">Draw Line</button>
-<button id="erase">Erase Text</button>
-
-<button id="del" class="danger">Delete Edit</button>
-<button id="undo">↶ Undo</button>
-<button id="redo">↷ Redo</button>
-
-<button id="save" class="primary">Save PDF</button>
-
-<a id="download" class="primary" href="#" download="edited.pdf"
-   style="display:none;text-decoration:none;height:34px;line-height:34px;padding:0 12px;border-radius:6px">
-Download PDF
-</a>
-
+    <section class="tool-panel" id="historyTab">
+      <div class="group-title">History</div>
+      <button id="del" class="danger">Delete Edit</button>
+      <button id="undo">↶ Undo</button>
+      <button id="redo">↷ Redo</button>
+      <div class="divider"></div>
+      <div class="group-title">Save</div>
+      <button id="save" class="primary">Save PDF</button>
+      <a id="download" class="primary" href="#" download="edited.pdf" style="display:none;text-decoration:none;height:34px;line-height:34px;padding:0 12px;border-radius:6px">Download PDF</a>
+    </section>
+  </div>
 </div>
 
 <div id="status" class="info">
@@ -250,6 +378,17 @@ Erase Text lets you click existing text to remove it instantly.
 pdfjsLib.GlobalWorkerOptions.workerSrc=
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+
+// ===== TOOL TABS =====
+document.querySelectorAll('.tool-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.tool-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.tool-panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    const panel=document.getElementById(tab.dataset.tab);
+    if(panel) panel.classList.add('active');
+  });
+});
 
 /* =========================================================
    GLOBAL VARIABLES
@@ -431,6 +570,34 @@ $('pdf').onchange=async e=>{
 /* =========================================================
    RENDER PAGE
 ========================================================= */
+
+function paintGridDom(el,c){
+  if(!el) return;
+  el.querySelectorAll('.grid-line,.grid-border-line').forEach(x=>x.remove());
+  const rows=Math.max(1,Math.round(c.rows||4));
+  const cols=Math.max(1,Math.round(c.cols||4));
+  const bw=Math.max(0.25,parseFloat(c.borderWidth)||1.5);
+  const sides=Object.assign({top:true,right:true,bottom:true,left:true},c.sides||{});
+  el.style.backgroundImage='none';
+  el.style.backgroundColor='transparent';
+  const addLine=(cls,styles)=>{
+    const d=document.createElement('div');
+    d.className=cls;
+    Object.assign(d.style,styles);
+    d.style.pointerEvents='none';
+    el.appendChild(d);
+  };
+  for(let cc=1;cc<cols;cc++){
+    addLine('grid-line',{left:(cc/cols*100)+'%',top:'0',width:bw+'px',height:'100%',transform:'translateX(-'+(bw/2)+'px)'});
+  }
+  for(let rr=1;rr<rows;rr++){
+    addLine('grid-line',{left:'0',top:(rr/rows*100)+'%',width:'100%',height:bw+'px',transform:'translateY(-'+(bw/2)+'px)'});
+  }
+  if(sides.top!==false) addLine('grid-border-line',{left:'0',top:'0',width:'100%',height:bw+'px'});
+  if(sides.right!==false) addLine('grid-border-line',{right:'0',top:'0',width:bw+'px',height:'100%'});
+  if(sides.bottom!==false) addLine('grid-border-line',{left:'0',bottom:'0',width:'100%',height:bw+'px'});
+  if(sides.left!==false) addLine('grid-border-line',{left:'0',top:'0',width:bw+'px',height:'100%'});
+}
 
 async function render(){
   if(cropSession) clearCropUI();
@@ -703,10 +870,35 @@ async function render(){
         el.classList.add('sel');
         $('color').value=c.color||'#000000';
         $('borderWidth').value=c.borderWidth||1.5;
+        $('shapeBorderWidth').value=c.borderWidth||1.5;
       };
       layer.appendChild(el);
     }
   });
+
+  function paintGridDom(el,c){
+    if(!el) return;
+    el.querySelectorAll('.grid-line,.grid-border-line').forEach(x=>x.remove());
+    const rows=Math.max(1,Math.round(c.rows||4));
+    const cols=Math.max(1,Math.round(c.cols||4));
+    const bw=Math.max(0.25,parseFloat(c.borderWidth)||1.5);
+    const sides=Object.assign({top:true,right:true,bottom:true,left:true},c.sides||{});
+    el.style.backgroundImage='none';
+    el.style.backgroundColor='transparent';
+    const addLine=(cls,styles)=>{
+      const d=document.createElement('div'); d.className=cls; Object.assign(d.style,styles); el.appendChild(d);
+    };
+    for(let cc=1;cc<cols;cc++){
+      addLine('grid-line',{left:(cc/cols*100)+'%',top:'0',width:bw+'px',height:'100%',transform:'translateX(-'+(bw/2)+'px)'});
+    }
+    for(let rr=1;rr<rows;rr++){
+      addLine('grid-line',{left:'0',top:(rr/rows*100)+'%',width:'100%',height:bw+'px',transform:'translateY(-'+(bw/2)+'px)'});
+    }
+    if(sides.top!==false) addLine('grid-border-line',{left:'0',top:'0',width:'100%',height:bw+'px'});
+    if(sides.right!==false) addLine('grid-border-line',{right:'0',top:'0',width:bw+'px',height:'100%'});
+    if(sides.bottom!==false) addLine('grid-border-line',{left:'0',bottom:'0',width:'100%',height:bw+'px'});
+    if(sides.left!==false) addLine('grid-border-line',{left:'0',top:'0',width:bw+'px',height:'100%'});
+  }
 
   /* ===== DRAW SAVED EXCEL-LIKE GRIDS ===== */
   (changes[n]||[]).forEach((c,i)=>{
@@ -721,24 +913,10 @@ async function render(){
       const rows=Math.max(1,Math.round(c.rows||4));
       const cols=Math.max(1,Math.round(c.cols||4));
       const bw=Math.max(0.25,parseFloat(c.borderWidth)||1.5);
-      el.style.backgroundSize=(100/cols)+'% '+(100/rows)+'%';
-      el.style.backgroundImage='linear-gradient(to right,#000 '+bw+'px,transparent '+bw+'px),linear-gradient(to bottom,#000 '+bw+'px,transparent '+bw+'px)';
+      el.style.backgroundImage='none';
+      paintGridDom(el,c);
       el.style.border='0';
       el.title='Excel-like grid '+rows+' × '+cols+' — Move Text to move, drag handles to resize';
-
-      // Hide any requested outside sides without affecting the internal cell lines.
-      const sides=Object.assign({top:true,right:true,bottom:true,left:true},c.sides||{});
-      const addMask=(side)=>{
-        if(sides[side]!==false) return;
-        const m=document.createElement('div');
-        m.className='grid-side-mask';
-        if(side==='top'){m.style.left='0';m.style.top='0';m.style.width='100%';m.style.height=Math.max(2,bw+1)+'px';}
-        if(side==='bottom'){m.style.left='0';m.style.bottom='0';m.style.width='100%';m.style.height=Math.max(2,bw+1)+'px';}
-        if(side==='left'){m.style.left='0';m.style.top='0';m.style.width=Math.max(2,bw+1)+'px';m.style.height='100%';}
-        if(side==='right'){m.style.right='0';m.style.top='0';m.style.width=Math.max(2,bw+1)+'px';m.style.height='100%';}
-        el.appendChild(m);
-      };
-      ['top','right','bottom','left'].forEach(addMask);
 
       el.onclick=e=>{
         e.stopPropagation();
@@ -787,8 +965,11 @@ async function render(){
         }
 
         selected={kind:'line',index:i,el};
-        document.querySelectorAll('.textitem,.lineitem,.whiteitem').forEach(x=>x.classList.remove('sel'));
+        document.querySelectorAll('.textitem,.lineitem,.whiteitem,.rectangleitem,.griditem,.imageitem,.signatureitem').forEach(x=>x.classList.remove('sel'));
         el.classList.add('sel');
+        const lw=c.width||2;
+        $('shapeBorderWidth').value=lw;
+        $('borderWidth').value=lw;
       };
 
       layer.appendChild(el);
@@ -836,6 +1017,26 @@ async function render(){
 
 
 /* =========================================================
+   GRID SELECTION HELPERS
+   Keep the selected grid reference valid after render().
+========================================================= */
+function reselectGrid(index){
+  const el=layer.querySelector('.griditem[data-grid-index="'+index+'"]');
+  if(!el) return false;
+  selected={kind:'grid',index,el};
+  document.querySelectorAll('.textitem,.lineitem,.whiteitem,.rectangleitem,.griditem,.imageitem,.signatureitem').forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel');
+  const c=changes[n]&&changes[n][index];
+  if(c){
+    $('borderWidth').value=c.borderWidth||1.5;
+    paintGridDom(el,c);
+  }
+  createGridResizeHandles(index,el);
+  return true;
+}
+
+
+/* =========================================================
    BUTTON STATES
 ========================================================= */
 
@@ -849,6 +1050,8 @@ function setButtons(){
   $('addSignature').classList.toggle('active',mode==='signature');
   $('rotateGraphic').disabled=!(selected && selected.kind==='graphic');
   $('move').classList.toggle('active',mode==='move');
+  $('moveShape').classList.toggle('active',mode==='move');
+  $('moveImage').classList.toggle('active',mode==='move');
   $('line').classList.toggle('active',mode==='line');
   $('erase').classList.toggle('active',mode==='erase');
   $('bold').classList.toggle('active',bold);
@@ -1721,6 +1924,16 @@ $('move').onclick=()=>{
   setButtons();
   msg('Move: drag text, cells/grids, rectangles, images or signatures.');
 };
+$('moveShape').onclick=()=>{
+  mode='move';
+  setButtons();
+  msg('Move Shape: select and drag a rectangle or line.');
+};
+$('moveImage').onclick=()=>{
+  mode='move';
+  setButtons();
+  msg('Move Image: select and drag an image or signature.');
+};
 
 $('rect').onclick=()=>{
   mode='rect';
@@ -1745,28 +1958,19 @@ $('color').addEventListener('input',()=>{
 $('borderWidth').addEventListener('input',()=>{
   if(!selected || !changes[n] || !changes[n][selected.index]) return;
   const c=changes[n][selected.index];
-  if(selected.kind!=='rect' && selected.kind!=='grid') return;
-  c.borderWidth=Math.max(0.25,Math.min(20,parseFloat($('borderWidth').value)||1.5));
-  if(selected.el){
-    selected.el.style.borderWidth=c.borderWidth+'px';
-    if(selected.kind==='grid'){
-      const bw=c.borderWidth;
-      selected.el.style.backgroundImage='linear-gradient(to right,#000 '+bw+'px,transparent '+bw+'px),linear-gradient(to bottom,#000 '+bw+'px,transparent '+bw+'px)';
-      // Rebuild side masks at the new thickness.
-      const oldMasks=selected.el.querySelectorAll('.grid-side-mask');
-      oldMasks.forEach(m=>m.remove());
-      const sides=Object.assign({top:true,right:true,bottom:true,left:true},c.sides||{});
-      ['top','right','bottom','left'].forEach(side=>{
-        if(sides[side]!==false)return;
-        const m=document.createElement('div');m.className='grid-side-mask';
-        if(side==='top'){m.style.left='0';m.style.top='0';m.style.width='100%';m.style.height=Math.max(2,bw+1)+'px';}
-        if(side==='bottom'){m.style.left='0';m.style.bottom='0';m.style.width='100%';m.style.height=Math.max(2,bw+1)+'px';}
-        if(side==='left'){m.style.left='0';m.style.top='0';m.style.width=Math.max(2,bw+1)+'px';m.style.height='100%';}
-        if(side==='right'){m.style.right='0';m.style.top='0';m.style.width=Math.max(2,bw+1)+'px';m.style.height='100%';}
-        selected.el.appendChild(m);
-      });
+  const w=Math.max(0.25,Math.min(20,parseFloat($('borderWidth').value)||1.5));
+  if(selected.kind!=='rect' && selected.kind!=='grid' && selected.kind!=='line') return;
+  if(selected.kind==='line'){
+    c.width=w;
+    if(selected.el) selected.el.style.height=w+'px';
+  }else{
+    c.borderWidth=w;
+    if(selected.el){
+      selected.el.style.borderWidth=w+'px';
+      if(selected.kind==='grid') paintGridDom(selected.el,c);
     }
   }
+  const sw=document.getElementById('shapeBorderWidth'); if(sw) sw.value=w;
 });
 
 $('eraseGridSide').onclick=()=>{
@@ -1776,7 +1980,7 @@ $('eraseGridSide').onclick=()=>{
   const c=changes[n][selected.index];
   c.sides=Object.assign({top:true,right:true,bottom:true,left:true},c.sides||{});
   c.sides[$('gridSide').value]=false;
-  pushHistory();render();msg('Grid '+$('gridSide').value+' side erased.');
+  const idx=selected.index; pushHistory();render();reselectGrid(idx);msg('Grid '+$('gridSide').value+' side erased.');
 };
 
 $('restoreGridSides').onclick=()=>{
@@ -1784,7 +1988,7 @@ $('restoreGridSides').onclick=()=>{
     msg('Select an Excel Grid first.'); return;
   }
   changes[n][selected.index].sides={top:true,right:true,bottom:true,left:true};
-  pushHistory();render();msg('All grid outside sides restored.');
+  const idx=selected.index; pushHistory();render();reselectGrid(idx);msg('All grid outside sides restored.');
 };
 
 $('line').onclick=()=>{
@@ -1801,6 +2005,40 @@ $('erase').onclick=()=>{
 
 $('bold').onclick=()=>{ bold=!bold; setButtons(); };
 $('italic').onclick=()=>{ italic=!italic; setButtons(); };
+// ===== CELL / SHAPE UI HELPERS =====
+$('moveCell').onclick=()=>{ mode='move'; setButtons(); msg('Move Cell: click/drag any grid cell area to move the whole grid.'); };
+$('resizeCell').onclick=()=>{
+  if(selected && selected.kind==='grid'){
+    mode='move'; setButtons();
+    reselectGrid(selected.index);
+    msg('Resize Cell: drag a blue handle to change the grid size.');
+  }else msg('Select an Excel Grid first, then click Resize Cell.');
+};
+$('shapeColor').addEventListener('input',()=>{ $('color').value=$('shapeColor').value; $('color').dispatchEvent(new Event('input')); });
+$('shapeBorderWidth').addEventListener('input',()=>{ $('borderWidth').value=$('shapeBorderWidth').value; });
+$('applyShapeWidth').onclick=()=>{
+  const w=Math.max(0.25,Math.min(20,parseFloat($('shapeBorderWidth').value)||1.5));
+  $('borderWidth').value=w;
+  if(!selected || !changes[n] || !changes[n][selected.index]){ msg('Select a rectangle or line first.'); return; }
+  const c=changes[n][selected.index];
+  if(selected.kind==='rect'){
+    c.borderWidth=w;
+    if(selected.el) selected.el.style.borderWidth=w+'px';
+  }else if(selected.kind==='line'){
+    c.width=w;
+    if(selected.el) selected.el.style.height=w+'px';
+  }else{
+    msg('Select a rectangle or line to apply shape thickness.'); return;
+  }
+  pushHistory();
+  render();
+  msg((selected.kind==='line'?'Line':'Rectangle')+' thickness set to '+w+' px.');
+};
+$('color').addEventListener('input',()=>{ const sc=document.getElementById('shapeColor'); if(sc) sc.value=$('color').value; });
+$('borderWidth').addEventListener('input',()=>{ const sb=document.getElementById('shapeBorderWidth'); if(sb) sb.value=$('borderWidth').value; });
+$('pagePrev').onclick=()=>$('prev').click();
+$('pageNext').onclick=()=>$('next').click();
+
 
 
 /* =========================================================
@@ -1992,7 +2230,7 @@ function finishLine(){
     line:true,
     x1,y1,x2,y2,
     color:$('color').value,
-    width:2
+    width:Math.max(0.25,Math.min(20,parseFloat($('shapeBorderWidth').value)||2))
   });
 
   pushHistory();
@@ -2127,15 +2365,23 @@ function finishGridResize(){
   document.removeEventListener('pointerup',finishGridResize,true);
   document.removeEventListener('pointercancel',finishGridResize,true);
   const d=gridResizeDrag,c=changes[n]&&changes[n][d.index];
-  try{if(d.pointerId!=null)document.querySelector('.grid-resize-handle')?.releasePointerCapture(d.pointerId)}catch(_){}
+  try{if(d.pointerId!=null)eSafeRelease(d.pointerId)}catch(_){}
   if(c){
-    c.x=parseFloat(d.el.style.left)||0;c.y=parseFloat(d.el.style.top)||0;
-    c.w=parseFloat(d.el.style.width)||d.startW;c.h=parseFloat(d.el.style.height)||d.startH;
-    c.manualSize=true;c.manualPos=true;
-    pushHistory();render();msg('Cell grid resized.');
+    c.x=parseFloat(d.el.style.left)||0; c.y=parseFloat(d.el.style.top)||0;
+    c.w=parseFloat(d.el.style.width)||d.startW; c.h=parseFloat(d.el.style.height)||d.startH;
+    c.manualSize=true; c.manualPos=true;
+    pushHistory();
+    render();
+    reselectGrid(d.index);
+    msg('Cell grid resized.');
   }
   gridResizeDrag=null;
 }
+function eSafeRelease(pointerId){
+  try{layer.releasePointerCapture(pointerId)}catch(_){}
+  document.querySelectorAll('.grid-resize-handle').forEach(h=>{try{h.releasePointerCapture(pointerId)}catch(_){}});
+}
+
 
 /* =========================================================
    DRAG CELLS / RECTANGLES
@@ -2144,8 +2390,10 @@ let shapeDrag=null;
 function beginShapeDrag(e,el){
   e.preventDefault(); e.stopPropagation();
   try{ layer.setPointerCapture(e.pointerId); }catch(_){}
-  const kind=el.classList.contains('griditem')?'grid':'rect';
-  const index=+(el.dataset.gridIndex!==undefined?el.dataset.gridIndex:el.dataset.rectIndex);
+  let kind='rect';
+  if(el.classList.contains('griditem')) kind='grid';
+  else if(el.classList.contains('lineitem')) kind='line';
+  const index=+(el.dataset.gridIndex!==undefined ? el.dataset.gridIndex : (el.dataset.rectIndex!==undefined ? el.dataset.rectIndex : el.dataset.lineIndex));
   selected={kind,index,el};
   document.querySelectorAll('.textitem,.lineitem,.whiteitem,.rectangleitem,.griditem,.imageitem,.signatureitem').forEach(x=>x.classList.remove('sel'));
   el.classList.add('sel');
@@ -2161,16 +2409,30 @@ function shapeDragMove(e){
 function finishShapeDrag(){
   if(!shapeDrag)return;
   try{layer.releasePointerCapture(shapeDrag.pointerId)}catch(_){}
-  const x=parseFloat(shapeDrag.el.style.left)||0, y=parseFloat(shapeDrag.el.style.top)||0;
-  const moved=Math.hypot(x-shapeDrag.startLeft,y-shapeDrag.startTop)>2;
+  const d=shapeDrag;
+  const x=parseFloat(d.el.style.left)||0, y=parseFloat(d.el.style.top)||0;
+  const moved=Math.hypot(x-d.startLeft,y-d.startTop)>2;
   if(moved){
     changes[n]=changes[n]||[];
-    const c=changes[n][shapeDrag.index];
-    if(c){c.x=x;c.y=y;}
-    pushHistory(); render(); msg(shapeDrag.kind==='grid'?'Cell grid moved.':'Rectangle moved.');
+    const c=changes[n][d.index];
+    if(c){
+      if(d.kind==='line'){
+        const dx=x-d.startLeft, dy=y-d.startTop;
+        c.x1=(c.x1||0)+dx; c.y1=(c.y1||0)+dy;
+        c.x2=(c.x2||0)+dx; c.y2=(c.y2||0)+dy;
+      }else{
+        c.x=x;c.y=y;
+      }
+      c.manualPos=true;
+    }
+    pushHistory();
+    render();
+    if(d.kind==='grid') reselectGrid(d.index);
+    msg(d.kind==='grid'?'Cell grid moved.':d.kind==='line'?'Line moved.':'Rectangle moved.');
   }
   shapeDrag=null;
 }
+
 
 /* =========================================================
    PAGE POINTER EVENTS
@@ -2179,18 +2441,24 @@ function finishShapeDrag(){
 let rectDrag=null;
 function beginRect(x,y){ rectDrag={x,y}; const el=document.createElement('div'); el.className='whitepreview'; el.style.left=x+'px'; el.style.top=y+'px'; el.style.width='0px'; el.style.height='0px'; layer.appendChild(el); rectDrag.el=el; }
 function updateRectPreview(e){ if(!rectDrag)return; const r=layer.getBoundingClientRect(); const x=e.clientX-r.left,y=e.clientY-r.top; const x0=Math.min(rectDrag.x,x),y0=Math.min(rectDrag.y,y),w=Math.abs(x-rectDrag.x),h=Math.abs(y-rectDrag.y); rectDrag.el.style.left=x0+'px';rectDrag.el.style.top=y0+'px';rectDrag.el.style.width=w+'px';rectDrag.el.style.height=h+'px'; }
-function finishRect(){ if(!rectDrag)return; const r=rectDrag.el.getBoundingClientRect(), lr=layer.getBoundingClientRect(); const x=r.left-lr.left,y=r.top-lr.top,w=r.width,h=r.height; rectDrag.el.remove(); if(w<2||h<2){rectDrag=null;return;} changes[n]=changes[n]||[]; changes[n].push({rect:true,x,y,w,h,color:$('color').value,borderColor:'#000000',borderWidth:Math.max(0.25,Math.min(20,parseFloat($('borderWidth').value)||1.5))}); pushHistory(); rectDrag=null; render(); msg('Colored rectangle added with a solid black border.'); }
+function finishRect(){ if(!rectDrag)return; const r=rectDrag.el.getBoundingClientRect(), lr=layer.getBoundingClientRect(); const x=r.left-lr.left,y=r.top-lr.top,w=r.width,h=r.height; rectDrag.el.remove(); if(w<2||h<2){rectDrag=null;return;} changes[n]=changes[n]||[]; changes[n].push({rect:true,x,y,w,h,color:$('color').value,borderColor:'#000000',borderWidth:Math.max(0.25,Math.min(20,parseFloat($('shapeBorderWidth').value)||1.5))}); pushHistory(); rectDrag=null; render(); msg('Colored rectangle added with a solid black border.'); }
 
-function beginGrid(x,y){
-  gridDraw={x1:x,y1:y,x2:x,y2:y};
+function beginGrid(x,y,e){
+  gridDraw={x1:x,y1:y,x2:x,y2:y,pointerId:e&&e.pointerId};
+  if(e){ e.preventDefault(); try{layer.setPointerCapture(e.pointerId)}catch(_){} }
   const el=document.createElement('div');
   el.className='griditem';
   el.style.left=x+'px'; el.style.top=y+'px'; el.style.width='0px'; el.style.height='0px';
-  el.style.backgroundSize=(100/Math.max(1,+$('gridCols').value||4))+'% '+(100/Math.max(1,+$('gridRows').value||4))+'%';
+  el.style.backgroundImage='none';
+  const rows=Math.max(1,Math.min(50,Math.round(+$('gridRows').value||4)));
+  const cols=Math.max(1,Math.min(50,Math.round(+$('gridCols').value||4)));
+  const bw=Math.max(0.25,Math.min(20,parseFloat($('borderWidth').value)||1.5));
+  paintGridDom(el,{rows,cols,borderWidth:bw,sides:{top:true,right:true,bottom:true,left:true}});
   layer.appendChild(el); gridDraw.el=el;
 }
 function updateGridPreview(e){
   if(!gridDraw)return;
+  e.preventDefault();
   const r=layer.getBoundingClientRect(); const x=e.clientX-r.left,y=e.clientY-r.top;
   const x0=Math.min(gridDraw.x1,x), y0=Math.min(gridDraw.y1,y), w=Math.abs(x-gridDraw.x1), h=Math.abs(y-gridDraw.y1);
   gridDraw.el.style.left=x0+'px'; gridDraw.el.style.top=y0+'px'; gridDraw.el.style.width=w+'px'; gridDraw.el.style.height=h+'px';
@@ -2198,16 +2466,23 @@ function updateGridPreview(e){
 }
 function finishGrid(){
   if(!gridDraw)return;
+  try{if(gridDraw.pointerId!=null)layer.releasePointerCapture(gridDraw.pointerId)}catch(_){}
   const r=gridDraw.el.getBoundingClientRect(), lr=layer.getBoundingClientRect();
   const x=r.left-lr.left,y=r.top-lr.top,w=r.width,h=r.height;
-  gridDraw.el.remove(); gridDraw=null;
-  if(w<3||h<3)return;
   const rows=Math.max(1,Math.min(50,Math.round(+$('gridRows').value||4)));
   const cols=Math.max(1,Math.min(50,Math.round(+$('gridCols').value||4)));
+  gridDraw.el.remove();
+  gridDraw=null;
+  if(w<3||h<3)return;
   changes[n]=changes[n]||[];
-  changes[n].push({grid:true,x,y,w,h,rows,cols,borderColor:'#000000',borderWidth:Math.max(0.25,Math.min(20,parseFloat($('borderWidth').value)||1.5))});
-  pushHistory(); render(); msg('Excel-like '+rows+' × '+cols+' cell grid added.');
+  const index=changes[n].length;
+  changes[n].push({grid:true,x,y,w,h,rows,cols,borderColor:'#000000',borderWidth:Math.max(0.25,Math.min(20,parseFloat($('borderWidth').value)||1.5)),sides:{top:true,right:true,bottom:true,left:true}});
+  pushHistory();
+  render();
+  reselectGrid(index);
+  msg('Excel-like '+rows+' × '+cols+' cell grid added.');
 }
+
 
 $('layer').addEventListener('pointerdown',e=>{
 
@@ -2232,6 +2507,19 @@ $('layer').addEventListener('pointerdown',e=>{
     return;
   }
 
+  // GRID DRAWING MUST TAKE PRIORITY: start a new grid anywhere on the page,
+  // including over existing editor objects. This prevents overlay elements
+  // from swallowing the pointer-down event and making Excel Grid appear dead.
+  if(mode==='grid'){
+    const r=layer.getBoundingClientRect();
+    const x=e.clientX-r.left;
+    const y=e.clientY-r.top;
+    if(x>=0 && y>=0 && x<=r.width && y<=r.height){
+      beginGrid(x,y,e);
+      return;
+    }
+  }
+
   if(
     e.target.classList.contains('textitem') ||
     e.target.classList.contains('imageitem') ||
@@ -2246,10 +2534,12 @@ $('layer').addEventListener('pointerdown',e=>{
     return;
   }
 
-  if(
-    e.target.classList.contains('lineitem') ||
-    e.target.classList.contains('whiteitem')
-  ){
+  if(e.target.classList.contains('lineitem')){
+    if(mode==='move') beginShapeDrag(e,e.target);
+    return;
+  }
+
+  if(e.target.classList.contains('whiteitem')){
     return;
   }
 
@@ -2275,7 +2565,7 @@ $('layer').addEventListener('pointerdown',e=>{
     beginRect(x,y);
   }
   else if(mode==='grid'){
-    beginGrid(x,y);
+    beginGrid(x,y,e);
   }
 });
 
