@@ -303,6 +303,10 @@ def column_design():
 def bridge_design():
     return render_template("design/projects/bridge_design.html")
 
+@app.route("/feasibility_check")
+def feasibility_check():
+    return render_template("design/projects/feasibility_check.html")
+
 @app.route("/slab_design")
 def slab_design():
     return render_template("design/slab_design.html")
