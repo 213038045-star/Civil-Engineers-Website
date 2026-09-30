@@ -82,7 +82,7 @@ body{
 .textitem:hover{border-color:var(--cyan)}
 .textitem.sel{border:1px dashed var(--blue);background:#14b8a61a}
 /* Edited text remains visible/selectable, but drawing tools bypass it in the pointer handler. */
-.coveritem{position:absolute;background:#fff;pointer-events:none;z-index:1}
+.coveritem{position:absolute;background:transparent;pointer-events:none;z-index:1;background-repeat:no-repeat;background-size:100% 100%;}
 .textitem{z-index:2}
 .addedtext{user-select:none;z-index:2}
 .lineitem{position:absolute;cursor:pointer;z-index:3}
@@ -571,7 +571,7 @@ $('pdf').onchange=async e=>{
 
 
 /* =========================================================
-   RENDER PAGE
+   GRID PAINTING
 ========================================================= */
 
 function paintGridDom(el,c){
@@ -653,6 +653,88 @@ function inferRenderedBold(ctx,x,y,w,h){
     return total>0 && ink/total>0.18;
   }catch(_){return false;}
 }
+
+
+/* =========================================================
+   PATCH 1: find only the ORIGINAL glyph ink + real background colour
+========================================================= */
+function computeCoverRect(cv,it){
+  try{
+    const cx=cv.getContext('2d');
+    const ang=it.angle||0;
+    let rx0,ry0,rx1,ry1;
+    if(ang===0){
+      rx0=it.x-2; rx1=it.x+it.w+2;
+      ry0=it.baselineY-it.font*0.92-1; ry1=it.baselineY+it.font*0.3+1;
+    }else{
+      const r=ang*Math.PI/180,cs=Math.cos(r),sn=Math.sin(r);
+      const pts=[[0,0],[it.w,0],[it.w,it.h],[0,it.h]].map(p=>[it.x+p[0]*cs-p[1]*sn,it.y+p[0]*sn+p[1]*cs]);
+      rx0=Math.min(...pts.map(p=>p[0]));rx1=Math.max(...pts.map(p=>p[0]));
+      ry0=Math.min(...pts.map(p=>p[1]));ry1=Math.max(...pts.map(p=>p[1]));
+    }
+    rx0=Math.max(0,Math.floor(rx0));ry0=Math.max(0,Math.floor(ry0));
+    rx1=Math.min(cv.width,Math.ceil(rx1));ry1=Math.min(cv.height,Math.ceil(ry1));
+    const W=rx1-rx0,H=ry1-ry0;
+    if(W<1||H<1) return null;
+    const d=cx.getImageData(rx0,ry0,W,H).data;
+
+    /* background = most common colour in the region (text is always the minority) */
+    const buckets=new Map();
+    for(let i=0;i<d.length;i+=4){
+      const k=((d[i]>>3)<<10)|((d[i+1]>>3)<<5)|(d[i+2]>>3);
+      const b=buckets.get(k);
+      if(b){b.n++;b.r+=d[i];b.g+=d[i+1];b.b+=d[i+2];}
+      else buckets.set(k,{n:1,r:d[i],g:d[i+1],b:d[i+2]});
+    }
+    let best=null;
+    for(const b of buckets.values()) if(!best||b.n>best.n) best=b;
+    const bg=[Math.round(best.r/best.n),Math.round(best.g/best.n),Math.round(best.b/best.n)];
+
+    if(ang!==0) return {x:rx0,y:ry0,w:W,h:H,color:bg};
+
+    /* mark ink pixels + detect long table rules (borders) so they are never erased */
+    const mark=new Uint8Array(W*H),strong=new Uint8Array(W*H);
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      const k=(y*W+x)*4;
+      const dd=Math.hypot(d[k]-bg[0],d[k+1]-bg[1],d[k+2]-bg[2]);
+      if(dd>30) mark[y*W+x]=1;
+      if(dd>60) strong[y*W+x]=1;
+    }
+    const ruleRow=new Uint8Array(H),ruleCol=new Uint8Array(W);
+    for(let y=0;y<H;y++){let run=0,mx=0;for(let x=0;x<W;x++){run=strong[y*W+x]?run+1:0;if(run>mx)mx=run;}if(mx>=W*0.9)ruleRow[y]=1;}
+    for(let x=0;x<W;x++){let run=0,mx=0;for(let y=0;y<H;y++){run=strong[y*W+x]?run+1:0;if(run>mx)mx=run;}if(mx>=H*0.9)ruleCol[x]=1;}
+    const protRow=new Uint8Array(H),protCol=new Uint8Array(W);
+    for(let y=0;y<H;y++) if(ruleRow[y]){protRow[y]=1;if(y>0)protRow[y-1]=1;if(y<H-1)protRow[y+1]=1;}
+    for(let x=0;x<W;x++) if(ruleCol[x]){protCol[x]=1;if(x>0)protCol[x-1]=1;if(x<W-1)protCol[x+1]=1;}
+
+    let l=W,r=-1,t=H,b=-1;
+    for(let y=0;y<H;y++){ if(protRow[y]) continue;
+      for(let x=0;x<W;x++){ if(protCol[x]||!mark[y*W+x]) continue;
+        if(x<l)l=x; if(x>r)r=x; if(y<t)t=y; if(y>b)b=y; } }
+    if(r<0) return null;
+    for(let s=0;s<2;s++){
+      if(l>0&&!protCol[l-1]) l--;
+      if(r<W-1&&!protCol[r+1]) r++;
+      if(t>0&&!protRow[t-1]) t--;
+      if(b<H-1&&!protRow[b+1]) b++;
+    }
+    return {x:rx0+l,y:ry0+t,w:r-l+1,h:b-t+1,color:bg};
+  }catch(_){ return null; }
+}
+
+/* Where the browser puts the baseline inside a line box, so screen == saved PDF */
+function domBaselineOffset(px,fam,isBold,isItalic,lineH){
+  measureCtx.font=(isItalic?'italic ':'')+(isBold?'700 ':'400 ')+px+'px '+familyCss(fam);
+  const m=measureCtx.measureText('Hg');
+  const fa=m.fontBoundingBoxAscent!==undefined?m.fontBoundingBoxAscent:px*0.905;
+  const fd=m.fontBoundingBoxDescent!==undefined?m.fontBoundingBoxDescent:px*0.212;
+  return (lineH-(fa+fd))/2+fa;
+}
+
+
+/* =========================================================
+   RENDER PAGE
+========================================================= */
 
 async function render(){
   if(cropSession) clearCropUI();
@@ -772,7 +854,7 @@ async function render(){
   pageItems[n]=items.map(it=>({...it}));
 
 
-  /* ===== APPLY EXISTING CHANGES ===== */
+  /* ===== APPLY EXISTING CHANGES (PATCH 2) ===== */
 
   for(const c of (changes[n]||[])){
 
@@ -789,21 +871,18 @@ async function render(){
         layer.appendChild(cover);
       }
 
-      /* Keep the on-screen cover identical to the saved replacement image.
-         Do not add a large descent area: that was causing the white mask to
-         reach the next sentence. */
-      /* LOCK the edit to the original glyph box.  Never expand the white
-         cover to the new word's width/height; doing so can erase cell/table
-         borders and neighboring content. */
-      const coverPadX=Math.min(0.45,Math.max(0.15,base.w*0.001));
-      const coverPadY=Math.min(0.45,Math.max(0.15,base.h*0.01));
-      const coverW=base.w+coverPadX*2;
-      const coverH=base.h+coverPadY*2;
-
-      cover.style.left=Math.max(0,(c.x!==undefined?c.x:base.x)-coverPadX)+'px';
-      cover.style.top=Math.max(0,(c.y!==undefined?c.y:base.y)-coverPadY)+'px';
-      cover.style.width=coverW+'px';
-      cover.style.height=coverH+'px';
+      /* Cover ONLY the original glyph ink, always at the ORIGINAL place. */
+      const cr=computeCoverRect(ctx.canvas,base);
+      if(cr){
+        cover.style.display='block';
+        cover.style.left=cr.x+'px';
+        cover.style.top=cr.y+'px';
+        cover.style.width=cr.w+'px';
+        cover.style.height=cr.h+'px';
+        cover.style.backgroundColor='rgb('+cr.color.join(',')+')';
+      }else{
+        cover.style.display='none';
+      }
 
       const el=layer.querySelector('.textitem[data-i="'+c.i+'"]');
       if(!el) continue;
@@ -813,28 +892,33 @@ async function render(){
         continue;
       }
 
+      const fam=c.family||base.family;
+      const isB=!!c.bold, isI=!!c.italic;
+      const sizePx=(c.size!==undefined ? c.size : base.font/(scale||1))*(scale||1);
+      const lineH=base.anchorH||base.h;
+      const manual=c.manualPos && c.x!==undefined && c.y!==undefined;
+      const left=manual ? c.x : base.anchorX;
+      const top =manual ? c.y : base.anchorY;
+
+      /* keep the BASELINE exactly where the original baseline was */
+      const domBase=domBaselineOffset(sizePx,fam,isB,isI,lineH);
+
       el.textContent=c.text;
-      const fixedRenderX=(c.manualPos && c.x!==undefined) ? c.x : base.anchorX;
-      const fixedRenderY=(c.manualPos && c.y!==undefined) ? c.y : base.anchorY;
-      el.style.left=fixedRenderX+'px';
-      el.style.top=fixedRenderY+'px';
+      el.style.left=left+'px';
+      el.style.top=(top+base.font-domBase)+'px';
       el.style.width=(base.anchorW||base.w)+'px';
-      el.style.height=(base.anchorH||base.h)+'px';
+      el.style.height=lineH+'px';
       el.style.boxSizing='border-box';
       el.style.color=c.color||base.originalColor||'#000';
-
-      const displaySizePt=c.size!==undefined ? c.size : base.font/(scale||1);
-      el.style.fontSize=(displaySizePt*(scale||1))+'px';
-      el.style.fontWeight=c.bold?'700':'400';
-      el.style.fontStyle=c.italic?'italic':'normal';
-      el.style.fontFamily=familyCss(c.family||base.family);
-      el.style.lineHeight=(base.anchorH||base.h)+'px';
+      el.style.fontSize=sizePx+'px';
+      el.style.fontWeight=isB?'700':'400';
+      el.style.fontStyle=isI?'italic':'normal';
+      el.style.fontFamily=familyCss(fam);
+      el.style.lineHeight=lineH+'px';
       el.style.textAlign=c.align==='center' ? 'center' : (c.align==='right' ? 'right' : 'left');
       el.style.whiteSpace='nowrap';
-
-      const rotation=c.angle!==undefined ? c.angle : (base.angle||0);
       el.style.transformOrigin='left top';
-      el.style.transform='rotate('+rotation+'deg)';
+      el.style.transform='rotate('+(c.angle!==undefined ? c.angle : (base.angle||0))+'deg)';
       el.style.background='transparent';
       el.style.borderColor='transparent';
     }
@@ -943,29 +1027,6 @@ async function render(){
     }
   });
 
-  function paintGridDom(el,c){
-    if(!el) return;
-    el.querySelectorAll('.grid-line,.grid-border-line').forEach(x=>x.remove());
-    const rows=Math.max(1,Math.round(c.rows||4));
-    const cols=Math.max(1,Math.round(c.cols||4));
-    const bw=Math.max(0.25,parseFloat(c.borderWidth)||1.5);
-    const sides=Object.assign({top:true,right:true,bottom:true,left:true},c.sides||{});
-    el.style.backgroundImage='none';
-    el.style.backgroundColor='transparent';
-    const addLine=(cls,styles)=>{
-      const d=document.createElement('div'); d.className=cls; Object.assign(d.style,styles); el.appendChild(d);
-    };
-    for(let cc=1;cc<cols;cc++){
-      addLine('grid-line',{left:(cc/cols*100)+'%',top:'0',width:bw+'px',height:'100%',transform:'translateX(-'+(bw/2)+'px)'});
-    }
-    for(let rr=1;rr<rows;rr++){
-      addLine('grid-line',{left:'0',top:(rr/rows*100)+'%',width:'100%',height:bw+'px',transform:'translateY(-'+(bw/2)+'px)'});
-    }
-    if(sides.top!==false) addLine('grid-border-line',{left:'0',top:'0',width:'100%',height:bw+'px'});
-    if(sides.right!==false) addLine('grid-border-line',{right:'0',top:'0',width:bw+'px',height:'100%'});
-    if(sides.bottom!==false) addLine('grid-border-line',{left:'0',bottom:'0',width:'100%',height:bw+'px'});
-    if(sides.left!==false) addLine('grid-border-line',{left:'0',top:'0',width:bw+'px',height:'100%'});
-  }
 
   /* ===== DRAW SAVED EXCEL-LIKE GRIDS ===== */
   (changes[n]||[]).forEach((c,i)=>{
@@ -1080,6 +1141,8 @@ async function render(){
   });
 
   $('pages').textContent=n+' / '+doc.numPages;
+  const pr=document.getElementById('pageReadout');
+  if(pr) pr.textContent=n+' / '+doc.numPages;
 }
 
 
@@ -1951,7 +2014,7 @@ function finishDrag(){
         i:drag.index,
         text:base.str,
         size:base.font/(scale||1),
-        color:'#000000',
+        color:base.originalColor||'#000000',   /* PATCH 4 */
         bold:!!base.boldGuess,
         italic:!!base.italicGuess,
         family:base.family,
@@ -2683,10 +2746,6 @@ $('layer').addEventListener('pointerdown',e=>{
 
   if(e.target!==$('layer')) return;
 
-  let r=layer.getBoundingClientRect();
-  let x=e.clientX-r.left;
-  let y=e.clientY-r.top;
-
   /* Drawing/add modes are handled above before object hit-testing so
      edited text cannot block them. */
 });
@@ -2801,20 +2860,7 @@ $('save').onclick=async()=>{
       throw new Error('Original PDF header is missing. Please reload the PDF.');
     }
 
-    let out;
-    try{
-      // Normal load for regular PDFs.
-      out=await PDFLib.PDFDocument.load(saveBytes);
-    }catch(loadErr){
-      // Some PDFs are marked encrypted even when they can be viewed normally.
-      // pdf-lib can load these for editing with ignoreEncryption.
-      if(/encrypt|encrypted|password|PDFDocument\.load/i.test(String(loadErr&&loadErr.message||loadErr))){
-        console.warn('Encrypted PDF detected; retrying with ignoreEncryption.',loadErr);
-        out=await PDFLib.PDFDocument.load(saveBytes,{ignoreEncryption:true});
-      }else{
-        throw loadErr;
-      }
-    }
+    const out=await PDFLib.PDFDocument.load(saveBytes);
 
     /* Only 3 PDF-safe font families can be embedded without external files. */
     const fontSets={
@@ -2869,11 +2915,11 @@ $('save').onclick=async()=>{
     }
 
 
-    /* ===== COVER SCREEN RECTANGLE ===== */
+    /* ===== COVER SCREEN RECTANGLE (PATCH 3a) ===== */
 
-    function coverScreenRect(pg,vp,x,y,w,h){
+    function coverScreenRect(pg,vp,x,y,w,h,col,padOverride){
 
-      const pad=0.3;
+      const pad=padOverride!==undefined ? padOverride : 0.3;
 
       const pts=[
         inverseViewportPoint(vp,x-pad,y-pad),
@@ -2893,11 +2939,8 @@ $('save').onclick=async()=>{
       if(maxX<=minX || maxY<=minY) return;
 
       pg.drawRectangle({
-        x:minX,
-        y:minY,
-        width:maxX-minX,
-        height:maxY-minY,
-        color:rgb(1,1,1),
+        x:minX,y:minY,width:maxX-minX,height:maxY-minY,
+        color: col ? rgb(col[0]/255,col[1]/255,col[2]/255) : rgb(1,1,1),
         opacity:1
       });
     }
@@ -2928,8 +2971,8 @@ $('save').onclick=async()=>{
       const pv=await doc.getPage(pn);
       const vp=pv.getViewport({scale});
 
-      /* Render the untouched page once. Existing-text replacements use this
-         raster as their local background so table/cell borders are preserved. */
+      /* Render the untouched page once. Used to find the real background
+         colour and the exact ink of the original glyphs. */
       const sourceCanvas=document.createElement('canvas');
       sourceCanvas.width=Math.ceil(vp.width);
       sourceCanvas.height=Math.ceil(vp.height);
@@ -2948,21 +2991,17 @@ $('save').onclick=async()=>{
         const x=tx[4];
         const baselineY=tx[5];
         const w=Math.max(it.width*scale,4);
-        /* PDF text-item boxes often stop at the baseline, while glyphs with
-           descenders (g, p, q, y, j) continue below it.  Keep a little extra
-           vertical room so edits can clean the complete original glyph without
-           changing the visible anchor. */
         const h=Math.max(fontScreen,7);
         const topOffset=fontScreen;
 
-        /* SCREEN-space rotation: used only for the whiteout cover math. */
+        /* SCREEN-space rotation. */
         let angle=Math.atan2(tx[1],tx[0])*180/Math.PI;
         if(Math.abs(angle-90)<2) angle=90;
         else if(Math.abs(angle+90)<2) angle=-90;
         else if(Math.abs(Math.abs(angle)-180)<2) angle=180;
         else if(Math.abs(angle)<2) angle=0;
 
-        /* CONTENT-space rotation: what pdf-lib's drawText needs. */
+        /* CONTENT-space rotation. */
         let contentAngle=Math.atan2(it.transform[1],it.transform[0])*180/Math.PI;
         if(Math.abs(contentAngle-90)<2) contentAngle=90;
         else if(Math.abs(contentAngle+90)<2) contentAngle=-90;
@@ -2979,7 +3018,7 @@ $('save').onclick=async()=>{
           baselineY,
           angle,
           contentAngle,
-          originalColor:(pageItems[pn-1]&&pageItems[pn-1][i]&&pageItems[pn-1][i].originalColor)||'#000000'
+          originalColor:(pageItems[pn]&&pageItems[pn][i]&&pageItems[pn][i].originalColor)||'#000000'
         });
       });
 
@@ -2988,7 +3027,7 @@ $('save').onclick=async()=>{
 
       for(const c of (changes[pn]||[])){
 
-        /* ---------- EXISTING TEXT ---------- */
+        /* ---------- EXISTING TEXT (PATCH 3b) ---------- */
 
         if(c.i!==undefined){
 
@@ -2997,292 +3036,59 @@ $('save').onclick=async()=>{
 
           const newt=c.text||'';
 
-          /* Deleted text is covered with a small, glyph-safe rectangle.
-             Edited text is covered by the replacement image below, so we do
-             not create a second oversized white rectangle here. */
-          if(c.delete || !newt){
-            const padX=Math.min(0.45,Math.max(0.15,it.w*0.001));
-            const padY=Math.min(0.45,Math.max(0.15,it.h*0.01));
-            coverScreenRect(pg,vp,it.x-padX,it.y-padY,it.w+padX*2,it.h+padY*2);
-            if(c.delete || !newt) continue;
-          }
+          /* 1) Erase only the ORIGINAL glyphs with the real local background. */
+          const cr=computeCoverRect(sourceCanvas,it);
+          if(cr) coverScreenRect(pg,vp,cr.x,cr.y,cr.w,cr.h,cr.color,0);
 
-          /*
-             IMPORTANT: do not redraw edited existing PDF text with pdf-lib's
-             StandardFonts.  A source PDF may use a different embedded font,
-             and the different ascent/descent/character metrics can make the
-             replacement jump vertically or leave pieces of the old glyphs
-             visible.  Instead, make one high-resolution image containing the
-             white cover AND the replacement text.  The image is positioned at
-             the exact original screen rectangle, so the visual position cannot
-             change when the font is replaced.
-          */
-          const fontSize=c.size!==undefined ? c.size : (it.font/(scale||1));
-          const q=hex(c.color||'#000000');
-          const rotation=c.contentAngle!==undefined ? c.contentAngle : (it.contentAngle||0);
+          if(c.delete || !newt.trim()) continue;
 
-          /* The replacement is clipped to the ORIGINAL text box.  This is
-             critical for tables/cells: the cover must never grow into a
-             neighboring border just because the replacement word is longer. */
-          const padX=Math.min(0.45,Math.max(0.15,it.w*0.001));
-          const padY=Math.min(0.45,Math.max(0.15,it.h*0.01));
-          const requestedPx=fontSize*(scale||1);
-          const coverW=it.w+padX*2;
-          const coverH=it.h+padY*2;
+          /* 2) Draw the new text as a transparent image on the ORIGINAL baseline. */
+          const fam=c.family||'sans';
+          const isB=!!c.bold, isI=!!c.italic;
+          const px=(c.size!==undefined ? c.size : it.font/(scale||1))*(scale||1);
+          const tw=measureTextWidthPx(newt,px,fam,isB,isI);
 
-          const imgCanvas=document.createElement('canvas');
-          const imageScale=3;
-          imgCanvas.width=Math.max(1,Math.ceil(coverW*imageScale));
-          imgCanvas.height=Math.max(1,Math.ceil(coverH*imageScale));
-          const ictx=imgCanvas.getContext('2d');
-          ictx.imageSmoothingEnabled=true;
-          ictx.setTransform(imageScale,0,0,imageScale,0,0);
+          const manual=c.manualPos && c.x!==undefined && c.y!==undefined;
+          const sx=manual ? c.x : it.x;
+          const sy=manual ? c.y : it.y;
 
-          /* Start from the ORIGINAL rendered PDF crop instead of a white
-             rectangle.  Then remove only pixels belonging to the original
-             glyphs. This keeps cell/table borders, fills and nearby graphics
-             intact. */
-          const sx0=Math.max(0,Math.floor(it.x)-1);
-          const sy0=Math.max(0,Math.floor(it.y)-1);
-          const sw=Math.max(1,Math.ceil(it.w)+2);
-          /* Extend ONLY the cleanup source below the nominal PDF text box.
-             The replacement image remains locked to coverH, so this cannot
-             move or resize the edited text. */
-          const cleanupExtra=Math.max(2,Math.ceil(it.font*0.42));
-          const cleanupH=it.h+cleanupExtra+2;
-          const sh=Math.max(1,Math.ceil(cleanupH));
-          const crop=document.createElement('canvas');
-          crop.width=Math.max(1,Math.ceil(coverW*imageScale));
-          crop.height=Math.max(1,Math.ceil(cleanupH*imageScale));
-          const cctx=crop.getContext('2d');
-          cctx.drawImage(sourceCanvas,sx0,sy0,Math.min(sw,sourceCanvas.width-sx0),Math.min(sh,sourceCanvas.height-sy0),0,0,crop.width,crop.height);
+          let textLeft=0;
+          if(c.align==='center') textLeft=(it.w-tw)/2;
+          else if(c.align==='right') textLeft=it.w-tw;
 
-          const pix=cctx.getImageData(0,0,crop.width,crop.height);
-          const pd=pix.data;
-          const target=hex(it.originalColor||c.color||'#000000');
-          /* Remove the ORIGINAL glyphs from the rendered crop.  Do this by
-             comparing every pixel with the local page background as well as
-             the original text color.  This is deliberately stronger than a
-             simple color-distance test: PDF anti-aliasing creates very light
-             edge pixels that otherwise survive as the thin 'ghost word'
-             visible under an edited sentence. */
-          const W=crop.width,H=crop.height;
-          const inkAt=(xx,yy)=>{
-            if(xx<0||yy<0||xx>=W||yy>=H) return false;
-            const k=(yy*W+xx)*4;
-            return Math.max(pd[k],pd[k+1],pd[k+2])<210;
-          };
-          const edgeThreshold=0.32;
-          let topInk=0,bottomInk=0,leftInk=0,rightInk=0;
-          for(let xx=0;xx<W;xx++){ if(inkAt(xx,0)||inkAt(xx,1)||inkAt(xx,Math.min(2,H-1))) topInk++; if(inkAt(xx,H-1)||inkAt(xx,Math.max(0,H-2))||inkAt(xx,Math.max(0,H-3))) bottomInk++; }
-          for(let yy=0;yy<H;yy++){ if(inkAt(0,yy)||inkAt(1,yy)||inkAt(Math.min(2,W-1),yy)) leftInk++; if(inkAt(W-1,yy)||inkAt(Math.max(0,W-2),yy)||inkAt(Math.max(0,W-3),yy)) rightInk++; }
-          const protectTop=topInk/W>edgeThreshold;
-          const protectBottom=bottomInk/W>edgeThreshold;
-          const protectLeft=leftInk/H>edgeThreshold;
-          const protectRight=rightInk/H>edgeThreshold;
-          const borderBand=Math.max(1,Math.round(0.7*imageScale));
+          const minL=Math.min(0,textLeft), maxR=Math.max(it.w,textLeft+tw);
+          const side=3, topM=Math.ceil(px*1.1), botM=Math.ceil(px*0.5);
+          const boxW=maxR-minL+side*2, boxH=topM+botM;
+          const IS=3;
 
-          const sampleBg=(xx,yy)=>{
-            const k=(Math.max(0,Math.min(H-1,yy))*W+Math.max(0,Math.min(W-1,xx)))*4;
-            return [pd[k],pd[k+1],pd[k+2]];
-          };
-          const bgSamples=[sampleBg(Math.max(3,Math.floor(W*.06)),Math.max(3,Math.floor(H*.06))),
-                          sampleBg(Math.min(W-4,Math.floor(W*.94)),Math.max(3,Math.floor(H*.06))),
-                          sampleBg(Math.max(3,Math.floor(W*.06)),Math.min(H-4,Math.floor(H*.94))),
-                          sampleBg(Math.min(W-4,Math.floor(W*.94)),Math.min(H-4,Math.floor(H*.94)))];
-          const bg=[0,1,2].map(k=>Math.round(bgSamples.reduce((a,v)=>a+v[k],0)/bgSamples.length));
+          const tcv=document.createElement('canvas');
+          tcv.width=Math.max(1,Math.ceil(boxW*IS));
+          tcv.height=Math.max(1,Math.ceil(boxH*IS));
+          const tctx=tcv.getContext('2d');
+          tctx.setTransform(IS,0,0,IS,0,0);
+          tctx.font=(isI?'italic ':'')+(isB?'700 ':'400 ')+px+'px '+familyCss(fam);
+          tctx.fillStyle=c.color||'#000000';
+          tctx.textBaseline='alphabetic';
+          tctx.textAlign='left';
+          tctx.fillText(newt,textLeft-minL+side,topM);   /* baseline = topM */
 
-          /* Remove the old glyphs much more aggressively. The old implementation
-             protected the whole bottom edge of the text-item box; because PDF
-             text boxes can end at the baseline, that protection was leaving the
-             bottom of descenders behind. Only preserve a border when the edge
-             actually looks like a long, continuous rule. */
-          const horizontalRuleAt=(yy)=>{
-            let dark=0, runs=0, last=-2;
-            for(let xx=0;xx<W;xx++){
-              const k=(yy*W+xx)*4;
-              const r=pd[k],g=pd[k+1],b=pd[k+2];
-              const isDark=Math.max(r,g,b)<150;
-              if(isDark){ dark++; if(xx!==last+1) runs++; last=xx; }
-            }
-            return dark>W*0.55 && runs<Math.max(8,W/20);
-          };
-          const verticalRuleAt=(xx)=>{
-            let dark=0,runs=0,last=-2;
-            for(let yy=0;yy<H;yy++){
-              const k=(yy*W+xx)*4;
-              const r=pd[k],g=pd[k+1],b=pd[k+2];
-              const isDark=Math.max(r,g,b)<150;
-              if(isDark){ dark++; if(yy!==last+1) runs++; last=yy; }
-            }
-            return dark>H*0.55 && runs<Math.max(8,H/20);
-          };
-          const keepRows=new Set(), keepCols=new Set();
-          for(let yy=0;yy<H;yy++) if(horizontalRuleAt(yy)) keepRows.add(yy);
-          for(let xx=0;xx<W;xx++) if(verticalRuleAt(xx)) keepCols.add(xx);
+          const left=sx+minL-side;
+          const top=sy+it.font-topM;                      /* baseline = sy + font */
 
-          for(let yy=0;yy<H;yy++){
-            for(let xx=0;xx<W;xx++){
-              const at=(yy*W+xx)*4;
-              const r=pd[at],g=pd[at+1],b=pd[at+2];
-              const edgeProtected=(protectTop&&yy<borderBand&&keepRows.has(yy))||
-                                   (protectBottom&&yy>=H-borderBand&&keepRows.has(yy))||
-                                   (protectLeft&&xx<borderBand&&keepCols.has(xx))||
-                                   (protectRight&&xx>=W-borderBand&&keepCols.has(xx));
-              if(edgeProtected) continue;
+          const rad=(it.angle||0)*Math.PI/180, cs=Math.cos(rad), sn=Math.sin(rad);
+          const rot=(X,Y)=>{const dx=X-sx,dy=Y-sy;return [sx+dx*cs-dy*sn, sy+dx*sn+dy*cs];};
+          const bl=rot(left,top+boxH), br=rot(left+boxW,top+boxH), tl=rot(left,top);
 
-              const dText=Math.hypot(r-target.r,g-target.g,b-target.b);
-              const dBg=Math.hypot(r-bg[0],g-bg[1],b-bg[2]);
-              const darkText=target.r<120&&target.g<120&&target.b<120;
-              const textChroma=Math.max(target.r,target.g,target.b)-Math.min(target.r,target.g,target.b);
-              const pxChroma=Math.max(r,g,b)-Math.min(r,g,b);
+          const pBL=inverseViewportPoint(vp,bl[0],bl[1]);
+          const pBR=inverseViewportPoint(vp,br[0],br[1]);
+          const pTL=inverseViewportPoint(vp,tl[0],tl[1]);
 
-              /* Stronger threshold catches the pale anti-aliased bottom edge of
-                 the original glyph. */
-              const looksLikeText = darkText
-                ? ((dText <= Math.max(38,dBg*1.55)) && Math.max(r,g,b)<252 && dBg>3)
-                : ((dText <= Math.max(55,dBg*1.65)) && (pxChroma>2 || Math.max(r,g,b)<245) && dBg>3);
-
-              if(looksLikeText){
-                pd[at]=bg[0];pd[at+1]=bg[1];pd[at+2]=bg[2];pd[at+3]=255;
-              }
-            }
-          }
-          cctx.putImageData(pix,0,0);
-
-          /* Put the cleaned source crop back onto the PDF first.  This is the
-             crucial ghost-removal step: descenders that fall below the PDF
-             text item's nominal height are removed too, while table/cell
-             borders remain because they were copied from the original render. */
-          const cleanupData=crop.toDataURL('image/png');
-          const cleanupImage=await embedGraphic(cleanupData);
-          const cleanupScreenH=cleanupH;
-          const cpBL=inverseViewportPoint(vp,it.x-1,it.y-1+cleanupScreenH);
-          const cpBR=inverseViewportPoint(vp,it.x-1+coverW,it.y-1+cleanupScreenH);
-          const cpTL=inverseViewportPoint(vp,it.x-1,it.y-1);
-          const cleanupW=Math.hypot(cpBR.x-cpBL.x,cpBR.y-cpBL.y);
-          const cleanupDrawH=Math.hypot(cpTL.x-cpBL.x,cpTL.y-cpBL.y);
-          const cleanupAngle=Math.atan2(cpBR.y-cpBL.y,cpBR.x-cpBL.x)*180/Math.PI;
-          pg.drawImage(cleanupImage,{x:cpBL.x,y:cpBL.y,width:cleanupW,height:cleanupDrawH,rotate:degrees(cleanupAngle)});
-
-          /* Replacement text itself is still drawn only inside the original
-             locked box. */
-          ictx.drawImage(crop,0,0,crop.width,Math.min(crop.height,Math.ceil(coverH*imageScale)),0,0,coverW,coverH);
-
-          /* Draw replacement text using the ORIGINAL RENDERED GLYPH SIZE.
-             Do not trust the PDF font-size value alone: embedded PDF fonts can
-             report a nominal size that produces a visibly different glyph
-             height in Canvas.  That mismatch was the source of the apparent
-             text-size change and the leftover strip under edited text.
-
-             We therefore measure the actual original ink in the rendered crop,
-             then choose the replacement font size from Canvas's actual glyph
-             metrics so the visible height and top edge stay fixed. */
-          const fam=familyCss(c.family||base.family);
-          const weight=c.bold?'700':'400';
-          const style=c.italic?'italic ':'normal ';
-          const maxTextW=Math.max(2,coverW-padX*2);
-
-          // Find the original glyph bounding box from the rendered source.
-          // Ignore the first/last ~2% of each dimension so cell borders cannot
-          // be mistaken for text.
-          const ix0=Math.max(2,Math.floor(W*0.02));
-          const ix1=Math.min(W-3,Math.ceil(W*0.98)-1);
-          const iy0=Math.max(2,Math.floor(H*0.02));
-          const iy1=Math.min(H-3,Math.ceil(H*0.98)-1);
-          const isOriginalInk=(xx,yy)=>{
-            if(xx<ix0||xx>ix1||yy<iy0||yy>iy1) return false;
-            const k=(yy*W+xx)*4;
-            const r=pd[k],g=pd[k+1],b=pd[k+2],a=pd[k+3];
-            if(a<40) return false;
-            const dist=Math.hypot(r-target.r,g-target.g,b-target.b);
-            const dark=Math.max(r,g,b)<185;
-            const coloredTarget=(Math.max(target.r,target.g,target.b)-Math.min(target.r,target.g,target.b))>18;
-            return coloredTarget ? dist<105 : (target.r<90&&target.g<90&&target.b<90&&dark);
-          };
-          let inkMinX=W,inkMaxX=-1,inkMinY=H,inkMaxY=-1;
-          for(let yy=iy0;yy<=iy1;yy++){
-            for(let xx=ix0;xx<=ix1;xx++){
-              if(isOriginalInk(xx,yy)){
-                if(xx<inkMinX) inkMinX=xx;
-                if(xx>inkMaxX) inkMaxX=xx;
-                if(yy<inkMinY) inkMinY=yy;
-                if(yy>inkMaxY) inkMaxY=yy;
-              }
-            }
-          }
-
-          // Fallback to the original PDF text metrics if ink detection finds
-          // nothing (e.g. unusual transparency or a very light font).
-          const targetInkH=(inkMaxY>=inkMinY) ? (inkMaxY-inkMinY+1) : Math.max(2,Math.min(H,requestedPx));
-          const targetInkTop=(inkMaxY>=inkMinY) ? inkMinY : Math.max(1,Math.min(H-2,Math.round((it.baselineY-it.y)-requestedPx*0.78)));
-
-          // Find a Canvas font size whose ACTUAL rendered glyph height matches
-          // the original visible glyph height. Binary search is more stable
-          // than multiplying by a nominal PDF font size.
-          const glyphMetrics=(px)=>{
-            ictx.font=style+weight+' '+px+'px '+fam;
-            const m=ictx.measureText(newt);
-            const ascent=m.actualBoundingBoxAscent||px*0.78;
-            const descent=m.actualBoundingBoxDescent||px*0.22;
-            return {m,ascent,descent,height:ascent+descent};
-          };
-          let lo=1,hi=Math.max(2,requestedPx*2.5,coverH*2),best=requestedPx;
-          for(let z=0;z<18;z++){
-            const mid=(lo+hi)/2;
-            const gm=glyphMetrics(mid);
-            if(gm.height<targetInkH){ lo=mid; best=mid; }
-            else { hi=mid; best=mid; }
-          }
-          let drawPx=Math.max(1,best);
-          let gm=glyphMetrics(drawPx);
-
-          // If the replacement is wider than the locked original text box,
-          // reduce it only enough to fit horizontally. Never enlarge it.
-          if(gm.m.width>maxTextW && gm.m.width>0){
-            drawPx=Math.max(1,drawPx*maxTextW/gm.m.width);
-            gm=glyphMetrics(drawPx);
-          }
-
-          ictx.fillStyle=c.color||it.originalColor||'#000000';
-          ictx.textBaseline='alphabetic';
-          ictx.textAlign=c.align==='center' ? 'center' : (c.align==='right' ? 'right' : 'left');
-          const textX=c.align==='center' ? coverW/2 : (c.align==='right' ? coverW-padX : padX);
-
-          // Lock the TOP of the visible replacement glyphs to the TOP of the
-          // original rendered glyphs. This makes the visible position invariant
-          // even when the replacement font has different ascent/descent.
-          const textY=Math.max(gm.ascent+0.25, targetInkTop+gm.ascent);
-          ictx.fillText(newt,textX,textY);
-
-          const replacementData=imgCanvas.toDataURL('image/png');
-          const replacementImage=await embedGraphic(replacementData);
-
-          /* c.x/c.y are screen coordinates.  For normal edits they are the
-             original position; if the user moved the text, manualPos is used.
-             Never recompute y from font metrics. */
-          const sx=(c.manualPos && c.x!==undefined) ? c.x : it.x;
-          const sy=(c.manualPos && c.y!==undefined) ? c.y : it.y;
-
-          /* Map the image's screen rectangle to PDF content space.  This keeps
-             the exact same top-left visual anchor on the page. */
-          const pBL=inverseViewportPoint(vp,sx,sy+coverH);
-          const pBR=inverseViewportPoint(vp,sx+coverW,sy+coverH);
-          const pTL=inverseViewportPoint(vp,sx,sy);
-
-          const drawW=Math.hypot(pBR.x-pBL.x,pBR.y-pBL.y);
-          const drawH=Math.hypot(pTL.x-pBL.x,pTL.y-pBL.y);
-          // The three mapped screen corners already include page/text orientation.
-          // Do NOT add the source text rotation again; that double-rotates the
-          // replacement image (for example horizontal text becomes vertical).
-          const imgAngle=Math.atan2(pBR.y-pBL.y,pBR.x-pBL.x)*180/Math.PI;
-
-          pg.drawImage(replacementImage,{
-            x:pBL.x,
-            y:pBL.y,
-            width:drawW,
-            height:drawH,
-            rotate:degrees(imgAngle)
+          const textImage=await embedGraphic(tcv.toDataURL('image/png'));
+          pg.drawImage(textImage,{
+            x:pBL.x,y:pBL.y,
+            width:Math.hypot(pBR.x-pBL.x,pBR.y-pBL.y),
+            height:Math.hypot(pTL.x-pBL.x,pTL.y-pBL.y),
+            rotate:degrees(Math.atan2(pBR.y-pBL.y,pBR.x-pBL.x)*180/Math.PI)
           });
         }
 
@@ -3429,7 +3235,7 @@ $('save').onclick=async()=>{
         }catch(saveErr3){
           console.error('All PDF save attempts failed',saveErr3);
           saveErrors.push(saveErr3);
-          throw new Error('PDF could not be saved after encrypted-PDF compatibility loading. '+(saveErr3&&saveErr3.message?saveErr3.message:'Unknown PDF save error'));
+          throw new Error('PDF could not be saved. '+(saveErr3&&saveErr3.message?saveErr3.message:'Unknown PDF save error'));
         }
       }
     }
