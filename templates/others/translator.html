@@ -1,0 +1,2646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+Bengali:wght@400;600&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+<title>English ⇄ Bangla Translator</title>
+<style>
+  :root {
+    --bg: #070a13;
+    --glow: #0f1d3d;
+    --panel: #0d1222;
+    --border: #232a45;
+    --text: #f1f5f9;
+    --muted: #8b93a7;
+    --orange: #ff6b35;
+    --teal: #2dd4a0;
+    --btn: #4a4a7a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; color: var(--text);
+    font-family: "Inter", "Nirmala UI", "Noto Sans Bengali", Arial, sans-serif;
+    background: radial-gradient(ellipse at 20% 0%, var(--glow) 0%, var(--bg) 55%) no-repeat, var(--bg);
+  }
+  .topline { height: 2px; background: linear-gradient(90deg, transparent, #7a2e4a, var(--orange), #7a2e4a, transparent); }
+  main { max-width: 760px; margin: 0 auto; padding: 36px 16px 60px; }
+  .hero { text-align: center; margin-bottom: 28px; }
+  .badge {
+    display: inline-block; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700;
+    letter-spacing: .06em; color: var(--teal); background: #0b2528; border: 1px solid #1c5b4d;
+  }
+  .badge::before { content: "●"; font-size: 8px; margin-right: 8px; vertical-align: middle; }
+  h1 { font-family: "Space Grotesk", "Inter", Arial, sans-serif; font-size: 40px; line-height: 1.15; margin: 18px 0 10px; }
+  h1 span { color: var(--orange); }
+  .sub { color: var(--muted); font-size: 16px; margin: 0; }
+  label { display: block; margin: 18px 0 6px; font-weight: 700; font-size: 14px; }
+  small { color: var(--muted); font-weight: 400; }
+  textarea, select {
+    width: 100%; padding: 12px; font-size: 16px; font-family: inherit; color: var(--text);
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px; outline: none;
+  }
+  textarea { min-height: 120px; }
+  textarea:focus, select:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(255,107,53,.18); }
+  select option { background: var(--panel); }
+  .actions { margin: 20px 0 4px; display: flex; flex-wrap: wrap; gap: 10px; }
+  button {
+    padding: 10px 20px; font-size: 15px; font-weight: 600; border: 0; border-radius: 6px;
+    background: var(--btn); color: #c9cbe8; cursor: pointer; transition: filter .15s;
+  }
+  button:hover { filter: brightness(1.15); }
+  button.primary { background: var(--orange); color: #fff; }
+  #status { margin-top: 10px; font-size: 14px; color: #ff7a7a; min-height: 18px; }
+  .tabs { display: flex; gap: 10px; justify-content: center; margin: 0 0 8px; flex-wrap: wrap; }
+  .tabs button.active { background: var(--orange); color: #fff; }
+  .hint { color: var(--muted); font-size: 13px; line-height: 1.7; margin-top: 12px; }
+  .hint b { color: var(--teal); font-weight: 600; }
+  #bnOut { font-size: 20px; }
+  #out, #bnOut, #glossary {
+    font-family: "Noto Sans Bengali", "Nirmala UI", "Kalpurush", "Siyam Rupali", Vrinda, "Inter", Arial, sans-serif;
+  }
+  details.adv { margin-top: 18px; }
+  details.adv summary { cursor: pointer; color: var(--muted); font-size: 14px; font-weight: 600; }
+  details.adv summary:hover { color: var(--orange); }
+  input[type=file] { color: var(--muted); font-size: 14px; }
+  #imgPrev { display: none; max-width: 100%; max-height: 320px; margin-top: 12px; border-radius: 8px; border: 1px solid var(--border); }
+  #imgOut, .chip { font-family: "Noto Sans Bengali", "Nirmala UI", "Inter", Arial, sans-serif; }
+  .chip { display: inline-block; margin: 3px; padding: 4px 11px; border-radius: 999px; background: var(--panel); border: 1px solid var(--border); font-size: 15px; }
+  .chip.low { border-color: var(--orange); color: var(--orange); }
+  #wordList { line-height: 2; }
+  #imgWrap { position: relative; display: none; width: fit-content; max-width: 100%; margin-top: 12px; cursor: crosshair; touch-action: none; user-select: none; }
+  #imgPrev { display: block; max-width: 100%; max-height: 420px; margin: 0; border: 0; border-radius: 8px; box-shadow: 0 0 0 1px var(--border); }
+  #cropBox { position: absolute; display: none; border: 2px dashed var(--orange); background: rgba(255,107,53,.18); pointer-events: none; }
+  #layoutWrap { overflow-x: auto; }
+  #layout { position: relative; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; margin-top: 6px; }
+  .lw { position: absolute; white-space: nowrap; transform-origin: 0 50%; font-family: "Noto Sans Bengali", "Nirmala UI", "Inter", Arial, sans-serif; }
+  #cropBox.ign { border-color: var(--teal); background: rgba(45,212,160,.18); }
+  .ignoreBox { position: absolute; border: 2px dashed var(--teal); background: rgba(45,212,160,.18); pointer-events: none; }
+</style>
+</head>
+<body>
+<div class="topline"></div>
+<main>
+<div class="hero">
+  <span class="badge">FREE TOOL, NO SIGN-UP</span>
+  <h1>English ⇄ <span>Bangla</span> Translator</h1>
+  <p class="sub">Translate names, addresses and short documents in both directions. Simple, fast, and free to use.</p>
+</div>
+<div class="tabs">
+  <button class="active" id="tabT">Translate</button>
+  <button id="tabP">Banglish → Bangla</button>
+  <button id="tabI">Image → Text</button>
+</div>
+
+<div id="paneT">
+<label for="dir">Direction</label>
+<select id="dir">
+  <option value="en|bn">English → Bangla</option>
+  <option value="bn|en">Bangla → English</option>
+</select>
+
+<label style="display:flex;gap:8px;align-items:center;font-weight:600;margin-top:14px">
+  <input type="checkbox" id="nameMode" style="width:auto"> Name / address mode
+  <small>(English → Bangla only: writes names and places by sound instead of translating meaning)</small>
+</label>
+
+<label for="src" id="srcLabel">English text (one item per line)</label>
+<textarea id="src" placeholder="Type or speak here..."></textarea>
+
+<div class="actions" style="align-items:center">
+  <button class="primary" id="micT">🎤 Speak</button>
+  <label style="margin:0;display:flex;gap:6px;align-items:center;font-weight:600">
+    <input type="checkbox" id="autoT" checked style="width:auto"> Translate automatically
+  </label>
+  <span id="micTStatus" class="hint" style="margin:0">Speaks in the input language: English for English → Bangla, Bangla for Bangla → English. Chrome or Edge, internet needed.</span>
+</div>
+
+<details class="adv">
+<summary>⚙ Glossary (advanced, click to show)</summary>
+<label for="glossary" style="margin-top:12px">Words list <small>(one per line: English = Bangla; works in both directions and is used exactly as written)</small></label>
+<textarea id="glossary" style="min-height:200px">Engr. = প্রকৌশলী
+Md. = মোঃ
+S.E. = এস.ই.
+CEO = সিইও
+Uttara = উত্তরা
+Dhaka = ঢাকা
+Road 3A = রোড ৩এ
+Block K = ব্লক কে
+Abdur = আব্দুর
+Abdul = আব্দুল
+Abdullah = আব্দুল্লাহ
+Rauf = রউফ
+Rouf = রউফ
+Rahman = রহমান
+Islam = ইসলাম
+Hossain = হোসেন
+Ahmed = আহমেদ
+Akter = আক্তার
+Khatun = খাতুন
+Begum = বেগম
+Uddin = উদ্দিন
+Mohammad = মোহাম্মদ
+Jamalpur = জামালপুর
+Melandah = মেলান্দহ
+Ashrafuddowla = আশরাফুদ্দৌলা
+Upal = উপল
+House = বাড়ি
+Flat = ফ্ল্যাট
+Road = রোড
+Block = ব্লক
+Principal Structural Engineer = প্রিন্সিপাল স্ট্রাকচারাল ইঞ্জিনিয়ার</textarea>
+</details>
+
+<div class="actions">
+  <button class="primary" id="go">Translate</button>
+  <button id="swap">Swap input ⇄ result</button>
+  <button id="copy">Copy result</button>
+  <button id="clearT">Clear</button>
+</div>
+<div id="status"></div>
+
+<label for="out" id="outLabel">Bangla result</label>
+<textarea id="out" readonly></textarea>
+
+</div>
+
+<div id="paneP" style="display:none">
+  <label for="bnIn">Type Bangla in English letters (Banglish)</label>
+  <textarea id="bnIn" placeholder="Type here..."></textarea>
+  <label for="bnOut">Bangla <small id="bnMode"></small></label>
+  <textarea id="bnOut"></textarea>
+  <div class="actions">
+    <button class="primary" id="bnCopy">Copy Bangla</button>
+    <button id="bnClear">Clear</button>
+  </div>
+
+  <label>🎤 Voice input <small>(Chrome or Edge, internet + microphone permission needed)</small></label>
+  <div class="actions" style="align-items:center">
+    <select id="vLang" style="width:auto;min-width:260px">
+      <option value="bn">Speak Bangla → Bangla text</option>
+      <option value="en">Speak English → Bangla translation</option>
+    </select>
+    <button class="primary" id="mic">🎤 Start speaking</button>
+    <span id="micStatus" class="hint" style="margin:0"></span>
+  </div>
+  <div class="hint">
+    Typing tips:
+    <b>a</b>=আ/া &nbsp; <b>i</b>=ই/ি &nbsp; <b>ii</b>=ঈ/ী &nbsp; <b>u</b>=উ/ু &nbsp; <b>e</b>=এ/ে &nbsp; <b>O</b>=ও/ো &nbsp; <b>oi</b>=ঐ/ৈ &nbsp; <b>ou</b>=ঔ/ৌ<br>
+    <b>k kh g gh</b>=ক খ গ ঘ &nbsp; <b>c</b>=চ &nbsp; <b>chh</b>=ছ &nbsp; <b>j jh</b>=জ ঝ &nbsp; <b>T Th D Dh</b>=ট ঠ ড ঢ &nbsp; <b>t th d dh</b>=ত থ দ ধ<br>
+    <b>n</b>=ন &nbsp; <b>N</b>=ণ &nbsp; <b>sh</b>=শ &nbsp; <b>Sh</b>=ষ &nbsp; <b>s</b>=স &nbsp; <b>R</b>=ড় &nbsp; <b>y</b>=য় &nbsp; <b>ng</b>=ং &nbsp; <b>:</b>=ঃ &nbsp; <b>^</b>=ঁ<br>
+    Common joint letters (st, nt, nd, bd, kt, pr, tr...) form automatically; other letters stay separate (<b>korbe</b> = করবে). To force a joint letter put <b>_</b> between them (<b>k_j</b> = ক্জ). Capital <b>T D</b> = ট ড.
+  </div>
+</div>
+<div id="paneI" style="display:none">
+  <label for="imgIn">Choose an image <small>(photo, screenshot or scan; you can also paste with Ctrl+V)</small></label>
+  <input type="file" id="imgIn" accept="image/*">
+  <p class="hint" id="cropHint" style="display:none;margin:8px 0 0"><b>Tip:</b> drag a box on the picture around just the part you want to read (for example only the card). This makes the reading much more accurate. To skip a part (like a logo), press <b>Ignore area</b> (or hold <b>Shift</b>) and drag over it: it turns green.</p>
+  <div id="imgWrap"><img id="imgPrev" alt="Selected image" draggable="false"><div id="cropBox"></div></div>
+
+  <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:16px">
+    <select id="ocrLang" style="width:auto;min-width:200px">
+      <option value="eng">English text</option>
+      <option value="ben">Bangla text</option>
+      <option value="ben+eng">Bangla + English</option>
+    </select>
+    <label style="margin:0;display:flex;gap:6px;align-items:center;font-weight:600">
+      <input type="checkbox" id="enh" checked style="width:auto"> Best accuracy <small>(tries several settings, slower)</small>
+    </label>
+    <label style="margin:0;display:flex;gap:6px;align-items:center;font-weight:600">
+      <input type="checkbox" id="qrSkip" checked style="width:auto"> Skip QR codes
+    </label>
+  </div>
+
+  <div class="actions">
+    <button class="primary" id="ocrGo">Extract text</button>
+    <button id="cropReset">Reset boxes</button>
+    <button id="ignMode">Ignore area: off</button>
+    <button id="ocrCopy">Copy text</button>
+    <button id="ocrSend">Send to Translate tab</button>
+    <button id="ocrClear">Clear</button>
+  </div>
+  <div id="ocrStatus" class="hint" style="margin:0 0 8px"></div>
+
+  <label for="imgOut">Extracted text <small>(you can edit it)</small></label>
+  <textarea id="imgOut" style="min-height:160px"></textarea>
+
+  <label>Same look as your image <small>(words keep their position, size and colours)</small></label>
+  <div id="layoutWrap"><div id="layout"></div></div>
+
+  <label>Each word <small id="wordCount"></small> <small>(orange border = the reader was not sure, check it)</small></label>
+  <div id="wordList"></div>
+  <div class="actions"><button id="wordsCopy">Copy words (one per line)</button></div>
+</div>
+</main>
+<script>
+const BN = "০১২৩৪৫৬৭৮৯";
+const toBnDigits = s => s.replace(/[0-9]/g, d => BN[d]);
+const toEnDigits = s => s.replace(/[০-৯]/g, d => BN.indexOf(d));
+const $ = id => document.getElementById(id);
+
+// ===== Built-in dictionary (English = Bangla) =====
+// One word or phrase per line. Use | to give more than one meaning; the first meaning is used.
+// To add more words, just add new lines here (or put them in the Glossary box, which always wins).
+const DICT_TEXT = `mouthwatering=লোভনীয়|মুখে জল আনা
+smart=স্মার্ট|চালাক
+long=লম্বা|দীর্ঘ
+short=ছোট|খাটো
+elephant=হাতি
+teeth=দাঁত
+tooth=দাঁত
+magic=জাদু|ম্যাজিক
+magical=জাদুকরী
+cruel=নিষ্ঠুর
+research=গবেষণা
+emotional=আবেগপ্রবণ|আবেগময়
+emotionally=আবেগগতভাবে
+mental=মানসিক
+mentally=মানসিকভাবে
+physical=শারীরিক
+physically=শারীরিকভাবে
+a=একটি
+an=একটি
+the=
+and=এবং
+or=অথবা
+but=কিন্তু
+if=যদি
+because=কারণ
+so=তাই
+then=তারপর
+than=চেয়ে
+that=যে|ওটা
+this=এটা
+these=এগুলো
+those=ওগুলো
+here=এখানে
+there=সেখানে
+where=কোথায়
+when=কখন
+what=কী
+who=কে
+whom=কাকে
+whose=কার
+which=কোনটি
+why=কেন
+how=কীভাবে
+i=আমি
+me=আমাকে
+my=আমার
+mine=আমারটা
+we=আমরা
+us=আমাদের
+our=আমাদের
+you=তুমি|আপনি
+your=তোমার|আপনার
+he=সে|তিনি
+him=তাকে
+his=তার
+she=সে|তিনি
+her=তার
+it=এটা
+its=এর
+they=তারা
+them=তাদের
+their=তাদের
+yes=হ্যাঁ
+no=না
+not=না
+very=খুব
+too=অতিরিক্ত|ও
+also=ও|আরও
+only=শুধু
+just=শুধু
+even=এমনকি
+still=এখনও
+already=ইতিমধ্যে
+again=আবার
+always=সবসময়
+never=কখনো না
+sometimes=মাঝে মাঝে
+often=প্রায়ই
+usually=সাধারণত
+now=এখন
+today=আজ
+tomorrow=আগামীকাল
+yesterday=গতকাল
+tonight=আজ রাতে
+soon=শীঘ্রই
+later=পরে
+early=তাড়াতাড়ি|আগে
+late=দেরি
+before=আগে
+after=পরে
+during=চলাকালীন
+while=যখন
+until=পর্যন্ত
+since=থেকে
+about=সম্পর্কে
+above=উপরে
+below=নিচে
+under=নিচে
+over=উপর দিয়ে
+between=মধ্যে
+among=মধ্যে
+inside=ভিতরে
+outside=বাইরে
+near=কাছে
+far=দূরে
+up=উপরে
+down=নিচে
+in=মধ্যে
+on=উপর
+at=এ
+to=প্রতি
+from=থেকে
+with=সঙ্গে
+without=ছাড়া
+for=জন্য
+of=এর
+by=দ্বারা
+into=ভিতরে
+through=মাধ্যমে
+across=পেরিয়ে
+against=বিরুদ্ধে
+all=সব
+some=কিছু
+any=যেকোনো
+many=অনেক
+much=অনেক
+more=আরও|বেশি
+most=সবচেয়ে বেশি
+less=কম
+least=সবচেয়ে কম
+few=অল্প|কয়েকটি
+several=কয়েকটি
+each=প্রতিটি
+every=প্রত্যেক
+both=উভয়
+either=যেকোনো একটি
+neither=কোনোটিই নয়
+other=অন্য
+another=আরেকটি
+same=একই
+different=ভিন্ন
+such=এমন
+own=নিজস্ব
+one=এক
+two=দুই
+three=তিন
+four=চার
+five=পাঁচ
+six=ছয়
+seven=সাত
+eight=আট
+nine=নয়
+ten=দশ
+eleven=এগারো
+twelve=বারো
+twenty=বিশ
+thirty=ত্রিশ
+forty=চল্লিশ
+fifty=পঞ্চাশ
+hundred=একশ|শত
+thousand=হাজার
+million=মিলিয়ন|দশ লাখ
+billion=বিলিয়ন
+first=প্রথম
+second=দ্বিতীয়
+third=তৃতীয়
+last=শেষ
+next=পরবর্তী
+half=অর্ধেক
+double=দ্বিগুণ
+zero=শূন্য
+good=ভালো
+bad=খারাপ
+great=মহান|চমৎকার
+best=সর্বোত্তম
+better=আরও ভালো
+worse=আরও খারাপ
+worst=সবচেয়ে খারাপ
+nice=সুন্দর|ভালো
+fine=ভালো|সূক্ষ্ম
+excellent=চমৎকার|উৎকৃষ্ট
+wonderful=চমৎকার|অপূর্ব
+amazing=বিস্ময়কর
+awesome=দারুণ
+terrible=ভয়ানক
+horrible=বীভৎস|ভয়ঙ্কর
+awful=বিশ্রী|ভয়ানক
+beautiful=সুন্দর
+ugly=কুৎসিত
+pretty=সুন্দর
+handsome=সুদর্শন
+cute=মিষ্টি|আদুরে
+lovely=মনোরম|সুন্দর
+big=বড়
+large=বিশাল|বড়
+small=ছোট
+little=ছোট|অল্প
+tiny=অতি ক্ষুদ্র
+huge=বিশাল
+giant=দৈত্যাকার
+tall=লম্বা|উঁচু
+high=উঁচু
+low=নিচু
+wide=চওড়া
+narrow=সরু
+thick=মোটা|ঘন
+thin=পাতলা|সরু
+fat=মোটা
+slim=ছিপছিপে
+heavy=ভারী
+light=হালকা|আলো
+deep=গভীর
+shallow=অগভীর
+new=নতুন
+old=পুরনো|বৃদ্ধ
+young=তরুণ|অল্পবয়সী
+ancient=প্রাচীন
+modern=আধুনিক
+fresh=তাজা
+stale=বাসি
+clean=পরিষ্কার
+dirty=নোংরা
+neat=পরিপাটি
+messy=অগোছালো
+easy=সহজ
+simple=সহজ|সরল
+hard=কঠিন|শক্ত
+difficult=কঠিন
+soft=নরম
+smooth=মসৃণ
+rough=অমসৃণ|রুক্ষ
+sharp=ধারালো|তীক্ষ্ণ
+dull=ভোঁতা|নিস্তেজ
+strong=শক্তিশালী
+weak=দুর্বল
+powerful=শক্তিশালী|ক্ষমতাধর
+fast=দ্রুত
+quick=দ্রুত
+quickly=দ্রুত
+slow=ধীর
+slowly=ধীরে
+hot=গরম
+cold=ঠান্ডা
+warm=উষ্ণ
+cool=শীতল|দারুণ
+wet=ভেজা
+dry=শুকনো
+full=পূর্ণ|ভর্তি
+empty=খালি
+rich=ধনী
+poor=গরিব|দরিদ্র
+cheap=সস্তা
+expensive=দামি
+free=বিনামূল্যে|মুক্ত
+busy=ব্যস্ত
+lazy=অলস
+active=সক্রিয়
+quiet=শান্ত|নীরব
+silent=নীরব
+loud=উচ্চস্বরে|জোরে
+noisy=কোলাহলপূর্ণ
+calm=শান্ত
+happy=খুশি|সুখী
+sad=দুঃখিত|বিষণ্ণ
+angry=রাগান্বিত
+upset=মনঃক্ষুণ্ণ
+afraid=ভীত
+scared=ভয়ার্ত
+brave=সাহসী
+bold=সাহসী
+shy=লাজুক
+proud=গর্বিত
+ashamed=লজ্জিত
+jealous=ঈর্ষান্বিত
+lonely=একা|নিঃসঙ্গ
+tired=ক্লান্ত
+sleepy=ঘুমঘুম|তন্দ্রাচ্ছন্ন
+hungry=ক্ষুধার্ত
+thirsty=তৃষ্ণার্ত
+sick=অসুস্থ
+ill=অসুস্থ
+healthy=সুস্থ
+safe=নিরাপদ
+dangerous=বিপজ্জনক
+careful=সতর্ক
+careless=অসতর্ক
+kind=দয়ালু
+gentle=কোমল
+polite=ভদ্র
+rude=অভদ্র
+honest=সৎ
+dishonest=অসৎ
+loyal=বিশ্বস্ত
+generous=উদার
+selfish=স্বার্থপর
+greedy=লোভী
+humble=বিনয়ী
+arrogant=অহংকারী
+clever=চতুর|বুদ্ধিমান
+intelligent=বুদ্ধিমান
+wise=জ্ঞানী|প্রজ্ঞাবান
+foolish=বোকা
+stupid=বোকা
+crazy=পাগল
+mad=পাগল
+funny=মজার
+serious=গম্ভীর|গুরুতর
+boring=বিরক্তিকর|একঘেয়ে
+interesting=আকর্ষণীয়|মজার
+exciting=উত্তেজনাপূর্ণ
+important=গুরুত্বপূর্ণ
+necessary=প্রয়োজনীয়
+useful=উপকারী|কাজের
+useless=অকেজো|অপ্রয়োজনীয়
+possible=সম্ভব
+impossible=অসম্ভব
+true=সত্য
+false=মিথ্যা
+real=প্রকৃত|আসল
+fake=নকল|ভুয়া
+right=সঠিক|ডান
+wrong=ভুল
+correct=সঠিক
+perfect=নিখুঁত
+special=বিশেষ
+common=সাধারণ
+rare=বিরল
+normal=স্বাভাবিক
+strange=অদ্ভুত
+weird=অদ্ভুত
+famous=বিখ্যাত
+popular=জনপ্রিয়
+public=সর্বজনীন|সরকারি
+private=ব্যক্তিগত
+personal=ব্যক্তিগত
+official=সরকারি|দাপ্তরিক
+general=সাধারণ
+local=স্থানীয়
+national=জাতীয়
+international=আন্তর্জাতিক
+foreign=বিদেশি
+natural=প্রাকৃতিক
+artificial=কৃত্রিম
+social=সামাজিক
+political=রাজনৈতিক
+economic=অর্থনৈতিক
+financial=আর্থিক
+legal=আইনি|বৈধ
+illegal=অবৈধ
+medical=চিকিৎসা
+technical=প্রযুক্তিগত|কারিগরি
+scientific=বৈজ্ঞানিক
+digital=ডিজিটাল
+electric=বৈদ্যুতিক
+electronic=ইলেকট্রনিক
+automatic=স্বয়ংক্রিয়
+manual=ম্যানুয়াল|হাতে চালিত
+main=প্রধান
+major=প্রধান
+minor=ছোট|অপ্রধান
+chief=প্রধান
+senior=জ্যেষ্ঠ|সিনিয়র
+junior=কনিষ্ঠ|জুনিয়র
+total=মোট
+whole=সম্পূর্ণ|পুরো
+complete=সম্পূর্ণ
+partial=আংশিক
+final=চূড়ান্ত
+initial=প্রাথমিক
+primary=প্রাথমিক
+secondary=মাধ্যমিক
+basic=মৌলিক|প্রাথমিক
+advanced=উন্নত
+available=উপলব্ধ
+ready=প্রস্তুত
+open=খোলা
+closed=বন্ধ
+red=লাল
+blue=নীল
+green=সবুজ
+yellow=হলুদ
+black=কালো
+white=সাদা
+brown=বাদামি
+pink=গোলাপি
+purple=বেগুনি
+orange=কমলা
+grey=ধূসর
+gray=ধূসর
+golden=সোনালি
+silver=রুপালি
+colorful=রঙিন
+color=রং
+colour=রং
+dark=অন্ধকার|গাঢ়
+bright=উজ্জ্বল
+sweet=মিষ্টি
+sour=টক
+bitter=তেতো
+salty=নোনতা
+spicy=ঝাল|মসলাদার
+delicious=সুস্বাদু
+tasty=সুস্বাদু
+juicy=রসালো
+crispy=কড়কড়ে|মুচমুচে
+raw=কাঁচা
+ripe=পাকা
+cooked=রান্না করা
+boiled=সেদ্ধ
+fried=ভাজা
+baked=বেকড|সেঁকা
+roasted=ভাজা|রোস্ট করা
+grilled=গ্রিল করা
+food=খাবার
+meal=খাবার
+breakfast=সকালের নাস্তা
+lunch=দুপুরের খাবার
+dinner=রাতের খাবার
+snack=নাস্তা
+drink=পানীয়|পান করা
+water=পানি|জল
+milk=দুধ
+tea=চা
+coffee=কফি
+juice=রস|জুস
+soup=স্যুপ|ঝোল
+rice=ভাত|চাল
+bread=রুটি|পাউরুটি
+butter=মাখন
+cheese=পনির
+egg=ডিম
+eggs=ডিম
+meat=মাংস
+beef=গরুর মাংস
+chicken=মুরগি
+mutton=খাসির মাংস
+fish=মাছ
+shrimp=চিংড়ি
+vegetable=সবজি
+vegetables=সবজি
+fruit=ফল
+fruits=ফল
+apple=আপেল
+banana=কলা
+mango=আম
+orange=কমলা
+grape=আঙুর
+grapes=আঙুর
+lemon=লেবু
+watermelon=তরমুজ
+pineapple=আনারস
+coconut=নারকেল
+jackfruit=কাঁঠাল
+guava=পেয়ারা
+papaya=পেঁপে
+potato=আলু
+tomato=টমেটো
+onion=পেঁয়াজ
+garlic=রসুন
+ginger=আদা
+chili=মরিচ
+pepper=মরিচ
+carrot=গাজর
+cabbage=বাঁধাকপি
+cauliflower=ফুলকপি
+cucumber=শসা
+eggplant=বেগুন
+pumpkin=কুমড়া
+spinach=পালং শাক
+salt=লবণ
+sugar=চিনি
+oil=তেল
+honey=মধু
+flour=আটা|ময়দা
+lentil=ডাল
+cake=কেক
+biscuit=বিস্কুট
+chocolate=চকোলেট
+ice cream=আইসক্রিম
+sweets=মিষ্টি
+salad=সালাদ
+kitchen=রান্নাঘর
+plate=থালা|প্লেট
+spoon=চামচ
+fork=কাঁটাচামচ
+knife=ছুরি
+cup=কাপ
+glass=গ্লাস|কাচ
+bottle=বোতল
+bowl=বাটি
+pot=হাঁড়ি|পাত্র
+pan=কড়াই|প্যান
+stove=চুলা
+animal=প্রাণী
+animals=প্রাণী
+dog=কুকুর
+cat=বিড়াল
+cow=গরু
+bull=ষাঁড়
+buffalo=মহিষ
+goat=ছাগল
+sheep=ভেড়া
+horse=ঘোড়া
+donkey=গাধা
+camel=উট
+pig=শূকর
+deer=হরিণ
+lion=সিংহ
+tiger=বাঘ
+bear=ভাল্লুক
+wolf=নেকড়ে
+fox=শিয়াল|খেঁকশিয়াল
+monkey=বানর
+rabbit=খরগোশ
+mouse=ইঁদুর
+rat=ইঁদুর
+snake=সাপ
+crocodile=কুমির
+frog=ব্যাঙ
+turtle=কচ্ছপ
+whale=তিমি
+dolphin=ডলফিন
+shark=হাঙর
+bird=পাখি
+birds=পাখি
+parrot=টিয়া|তোতা
+crow=কাক
+eagle=ঈগল
+owl=পেঁচা
+sparrow=চড়ুই
+peacock=ময়ূর
+duck=হাঁস
+pigeon=কবুতর
+butterfly=প্রজাপতি
+bee=মৌমাছি
+ant=পিঁপড়া
+fly=মাছি|উড়া
+mosquito=মশা
+spider=মাকড়সা
+insect=পোকা
+worm=কৃমি
+tail=লেজ
+wing=ডানা
+wings=ডানা
+horn=শিং
+feather=পালক
+nest=বাসা
+cage=খাঁচা
+body=শরীর
+head=মাথা
+face=মুখমণ্ডল|চেহারা
+hair=চুল
+forehead=কপাল
+eye=চোখ
+eyes=চোখ
+eyebrow=ভ্রু
+ear=কান
+ears=কান
+nose=নাক
+mouth=মুখ
+lip=ঠোঁট
+lips=ঠোঁট
+tongue=জিহ্বা|জিভ
+neck=গলা|ঘাড়
+throat=গলা
+shoulder=কাঁধ
+arm=বাহু|হাত
+elbow=কনুই
+hand=হাত
+hands=হাত
+finger=আঙুল
+fingers=আঙুল
+thumb=বুড়ো আঙুল
+nail=নখ
+chest=বুক
+heart=হৃদয়|হার্ট
+lung=ফুসফুস
+liver=যকৃৎ|কলিজা
+kidney=কিডনি
+stomach=পেট|পাকস্থলী
+belly=পেট
+back=পিঠ|পিছনে
+spine=মেরুদণ্ড
+bone=হাড়
+bones=হাড়
+skin=ত্বক|চামড়া
+blood=রক্ত
+brain=মস্তিষ্ক
+muscle=পেশি
+leg=পা
+legs=পা
+knee=হাঁটু
+foot=পা|পায়ের পাতা
+feet=পা
+toe=পায়ের আঙুল
+beard=দাড়ি
+mustache=গোঁফ
+voice=কণ্ঠ|কণ্ঠস্বর
+breath=শ্বাস
+sweat=ঘাম
+tear=অশ্রু|চোখের জল
+tears=অশ্রু|চোখের জল
+smile=হাসি|মুচকি হাসি
+laugh=হাসা
+laughter=হাসি
+cry=কান্না|কাঁদা
+family=পরিবার
+father=বাবা|পিতা
+dad=বাবা
+mother=মা|মাতা
+mom=মা
+mum=মা
+parent=অভিভাবক|পিতামাতা
+parents=বাবা-মা|পিতামাতা
+son=ছেলে|পুত্র
+daughter=মেয়ে|কন্যা
+child=শিশু|সন্তান
+children=শিশুরা|সন্তানেরা
+baby=শিশু|বাচ্চা
+brother=ভাই
+sister=বোন
+grandfather=দাদা|নানা
+grandmother=দাদি|নানি
+grandparents=দাদা-দাদি
+uncle=চাচা|মামা
+aunt=চাচি|খালা|ফুফু
+cousin=চাচাতো ভাই|খালাতো ভাই
+nephew=ভাতিজা|ভাগ্নে
+niece=ভাতিজি|ভাগ্নি
+husband=স্বামী
+wife=স্ত্রী
+spouse=স্ত্রী|স্বামী
+friend=বন্ধু
+friends=বন্ধুরা
+neighbor=প্রতিবেশী
+neighbour=প্রতিবেশী
+guest=অতিথি
+stranger=অচেনা মানুষ|অপরিচিত
+enemy=শত্রু
+man=পুরুষ|মানুষ
+men=পুরুষেরা
+woman=নারী|মহিলা
+women=নারীরা|মহিলারা
+boy=ছেলে
+girl=মেয়ে
+adult=প্রাপ্তবয়স্ক
+elder=বয়োজ্যেষ্ঠ
+person=ব্যক্তি|মানুষ
+people=মানুষ|জনগণ
+human=মানুষ|মানবিক
+citizen=নাগরিক
+member=সদস্য
+team=দল|টিম
+group=দল|গোষ্ঠী
+crowd=ভিড়
+leader=নেতা
+king=রাজা
+queen=রানি
+prince=রাজকুমার
+princess=রাজকন্যা
+god=ঈশ্বর|আল্লাহ
+angel=ফেরেশতা|দেবদূত
+devil=শয়তান
+ghost=ভূত
+spirit=আত্মা|চেতনা
+soul=আত্মা
+home=বাড়ি|ঘর
+house=বাড়ি
+room=ঘর|কক্ষ
+bedroom=শোবার ঘর
+bathroom=গোসলখানা|বাথরুম
+toilet=শৌচাগার|টয়লেট
+door=দরজা
+window=জানালা
+wall=দেয়াল
+roof=ছাদ
+floor=মেঝে|তলা
+stairs=সিঁড়ি
+ceiling=সিলিং|ছাদ
+garden=বাগান
+yard=উঠান|আঙিনা
+gate=ফটক|গেট
+fence=বেড়া
+bed=বিছানা|খাট
+chair=চেয়ার
+table=টেবিল
+desk=ডেস্ক
+sofa=সোফা
+mirror=আয়না
+lamp=বাতি|ল্যাম্প
+fan=পাখা|ফ্যান
+clock=ঘড়ি
+watch=ঘড়ি|দেখা
+carpet=কার্পেট
+curtain=পর্দা
+pillow=বালিশ
+blanket=কম্বল|কাঁথা
+towel=তোয়ালে|গামছা
+soap=সাবান
+key=চাবি
+lock=তালা
+box=বাক্স
+bag=ব্যাগ|থলে
+basket=ঝুড়ি
+bucket=বালতি
+broom=ঝাড়ু
+umbrella=ছাতা
+phone=ফোন
+mobile=মোবাইল
+computer=কম্পিউটার
+laptop=ল্যাপটপ
+camera=ক্যামেরা
+television=টেলিভিশন
+tv=টিভি
+radio=রেডিও
+internet=ইন্টারনেট
+website=ওয়েবসাইট
+email=ইমেইল
+message=বার্তা|মেসেজ
+password=পাসওয়ার্ড
+screen=পর্দা|স্ক্রিন
+keyboard=কিবোর্ড
+battery=ব্যাটারি
+charger=চার্জার
+cable=তার|ক্যাবল
+machine=যন্ত্র|মেশিন
+tool=যন্ত্র|সরঞ্জাম
+tools=যন্ত্রপাতি|সরঞ্জাম
+engine=ইঞ্জিন
+wire=তার
+rope=দড়ি
+chain=শিকল
+paper=কাগজ
+pen=কলম
+pencil=পেন্সিল
+book=বই
+books=বই
+notebook=খাতা
+page=পৃষ্ঠা
+letter=চিঠি|অক্ষর
+newspaper=সংবাদপত্র|পত্রিকা
+magazine=ম্যাগাজিন|সাময়িকী
+story=গল্প
+poem=কবিতা
+song=গান
+picture=ছবি
+photo=ছবি
+painting=চিত্রকর্ম
+map=মানচিত্র
+word=শব্দ
+words=শব্দ
+sentence=বাক্য
+language=ভাষা
+name=নাম
+number=সংখ্যা|নম্বর
+address=ঠিকানা
+date=তারিখ
+time=সময়
+year=বছর
+month=মাস
+week=সপ্তাহ
+day=দিন
+night=রাত
+morning=সকাল
+afternoon=বিকাল|অপরাহ্ন
+evening=সন্ধ্যা
+noon=দুপুর
+midnight=মধ্যরাত
+hour=ঘণ্টা
+minute=মিনিট
+moment=মুহূর্ত
+second=সেকেন্ড
+monday=সোমবার
+tuesday=মঙ্গলবার
+wednesday=বুধবার
+thursday=বৃহস্পতিবার
+friday=শুক্রবার
+saturday=শনিবার
+sunday=রবিবার
+january=জানুয়ারি
+february=ফেব্রুয়ারি
+march=মার্চ
+april=এপ্রিল
+may=মে
+june=জুন
+july=জুলাই
+august=আগস্ট
+september=সেপ্টেম্বর
+october=অক্টোবর
+november=নভেম্বর
+december=ডিসেম্বর
+spring=বসন্ত
+summer=গ্রীষ্ম
+autumn=শরৎ
+winter=শীত
+rainy=বর্ষা
+season=ঋতু
+weather=আবহাওয়া
+sun=সূর্য
+moon=চাঁদ
+star=তারা
+stars=তারা
+sky=আকাশ
+cloud=মেঘ
+clouds=মেঘ
+rain=বৃষ্টি
+storm=ঝড়
+wind=বাতাস|হাওয়া
+thunder=বজ্র
+lightning=বিদ্যুৎ চমক|বজ্রপাত
+snow=তুষার|বরফ
+ice=বরফ
+fog=কুয়াশা
+mist=কুয়াশা
+flood=বন্যা
+earthquake=ভূমিকম্প
+fire=আগুন
+smoke=ধোঁয়া
+earth=পৃথিবী|মাটি
+world=পৃথিবী|বিশ্ব
+land=জমি|ভূমি
+soil=মাটি
+sand=বালি
+stone=পাথর
+rock=পাথর|শিলা
+mountain=পাহাড়
+hill=টিলা|পাহাড়
+valley=উপত্যকা
+forest=বন|জঙ্গল
+jungle=জঙ্গল
+tree=গাছ
+trees=গাছ
+plant=গাছ|উদ্ভিদ
+flower=ফুল
+flowers=ফুল
+rose=গোলাপ
+lotus=পদ্ম
+leaf=পাতা
+leaves=পাতা
+root=শিকড়
+branch=ডাল|শাখা
+seed=বীজ
+grass=ঘাস
+field=মাঠ
+farm=খামার
+crop=ফসল
+river=নদী
+lake=হ্রদ|লেক
+pond=পুকুর
+sea=সাগর|সমুদ্র
+ocean=মহাসাগর
+beach=সৈকত
+island=দ্বীপ
+wave=ঢেউ
+bridge=সেতু|ব্রিজ
+road=রাস্তা|সড়ক
+street=রাস্তা|গলি
+path=পথ
+way=পথ|উপায়
+lane=গলি
+highway=মহাসড়ক
+city=শহর|নগর
+town=শহর
+village=গ্রাম
+country=দেশ
+state=রাষ্ট্র|রাজ্য
+capital=রাজধানী|মূলধন
+district=জেলা
+division=বিভাগ
+area=এলাকা
+place=জায়গা|স্থান
+market=বাজার
+shop=দোকান
+store=দোকান|ভান্ডার
+mall=শপিংমল
+office=অফিস|দপ্তর
+school=স্কুল|বিদ্যালয়
+college=কলেজ
+university=বিশ্ববিদ্যালয়
+class=ক্লাস|শ্রেণি
+classroom=শ্রেণিকক্ষ
+library=গ্রন্থাগার|লাইব্রেরি
+hospital=হাসপাতাল
+clinic=ক্লিনিক
+pharmacy=ফার্মেসি
+bank=ব্যাংক
+mosque=মসজিদ
+temple=মন্দির
+church=গির্জা
+museum=জাদুঘর
+park=পার্ক|উদ্যান
+playground=খেলার মাঠ
+stadium=স্টেডিয়াম
+airport=বিমানবন্দর
+station=স্টেশন
+port=বন্দর
+hotel=হোটেল
+restaurant=রেস্তোরাঁ
+factory=কারখানা
+court=আদালত
+prison=কারাগার
+jail=জেল
+police=পুলিশ
+army=সেনাবাহিনী
+soldier=সৈনিক
+war=যুদ্ধ
+peace=শান্তি
+freedom=স্বাধীনতা
+independence=স্বাধীনতা
+victory=বিজয়
+defeat=পরাজয়
+government=সরকার
+minister=মন্ত্রী
+president=রাষ্ট্রপতি|সভাপতি
+prime=প্রধান
+parliament=সংসদ
+election=নির্বাচন
+vote=ভোট
+law=আইন
+rule=নিয়ম
+rules=নিয়মকানুন
+right=অধিকার
+rights=অধিকার
+justice=ন্যায়বিচার
+crime=অপরাধ
+criminal=অপরাধী
+thief=চোর
+lawyer=আইনজীবী|উকিল
+judge=বিচারক
+doctor=ডাক্তার|চিকিৎসক
+nurse=নার্স|সেবিকা
+patient=রোগী|ধৈর্যশীল
+teacher=শিক্ষক
+student=ছাত্র|শিক্ষার্থী
+students=শিক্ষার্থীরা
+engineer=প্রকৌশলী|ইঞ্জিনিয়ার
+farmer=কৃষক
+worker=শ্রমিক|কর্মী
+driver=চালক|ড্রাইভার
+pilot=বৈমানিক|পাইলট
+sailor=নাবিক
+fisherman=জেলে
+carpenter=কাঠমিস্ত্রি
+tailor=দর্জি
+cook=বাবুর্চি|রাঁধুনি
+chef=শেফ|বাবুর্চি
+barber=নাপিত
+painter=চিত্রশিল্পী|রং মিস্ত্রি
+artist=শিল্পী
+singer=গায়ক|গায়িকা
+writer=লেখক
+poet=কবি
+author=লেখক
+actor=অভিনেতা
+actress=অভিনেত্রী
+player=খেলোয়াড়
+coach=প্রশিক্ষক|কোচ
+manager=ব্যবস্থাপক|ম্যানেজার
+director=পরিচালক
+secretary=সচিব
+clerk=কেরানি
+officer=কর্মকর্তা
+employee=কর্মচারী
+boss=মালিক|বস
+owner=মালিক
+businessman=ব্যবসায়ী
+merchant=বণিক|ব্যবসায়ী
+customer=গ্রাহক|ক্রেতা
+seller=বিক্রেতা
+buyer=ক্রেতা
+scientist=বিজ্ঞানী
+professor=অধ্যাপক
+journalist=সাংবাদিক
+reporter=প্রতিবেদক|রিপোর্টার
+job=চাকরি|কাজ
+work=কাজ|কাজ করা
+business=ব্যবসা
+company=কোম্পানি|প্রতিষ্ঠান
+industry=শিল্প
+trade=বাণিজ্য
+profession=পেশা
+career=ক্যারিয়ার|পেশা
+salary=বেতন
+wage=মজুরি
+income=আয়
+profit=লাভ|মুনাফা
+loss=ক্ষতি|লোকসান
+price=দাম|মূল্য
+cost=খরচ|মূল্য
+money=টাকা|অর্থ
+cash=নগদ
+coin=মুদ্রা|কয়েন
+tax=কর|ট্যাক্স
+debt=ঋণ
+loan=ঋণ
+account=হিসাব|অ্যাকাউন্ট
+budget=বাজেট
+bill=বিল
+receipt=রসিদ
+payment=পরিশোধ|পেমেন্ট
+education=শিক্ষা
+knowledge=জ্ঞান
+learning=শিক্ষা|শেখা
+lesson=পাঠ
+exam=পরীক্ষা
+test=পরীক্ষা
+question=প্রশ্ন
+answer=উত্তর
+problem=সমস্যা
+solution=সমাধান
+idea=ধারণা|ভাবনা
+thought=চিন্তা
+opinion=মতামত
+reason=কারণ|যুক্তি
+result=ফলাফল
+effect=প্রভাব
+cause=কারণ
+purpose=উদ্দেশ্য
+goal=লক্ষ্য
+aim=লক্ষ্য
+plan=পরিকল্পনা
+project=প্রকল্প
+program=কর্মসূচি|প্রোগ্রাম
+system=ব্যবস্থা|সিস্টেম
+method=পদ্ধতি
+process=প্রক্রিয়া
+experiment=পরীক্ষা-নিরীক্ষা
+discovery=আবিষ্কার
+invention=উদ্ভাবন
+technology=প্রযুক্তি
+science=বিজ্ঞান
+mathematics=গণিত
+math=গণিত
+physics=পদার্থবিজ্ঞান
+chemistry=রসায়ন
+biology=জীববিজ্ঞান
+history=ইতিহাস
+geography=ভূগোল
+literature=সাহিত্য
+art=শিল্প|কলা
+music=সংগীত|গান
+dance=নৃত্য|নাচ
+drama=নাটক
+film=চলচ্চিত্র|সিনেমা
+movie=সিনেমা|চলচ্চিত্র
+game=খেলা
+sport=খেলা
+sports=খেলাধুলা
+football=ফুটবল
+cricket=ক্রিকেট
+match=ম্যাচ|খেলা
+race=দৌড়|প্রতিযোগিতা
+health=স্বাস্থ্য
+disease=রোগ
+illness=অসুস্থতা
+pain=ব্যথা
+fever=জ্বর
+cough=কাশি
+cold=সর্দি|ঠান্ডা
+headache=মাথাব্যথা
+wound=ক্ষত|ঘা
+injury=আঘাত|আহত হওয়া
+medicine=ওষুধ
+treatment=চিকিৎসা
+surgery=অস্ত্রোপচার
+cancer=ক্যান্সার
+diabetes=ডায়াবেটিস
+virus=ভাইরাস
+vaccine=টিকা|ভ্যাকসিন
+death=মৃত্যু
+life=জীবন
+birth=জন্ম
+age=বয়স
+love=ভালোবাসা|ভালোবাসা
+hate=ঘৃণা
+fear=ভয়
+anger=রাগ
+joy=আনন্দ
+happiness=সুখ|আনন্দ
+sadness=দুঃখ
+sorrow=দুঃখ|শোক
+hope=আশা
+dream=স্বপ্ন
+wish=ইচ্ছা|কামনা
+desire=ইচ্ছা|আকাঙ্ক্ষা
+courage=সাহস
+strength=শক্তি
+power=ক্ষমতা|শক্তি
+energy=শক্তি
+trust=বিশ্বাস|আস্থা
+faith=বিশ্বাস|ঈমান
+belief=বিশ্বাস
+truth=সত্য
+lie=মিথ্যা|মিথ্যা বলা
+honesty=সততা
+patience=ধৈর্য
+kindness=দয়া|সদয়তা
+mercy=দয়া|করুণা
+cruelty=নিষ্ঠুরতা
+violence=সহিংসতা
+beauty=সৌন্দর্য
+luck=ভাগ্য
+fortune=ভাগ্য
+fate=নিয়তি|ভাগ্য
+success=সফলতা|সাফল্য
+failure=ব্যর্থতা
+effort=প্রচেষ্টা
+attempt=চেষ্টা
+chance=সুযোগ
+opportunity=সুযোগ
+risk=ঝুঁকি
+danger=বিপদ|ঝুঁকি
+help=সাহায্য
+support=সমর্থন|সহায়তা
+service=সেবা
+advice=পরামর্শ
+suggestion=পরামর্শ
+information=তথ্য
+news=খবর|সংবাদ
+report=প্রতিবেদন|রিপোর্ট
+document=নথি|দলিল
+certificate=সনদ|সার্টিফিকেট
+form=ফরম|ফর্ম
+application=আবেদন|অ্যাপ্লিকেশন
+signature=স্বাক্ষর
+permission=অনুমতি
+passport=পাসপোর্ট
+visa=ভিসা
+ticket=টিকিট
+card=কার্ড
+identity=পরিচয়
+age=বয়স
+gender=লিঙ্গ
+male=পুরুষ
+female=নারী
+married=বিবাহিত
+single=অবিবাহিত|একক
+birthday=জন্মদিন
+wedding=বিয়ে|বিবাহ
+marriage=বিবাহ|বিয়ে
+festival=উৎসব
+holiday=ছুটি
+vacation=ছুটি
+trip=ভ্রমণ|সফর
+travel=ভ্রমণ
+journey=যাত্রা|ভ্রমণ
+tour=ভ্রমণ
+tourist=পর্যটক
+guide=গাইড|পথপ্রদর্শক
+car=গাড়ি
+bus=বাস
+train=ট্রেন
+plane=বিমান
+airplane=বিমান
+ship=জাহাজ
+boat=নৌকা
+bicycle=সাইকেল
+bike=বাইক|সাইকেল
+motorcycle=মোটরসাইকেল
+truck=ট্রাক
+taxi=ট্যাক্সি
+rickshaw=রিকশা
+helicopter=হেলিকপ্টার
+vehicle=যানবাহন
+traffic=যানজট|ট্রাফিক
+fuel=জ্বালানি
+gas=গ্যাস
+petrol=পেট্রল
+electricity=বিদ্যুৎ
+light=আলো
+shirt=শার্ট|জামা
+pants=প্যান্ট
+trousers=প্যান্ট
+dress=পোশাক|জামা
+skirt=স্কার্ট
+coat=কোট
+jacket=জ্যাকেট
+sweater=সোয়েটার
+scarf=স্কার্ফ|মাফলার
+cap=টুপি
+hat=টুপি
+shoe=জুতা
+shoes=জুতা
+sandal=স্যান্ডেল|চটি
+socks=মোজা
+glasses=চশমা
+ring=আংটি
+necklace=হার
+bracelet=বালা|ব্রেসলেট
+earring=কানের দুল
+gold=সোনা
+silver=রুপা
+iron=লোহা
+steel=ইস্পাত|স্টিল
+copper=তামা
+wood=কাঠ
+glass=কাচ
+plastic=প্লাস্টিক
+cotton=তুলা|সুতি
+silk=রেশম|সিল্ক
+wool=পশম
+leather=চামড়া
+cloth=কাপড়
+clothes=কাপড়|পোশাক
+thread=সুতা
+needle=সুই
+button=বোতাম
+color=রং
+shape=আকৃতি
+size=আকার
+circle=বৃত্ত
+square=বর্গ|চতুর্ভুজ
+triangle=ত্রিভুজ
+line=রেখা|লাইন
+point=বিন্দু|পয়েন্ট
+top=উপরে|শীর্ষ
+bottom=নিচ|তলদেশ
+side=পাশ
+edge=কিনারা
+corner=কোণ
+center=কেন্দ্র
+middle=মাঝখান|মধ্যবর্তী
+front=সামনে
+left=বাম
+north=উত্তর
+south=দক্ষিণ
+east=পূর্ব
+west=পশ্চিম
+direction=দিক
+distance=দূরত্ব
+length=দৈর্ঘ্য
+width=প্রস্থ
+height=উচ্চতা
+weight=ওজন
+depth=গভীরতা
+speed=গতি
+amount=পরিমাণ
+quantity=পরিমাণ
+part=অংশ
+piece=টুকরা
+pair=জোড়া
+set=সেট
+list=তালিকা
+kind=ধরন
+type=ধরন
+sort=ধরন
+example=উদাহরণ
+sample=নমুনা
+sign=চিহ্ন|সংকেত
+symbol=প্রতীক
+mark=চিহ্ন|নম্বর
+level=স্তর
+step=ধাপ
+stage=ধাপ|মঞ্চ
+beginning=শুরু
+start=শুরু
+end=শেষ
+middle=মধ্য
+change=পরিবর্তন
+difference=পার্থক্য
+similarity=মিল
+use=ব্যবহার
+need=প্রয়োজন
+want=চাওয়া
+be=হওয়া
+am=আমি
+is=হয়
+are=হও|হয়
+was=ছিল
+were=ছিলে|ছিল
+been=হয়েছে
+being=হওয়া
+have=আছে|থাকা
+has=আছে
+had=ছিল
+do=করা
+does=করে
+did=করেছিল
+done=সম্পন্ন|করা হয়েছে
+make=তৈরি করা|বানানো
+made=তৈরি
+go=যাওয়া
+goes=যায়
+went=গিয়েছিল
+gone=চলে গেছে
+going=যাচ্ছে
+come=আসা
+came=এসেছিল
+coming=আসছে
+get=পাওয়া
+got=পেয়েছে
+give=দেওয়া
+gave=দিয়েছিল
+given=দেওয়া হয়েছে
+take=নেওয়া
+took=নিয়েছিল
+taken=নেওয়া হয়েছে
+bring=আনা
+brought=এনেছিল
+put=রাখা
+keep=রাখা
+hold=ধরে রাখা
+carry=বহন করা
+pick=তোলা|বাছাই করা
+throw=ছোড়া|ফেলা
+catch=ধরা
+drop=ফেলা|পড়ে যাওয়া
+push=ঠেলা
+pull=টানা
+lift=তোলা
+open=খোলা
+close=বন্ধ করা
+shut=বন্ধ করা
+break=ভাঙা
+cut=কাটা
+tear=ছেঁড়া
+join=যোগ দেওয়া|জোড়া লাগানো
+build=নির্মাণ করা
+create=সৃষ্টি করা
+destroy=ধ্বংস করা
+repair=মেরামত করা
+fix=ঠিক করা|মেরামত করা
+clean=পরিষ্কার করা
+wash=ধোয়া
+dry=শুকানো
+fill=পূরণ করা|ভরা
+pour=ঢালা
+mix=মেশানো
+cook=রান্না করা
+eat=খাওয়া
+ate=খেয়েছিল
+eaten=খাওয়া হয়েছে
+drink=পান করা
+drank=পান করেছিল
+sleep=ঘুমানো|ঘুম
+slept=ঘুমিয়েছিল
+wake=জাগা
+dream=স্বপ্ন দেখা
+sit=বসা
+sat=বসেছিল
+stand=দাঁড়ানো
+stood=দাঁড়িয়েছিল
+lie=শোয়া
+walk=হাঁটা
+walked=হেঁটেছিল
+run=দৌড়ানো|চালানো
+ran=দৌড়েছিল
+jump=লাফানো
+climb=ওঠা|আরোহণ করা
+fall=পড়া|পতন
+fell=পড়েছিল
+swim=সাঁতার কাটা
+fly=উড়া
+flew=উড়েছিল
+drive=চালানো
+ride=চড়া
+stop=থামা
+wait=অপেক্ষা করা
+move=নড়া|সরানো
+turn=ঘোরা
+return=ফেরা|ফেরত দেওয়া
+leave=ছেড়ে যাওয়া
+left=ছেড়ে গেছে|বাম
+arrive=পৌঁছানো
+enter=প্রবেশ করা
+exit=প্রস্থান|বের হওয়া
+follow=অনুসরণ করা
+lead=নেতৃত্ব দেওয়া
+see=দেখা
+saw=দেখেছিল
+seen=দেখা হয়েছে
+look=তাকানো|দেখা
+watch=দেখা
+show=দেখানো
+hear=শোনা
+heard=শুনেছিল
+listen=শোনা|মনোযোগ দিয়ে শোনা
+smell=গন্ধ|শোঁকা
+taste=স্বাদ|চাখা
+touch=স্পর্শ করা|স্পর্শ
+feel=অনুভব করা
+felt=অনুভব করেছিল
+think=ভাবা|মনে করা
+thought=ভেবেছিল
+know=জানা
+knew=জানত
+known=পরিচিত
+understand=বোঝা
+understood=বুঝেছিল
+remember=মনে রাখা|মনে পড়া
+forget=ভুলে যাওয়া
+forgot=ভুলে গিয়েছিল
+learn=শেখা
+teach=শেখানো
+taught=শিখিয়েছিল
+study=পড়াশোনা করা|অধ্যয়ন
+read=পড়া
+write=লেখা
+wrote=লিখেছিল
+written=লেখা
+draw=আঁকা
+paint=রং করা|আঁকা
+sing=গান গাওয়া
+sang=গেয়েছিল
+play=খেলা|বাজানো
+say=বলা
+said=বলেছিল
+tell=বলা
+told=বলেছিল
+speak=কথা বলা
+spoke=কথা বলেছিল
+talk=কথা বলা|আলাপ
+call=ডাকা|ফোন করা
+ask=জিজ্ঞাসা করা
+asked=জিজ্ঞাসা করেছিল
+reply=উত্তর দেওয়া
+answer=উত্তর দেওয়া
+explain=ব্যাখ্যা করা
+describe=বর্ণনা করা
+discuss=আলোচনা করা
+argue=তর্ক করা
+agree=একমত হওয়া
+disagree=দ্বিমত করা
+shout=চিৎকার করা
+whisper=ফিসফিস করা
+smile=হাসা
+laugh=হাসা
+cry=কাঁদা
+weep=কাঁদা
+love=ভালোবাসা
+like=পছন্দ করা|মতো
+dislike=অপছন্দ করা
+hate=ঘৃণা করা
+enjoy=উপভোগ করা
+prefer=পছন্দ করা
+want=চাওয়া
+wish=কামনা করা
+hope=আশা করা
+expect=আশা করা|প্রত্যাশা করা
+believe=বিশ্বাস করা
+trust=বিশ্বাস করা
+doubt=সন্দেহ করা
+fear=ভয় পাওয়া
+worry=চিন্তা করা|দুশ্চিন্তা
+care=যত্ন নেওয়া|যত্ন
+help=সাহায্য করা
+support=সমর্থন করা
+protect=রক্ষা করা
+save=বাঁচানো|সংরক্ষণ করা
+rescue=উদ্ধার করা
+kill=হত্যা করা|মারা
+die=মারা যাওয়া
+died=মারা গিয়েছিল
+dead=মৃত
+alive=জীবিত
+live=বাস করা|বাঁচা
+lived=বাস করেছিল
+born=জন্মগ্রহণ করা
+grow=বড় হওয়া|বাড়া
+grew=বড় হয়েছিল
+growth=বৃদ্ধি
+increase=বৃদ্ধি পাওয়া|বাড়ানো
+decrease=হ্রাস পাওয়া|কমানো
+reduce=কমানো
+add=যোগ করা
+subtract=বিয়োগ করা
+multiply=গুণ করা
+divide=ভাগ করা
+count=গণনা করা|গোনা
+measure=পরিমাপ করা
+weigh=ওজন করা
+compare=তুলনা করা
+choose=বেছে নেওয়া
+chose=বেছে নিয়েছিল
+select=নির্বাচন করা
+decide=সিদ্ধান্ত নেওয়া
+try=চেষ্টা করা
+tried=চেষ্টা করেছিল
+begin=শুরু করা
+began=শুরু করেছিল
+finish=শেষ করা
+complete=সম্পন্ন করা
+continue=চালিয়ে যাওয়া
+stay=থাকা
+remain=থেকে যাওয়া
+wait=অপেক্ষা
+meet=দেখা করা|মিলিত হওয়া
+met=দেখা হয়েছিল
+visit=পরিদর্শন করা|বেড়াতে যাওয়া
+invite=আমন্ত্রণ জানানো
+welcome=স্বাগতম|স্বাগত জানানো
+thank=ধন্যবাদ দেওয়া
+thanks=ধন্যবাদ
+please=অনুগ্রহ করে|দয়া করে
+sorry=দুঃখিত
+excuse=ক্ষমা|অজুহাত
+forgive=ক্ষমা করা
+apologize=ক্ষমা চাওয়া
+hello=হ্যালো|আসসালামু আলাইকুম
+hi=হাই|হ্যালো
+goodbye=বিদায়
+bye=বিদায়
+congratulations=অভিনন্দন
+sell=বিক্রি করা
+sold=বিক্রি করেছিল
+buy=কেনা
+bought=কিনেছিল
+pay=পরিশোধ করা|মজুরি দেওয়া
+paid=পরিশোধ করেছিল
+spend=খরচ করা
+earn=উপার্জন করা
+borrow=ধার নেওয়া
+lend=ধার দেওয়া
+owe=ঋণী থাকা
+win=জেতা
+won=জিতেছিল
+lose=হারানো|হারা
+lost=হারিয়ে গেছে|হারিয়েছিল
+find=খুঁজে পাওয়া
+found=খুঁজে পেয়েছিল
+search=খোঁজা|অনুসন্ধান
+seek=খোঁজা
+hide=লুকানো
+hid=লুকিয়েছিল
+appear=দেখা দেওয়া
+disappear=অদৃশ্য হওয়া
+happen=ঘটা
+happened=ঘটেছিল
+occur=ঘটা
+become=হওয়া
+became=হয়েছিল
+seem=মনে হওয়া
+look=দেখতে লাগা
+send=পাঠানো
+sent=পাঠিয়েছিল
+receive=গ্রহণ করা|পাওয়া
+accept=গ্রহণ করা
+refuse=প্রত্যাখ্যান করা
+reject=প্রত্যাখ্যান করা
+allow=অনুমতি দেওয়া
+forbid=নিষেধ করা
+prevent=প্রতিরোধ করা
+avoid=এড়িয়ে চলা
+allow=অনুমতি দেওয়া
+obey=মান্য করা
+command=আদেশ
+order=আদেশ|ক্রম
+request=অনুরোধ
+demand=দাবি
+offer=প্রস্তাব|দেওয়া
+promise=প্রতিশ্রুতি
+warn=সতর্ক করা
+warning=সতর্কতা
+threat=হুমকি
+attack=আক্রমণ
+defend=রক্ষা করা
+fight=যুদ্ধ করা|লড়াই
+beat=পেটানো|হারানো
+hit=আঘাত করা
+punish=শাস্তি দেওয়া
+punishment=শাস্তি
+reward=পুরস্কার
+prize=পুরস্কার
+gift=উপহার
+present=উপহার|বর্তমান
+past=অতীত
+future=ভবিষ্যৎ
+share=ভাগ করা|অংশ
+divide=ভাগ করা
+collect=সংগ্রহ করা
+gather=জড়ো করা
+spread=ছড়ানো
+cover=ঢাকা
+wrap=মোড়ানো
+tie=বাঁধা
+untie=খোলা
+hang=ঝোলানো
+dig=খোঁড়া
+plant=রোপণ করা
+water=পানি দেওয়া
+harvest=ফসল তোলা
+cut=কাটা
+sew=সেলাই করা
+knit=বোনা
+shave=কামানো
+comb=চিরুনি|আঁচড়ানো
+brush=ব্রাশ|আঁচড়ানো
+bath=গোসল
+shower=ঝরনা|গোসল
+dress=পোশাক পরা
+wear=পরা
+wore=পরেছিল
+remove=সরানো
+replace=প্রতিস্থাপন করা
+check=যাচাই করা|পরীক্ষা করা
+control=নিয়ন্ত্রণ করা|নিয়ন্ত্রণ
+manage=পরিচালনা করা
+organize=সংগঠিত করা
+prepare=প্রস্তুত করা
+develop=উন্নয়ন করা|বিকশিত করা
+improve=উন্নত করা
+design=নকশা|ডিজাইন
+produce=উৎপাদন করা
+product=পণ্য
+production=উৎপাদন
+quality=গুণমান
+quantity=পরিমাণ
+research=গবেষণা
+study=অধ্যয়ন|গবেষণা
+analysis=বিশ্লেষণ
+data=উপাত্ত|তথ্য
+fact=তথ্য|সত্য
+evidence=প্রমাণ
+proof=প্রমাণ
+rule=নিয়ম
+theory=তত্ত্ব
+practice=অনুশীলন|চর্চা
+skill=দক্ষতা
+talent=প্রতিভা
+ability=সামর্থ্য|দক্ষতা
+experience=অভিজ্ঞতা
+training=প্রশিক্ষণ
+culture=সংস্কৃতি
+tradition=ঐতিহ্য|প্রথা
+custom=প্রথা|রীতি
+religion=ধর্ম
+prayer=প্রার্থনা|নামাজ
+society=সমাজ
+community=সম্প্রদায়
+nation=জাতি
+race=জাতি|দৌড়
+poverty=দারিদ্র্য
+wealth=সম্পদ
+property=সম্পত্তি
+resource=সম্পদ
+environment=পরিবেশ
+nature=প্রকৃতি
+pollution=দূষণ
+climate=জলবায়ু
+disaster=দুর্যোগ
+accident=দুর্ঘটনা
+emergency=জরুরি অবস্থা
+bangladesh=বাংলাদেশ
+bangla=বাংলা
+bengali=বাঙালি|বাংলা
+dhaka=ঢাকা
+india=ভারত
+pakistan=পাকিস্তান
+nepal=নেপাল
+china=চীন
+japan=জাপান
+america=আমেরিকা
+england=ইংল্যান্ড
+english=ইংরেজি
+arabic=আরবি
+hindi=হিন্দি
+urdu=উর্দু
+muslim=মুসলিম
+hindu=হিন্দু
+christian=খ্রিস্টান
+buddhist=বৌদ্ধ
+islam=ইসলাম
+quran=কুরআন
+ramadan=রমজান
+eid=ঈদ
+hajj=হজ`;
+
+const DICT = {}, DICT_REV = {};
+(function buildDict() {
+  DICT_TEXT.split("\n").forEach(line => {
+    const i = line.indexOf("=");
+    if (i < 1) return;
+    const en = line.slice(0, i).trim().toLowerCase();
+    const senses = line.slice(i + 1).split("|").map(x => x.trim()).filter(Boolean);
+    if (!en) return;
+    DICT[en] = DICT[en] || [];
+    senses.forEach(x => { if (!DICT[en].includes(x)) DICT[en].push(x); });
+  });
+  // reverse (Bangla -> English): main meanings first, then the rest
+  Object.entries(DICT).forEach(([en, bn]) => { if (bn[0] && !DICT_REV[bn[0]]) DICT_REV[bn[0]] = en; });
+  Object.entries(DICT).forEach(([en, bn]) => bn.slice(1).forEach(x => { if (!DICT_REV[x]) DICT_REV[x] = en; }));
+})();
+
+// Look up one English word, also trying simple endings: cats, boxes, studies, quickly, walking, walked
+function dictWord(w) {
+  const k = w.toLowerCase();
+  if (k === "the") return "";
+  if (DICT[k]) return DICT[k][0];
+  const tries = [];
+  if (/ies$/.test(k)) tries.push([k.slice(0, -3) + "y", ""]);
+  if (/(es|s)$/.test(k)) { tries.push([k.slice(0, -2), ""]); tries.push([k.slice(0, -1), ""]); }
+  if (/ly$/.test(k)) { tries.push([k.slice(0, -2), "ভাবে"]); tries.push([k.slice(0, -3) + "y", "ভাবে"]); }
+  if (/ing$/.test(k)) { const b = k.slice(0, -3); tries.push([b, ""], [b + "e", ""], [b.slice(0, -1), ""]); }
+  if (/ed$/.test(k)) { const b = k.slice(0, -2); tries.push([b, ""], [b + "e", ""], [b.slice(0, -1), ""], [k.slice(0, -3) + "y", ""]); }
+  for (const [b, suf] of tries) if (b.length > 1 && DICT[b]) return DICT[b][0] + suf;
+  return null;
+}
+
+// Whole item (word or short phrase) -> dictionary result, or null if any word is unknown
+function dictItem(item, from) {
+  const t = item.trim();
+  if (!t) return "";
+  if (from === "bn") return DICT_REV[t] || null;
+  const whole = DICT[t.toLowerCase()];
+  if (whole) return whole[0];
+  const words = t.split(/\s+/);
+  const out = [];
+  for (const w of words) {
+    const m = w.match(/^([^A-Za-z0-9]*)([A-Za-z'-]+)([^A-Za-z0-9]*)$/);
+    if (!m) { if (/^[0-9.,]+$/.test(w)) { out.push(w); continue; } return null; }
+    const r = dictWord(m[2].replace(/'s$/i, ""));
+    if (r === null) return null;
+    out.push(m[1] + r + m[3]);
+  }
+  return out.filter(x => x !== "").join(" ");
+}
+
+async function apiOne(text, from, to) {
+  try {
+    const url = "https://api.mymemory.translated.net/get?q=" +
+                encodeURIComponent(text) + "&langpair=" + from + "|" + to;
+    const j = await (await fetch(url)).json();
+    const r = j && j.responseData && j.responseData.translatedText;
+    if (j.responseStatus && Number(j.responseStatus) !== 200) return text;
+    return r || text;
+  } catch (e) { return text; }
+}
+
+// Word-list mode: "smart, long, elephant" or a single word / short phrase.
+// Each item is looked up in the dictionary first; only unknown items go to the online translator.
+// Returns null when the line is a normal sentence (then the old method is used).
+async function translateWordList(text, from, to) {
+  const parts = text.split(/(\s*[,;،]\s*)/);           // items and the separators between them
+  const items = parts.filter((_, i) => i % 2 === 0);
+  const looksLikeList = items.every(it => it.trim().split(/\s+/).length <= 3);
+  if (!looksLikeList) return null;
+  const out = await Promise.all(parts.map(async (p, i) => {
+    if (i % 2 === 1) return p;                            // separator
+    const it = p.trim();
+    if (!it) return p;
+    const hasToken = /XQ\d+Z/.test(it);
+    const core = it.replace(/XQ\d+Z/g, "");
+    const hasLetters = from === "en" ? /[A-Za-z]/.test(core) : /[\u0980-\u09E5\u09F0-\u09FF]/.test(core);
+    if (!hasLetters) return it;                           // numbers / glossary hits only
+    const lead = it.match(/^[^A-Za-z\u0980-\u09FF]*/)[0];
+    const tail = it.match(/[.!?]*$/)[0];
+    const body = it.slice(lead.length, it.length - tail.length);
+    if (!hasToken) {
+      const d = dictItem(body, from);
+      if (d !== null) return lead + d + tail;
+    }
+    return await apiOne(it, from, to);                    // unknown word -> online translator
+  }));
+  return out.join("");
+}
+
+function readGlossary() {
+  const map = [];
+  $("glossary").value.split("\n").forEach(line => {
+    const i = line.indexOf("=");
+    if (i > 0) map.push([line.slice(0, i).trim(), line.slice(i + 1).trim()]);
+  });
+  return map;
+}
+
+const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Spelling fixes applied to every English -> Bangla result (wrong -> right).
+// Add more pairs here when you notice a repeated mistake.
+const FIXES = [
+  ["আবদুর", "আব্দুর"], ["আবদুল", "আব্দুল"], ["আবদুস", "আব্দুস"],
+  ["আবদুল্লাহ", "আব্দুল্লাহ"], ["আব্দুল্লা ", "আব্দুল্লাহ "],
+  ["মোহাম্মাদ", "মোহাম্মদ"], [" & ", " ও "], ["রহমান", "রহমান"]
+];
+const applyFixes = s => FIXES.reduce((t, [a, b]) => t.split(a).join(b), s);
+
+// Name / address mode: write by sound (transliterate) instead of translating meaning
+async function transliterateLine(line, glossary) {
+  const tokens = {};
+  let text = line;
+  glossary.slice().sort((a, b) => b[0].length - a[0].length).forEach(([en, bn], i) => {
+    if (!en) return;
+    const re = new RegExp("(?<![A-Za-z])" + escRe(en) + "(?![A-Za-z])", "gi");
+    if (re.test(text)) { re.lastIndex = 0; const t = "XQ" + i + "Z"; text = text.replace(re, t); tokens[t] = bn; }
+  });
+  const parts = text.split(/(\s+)/);
+  const out = await Promise.all(parts.map(async p => {
+    if (!p.trim() || /XQ\d+Z/.test(p)) return p;
+    const sp = wordSpecial(p); if (sp !== null) return sp;
+    // degrees / abbreviations are read letter by letter: M.ASCE -> এম.এএসসিই, EWU -> ইডব্লিউইউ
+    const core = p.replace(/^[(\[]+/, "").replace(/[),;:!?]+$/, "");
+    if (/^([A-Z][a-z]?\.)+[A-Za-z]+\.?$/.test(core) || /^[A-Z]{2,4}$/.test(core)) {
+      const spell = s => /^[A-Z]+$/.test(s) ? [...s].map(c => LN[c.toLowerCase()]).join("") : (DEG[s.toLowerCase()] || s);
+      const i = p.indexOf(core);
+      return p.slice(0, i) + core.split(".").map(spell).join(".") + p.slice(i + core.length);
+    }
+    const m = p.match(/^([^A-Za-z0-9]*)([A-Za-z']+)([^A-Za-z0-9]*)$/);
+    if (!m) return toBnDigits(p);
+    try { return m[1] + await gword(m[2]) + m[3]; } catch (e) { return m[1] + banglish(m[2]) + m[3]; }
+  }));
+  let res = out.join("");
+  Object.entries(tokens).forEach(([t, v]) => { res = res.split(t).join(v); });
+  return toBnDigits(applyFixes(res));
+}
+
+async function translateLine(line, dir, glossary) {
+  const [from, to] = dir.split("|");
+  // Glossary: swap sides when translating Bangla -> English
+  const pairs = glossary.map(([en, bn]) => from === "en" ? [en, bn] : [bn, en])
+                        .sort((a, b) => b[0].length - a[0].length);
+  if (from === "bn") line = toEnDigits(line);
+
+  const tokens = {};
+  let text = line;
+  pairs.forEach(([src, dst], i) => {
+    if (!src) return;
+    const re = from === "en"
+      ? new RegExp("(?<![A-Za-z])" + escRe(src) + "(?![A-Za-z])", "gi")
+      : new RegExp(escRe(src), "g");
+    if (re.test(text)) {
+      re.lastIndex = 0;
+      const t = "XQ" + i + "Z";
+      text = text.replace(re, t);
+      tokens[t] = dst;
+    }
+  });
+
+  let result = text;
+  const letters = from === "en" ? /[A-Za-z]{2,}/ : /[\u0980-\u09E5\u09F0-\u09FF]/;
+  const listResult = await translateWordList(text, from, to);   // dictionary first for words / word lists
+  if (listResult !== null) {
+    result = listResult;
+  } else if (letters.test(text.replace(/XQ\d+Z/g, ""))) {
+    const url = "https://api.mymemory.translated.net/get?q=" +
+                encodeURIComponent(text) + "&langpair=" + from + "|" + to;
+    const j = await (await fetch(url)).json();
+    result = j.responseData.translatedText;
+  }
+  Object.entries(tokens).forEach(([t, v]) => { result = result.split(t).join(v); });
+  return to === "bn" ? toBnDigits(applyFixes(result)) : result;
+}
+
+function updateLabels() {
+  const bnToEn = $("dir").value === "bn|en";
+  $("srcLabel").textContent = (bnToEn ? "Bangla" : "English") + " text (one item per line)";
+  $("outLabel").textContent = (bnToEn ? "English" : "Bangla") + " result";
+}
+$("dir").onchange = updateLabels;
+
+$("go").onclick = async () => {
+  $("status").textContent = "Translating...";
+  $("out").value = "";
+  try {
+    const glossary = readGlossary();
+    const results = [];
+    for (const line of $("src").value.split("\n")) {
+      const nm = $("nameMode").checked && $("dir").value === "en|bn";
+      results.push(line.trim() ? (nm ? await transliterateLine(line.trim(), glossary)
+                                     : await translateLine(line.trim(), $("dir").value, glossary)) : "");
+    }
+    $("out").value = results.join("\n");
+    $("status").textContent = "";
+  } catch (e) {
+    $("status").textContent = "Translation failed (check your internet connection): " + e.message;
+  }
+};
+
+$("swap").onclick = () => {
+  const out = $("out").value;
+  $("dir").value = $("dir").value === "en|bn" ? "bn|en" : "en|bn";
+  if (out) $("src").value = out;
+  $("out").value = "";
+  updateLabels();
+};
+
+$("copy").onclick = () => {
+  $("out").select();
+  navigator.clipboard.writeText($("out").value);
+};
+// ---------- Banglish -> Bangla (phonetic) ----------
+const CONS = {kh:"খ",gh:"ঘ",chh:"ছ",ch:"চ",jh:"ঝ",Th:"ঠ",Dh:"ঢ",th:"থ",dh:"ধ",ph:"ফ",bh:"ভ",sh:"শ",Sh:"ষ",Rh:"ঢ়",
+  k:"ক",g:"গ",c:"চ",j:"জ",T:"ট",D:"ড",N:"ণ",t:"ত",d:"দ",n:"ন",p:"প",f:"ফ",b:"ব",v:"ভ",m:"ম",z:"য",r:"র",l:"ল",
+  s:"স",S:"শ",h:"হ",R:"ড়",y:"য়",w:"ও",q:"ক",x:"ক্স",kkh:"ক্ষ"};
+const VOW = {oi:["ঐ","ৈ"],ou:["ঔ","ৌ"],ii:["ঈ","ী"],uu:["ঊ","ূ"],a:["আ","া"],i:["ই","ি"],u:["উ","ু"],e:["এ","ে"],O:["ও","ো"],o:["অ",""]};
+const MARK = {"ng":"ং",":":"ঃ","^":"ঁ"};
+const KEYS = [...Object.keys(CONS),...Object.keys(VOW),...Object.keys(MARK)].sort((a,b)=>b.length-a.length);
+
+// Pairs that become a joint letter (যুক্তাক্ষর) automatically. Anything else stays separate (korbe = করবে).
+const JOIN = new Set(("st sT sth sTh sk skh sp sph sm sn sl str " +
+  "shc shn shm shl shb shr nt nT nd nD nth nTh ndh nk nkh nj nc nch nm ns np nb nn " +
+  "mp mb mph mbh mm ml kt kT kk kl ky kr khr gg gn gl gm gr ghr cc jj jb Tt TT Ty DD Dy " +
+  "tt tn tm tr tb ty thr dd db dm dr dy dhr pt pp pr pl ps pn pm py phr bb bd bj bl br by bdh bhr " +
+  "ll lp lk lm lt lT lb lg ly hm hn hl hr hy mr sr").split(" "));
+
+function banglish(text) {
+  // "_" forces a joint letter between two consonants (k_j = ক্জ); "o" keeps them apart
+  let out = "", prevCons = false, pk = "", force = false, i = 0;
+  while (i < text.length) {
+    if (text[i] === "_") { if (prevCons) force = true; i++; continue; }
+    const k = KEYS.find(k => text.startsWith(k, i));
+    if (!k) { out += /[0-9]/.test(text[i]) ? BN[text[i]] : text[i]; prevCons = false; force = false; i++; continue; }
+    i += k.length;
+    if (k in MARK) { out += MARK[k]; prevCons = false; }
+    else if (k in CONS) {
+      if (prevCons && (force || JOIN.has(pk + k))) out += "্" + (k === "y" ? "য" : CONS[k]);
+      else out += CONS[k];
+      prevCons = true; pk = k; force = false;
+    }
+    else { out += prevCons ? VOW[k][1] : VOW[k][0]; prevCons = false; force = false; }
+  }
+  return out;
+}
+// Words that must always come out in this exact spelling in the Banglish tab.
+// Add your own: lowercase English word -> Bangla spelling.
+const BW = {
+  "md.": "মোঃ", "mst.": "মোসাঃ", "engr.": "প্রকৌশলী", "md": "মোঃ",
+  student: "স্টুডেন্ট", students: "স্টুডেন্টস", engineer: "ইঞ্জিনিয়ার", engineering: "ইঞ্জিনিয়ারিং",
+  structural: "স্ট্রাকচারাল", consulting: "কনসাল্টিং", university: "ইউনিভার্সিটি", college: "কলেজ",
+  school: "স্কুল", office: "অফিস", mobile: "মোবাইল", email: "ইমেইল", job: "জব", thanks: "থ্যাংকস",
+  ami: "আমি", tumi: "তুমি", tui: "তুই", se: "সে", amra: "আমরা", tomra: "তোমরা", tara: "তারা",
+  amar: "আমার", tomar: "তোমার", tar: "তার", amake: "আমাকে", tomake: "তোমাকে", take: "তাকে",
+  amader: "আমাদের", tomader: "তোমাদের", ekhon: "এখন", tokhon: "তখন", kokhon: "কখন",
+  kon: "কোন", kono: "কোনো", koto: "কত", kothay: "কোথায়", kothai: "কোথায়", keno: "কেন", kemon: "কেমন",
+  ki: "কি", ke: "কে", kintu: "কিন্তু", tai: "তাই", jodi: "যদি", tahole: "তাহলে", tobe: "তবে", ebong: "এবং",
+  ache: "আছে", achi: "আছি", acho: "আছো", achen: "আছেন", hoy: "হয়", hobe: "হবে", hoyeche: "হয়েছে",
+  na: "না", nai: "নেই", ar: "আর", ba: "বা", kaj: "কাজ", ekjon: "একজন", ekojon: "একজন", ekta: "একটা", ekti: "একটি",
+  kori: "করি", koro: "করো", kore: "করে", korbe: "করবে", korbo: "করবো", korte: "করতে", korchi: "করছি",
+  korcho: "করছো", korso: "করছো", korsi: "করছি", korche: "করছে", korechi: "করেছি", koresho: "করেছো",
+  jai: "যাই", jabo: "যাবো", jabe: "যাবে", zabe: "যাবে", zabo: "যাবো", jacchi: "যাচ্ছি", jacche: "যাচ্ছে",
+  gelam: "গেলাম", gechi: "গেছি", geche: "গেছে", asi: "আসি", asbo: "আসবো", asbe: "আসবে", esechi: "এসেছি",
+  esho: "এসো", ashchi: "আসছি", dekhi: "দেখি", dekho: "দেখো", dekhbo: "দেখবো", dekhbe: "দেখবে",
+  khai: "খাই", khabo: "খাবো", khabe: "খাবে", khachchi: "খাচ্ছি", khelam: "খেলাম", bolo: "বলো", bolbo: "বলবো",
+  bhalo: "ভালো", valo: "ভালো", bhalobashi: "ভালোবাসি", valobashi: "ভালোবাসি", kharap: "খারাপ",
+  aj: "আজ", ajke: "আজকে", kal: "কাল", kalke: "কালকে", shokal: "সকাল", rat: "রাত", din: "দিন",
+  bari: "বাড়ি", bangladesh: "বাংলাদেশ", bangladesher: "বাংলাদেশের", dhaka: "ঢাকা", desh: "দেশ",
+  nagorik: "নাগরিক", chakri: "চাকরি", protisthan: "প্রতিষ্ঠান", protisthane: "প্রতিষ্ঠানে",
+  sthan: "স্থান", shikkha: "শিক্ষা", biye: "বিয়ে", bondhu: "বন্ধু", bhai: "ভাই", bon: "বোন", baba: "বাবা", ma: "মা",
+  upal: "উপল", buet: "বুয়েট", managing: "ম্যানেজিং", director: "ডিরেক্টর", torque: "টর্ক", civil: "সিভিল", engineers: "ইঞ্জিনিয়ার্স", consultants: "কনসালট্যান্টস", ashrafuddowla: "আশরাফুদ্দৌলা", house: "বাড়ি", flat: "ফ্ল্যাট", road: "রোড", block: "ব্লক",
+  sector: "সেক্টর", principal: "প্রিন্সিপাল", ceo: "সিইও", "s.e.": "এস.ই.", "s.e": "এস.ই", "&": "ও", uttara: "উত্তরা",
+  nam: "নাম", dhonnobad: "ধন্যবাদ", shagotom: "স্বাগতম", pani: "পানি", vat: "ভাত", bhat: "ভাত", gyan: "জ্ঞান"
+};
+// Spoken names of single letters, e.g. "Block K" -> ব্লক কে, "Road 3A" -> রোড ৩এ
+const LN = {a:"এ",b:"বি",c:"সি",d:"ডি",e:"ই",f:"এফ",g:"জি",h:"এইচ",i:"আই",j:"জে",k:"কে",l:"এল",m:"এম",
+  n:"এন",o:"ও",p:"পি",q:"কিউ",r:"আর",s:"এস",t:"টি",u:"ইউ",v:"ভি",w:"ডব্লিউ",x:"এক্স",y:"ওয়াই",z:"জেড"};
+const DEG = { sc: "এসসি", ph: "পিএইচ", eng: "ইঞ্জি", engg: "ইঞ্জি" };   // lower-case parts of degrees (B.Sc, Ph.D)
+function lookupWord(k) {
+  return BW[k] || (readGlossary().find(([en]) => en.toLowerCase() === k) || [])[1];
+}
+function wordSpecial(p) {
+  const mm = p.match(/^([(\[]*)(.*?)([),;:!?]*)$/), core = mm[2];
+  if (!core) return null;
+  const k = core.toLowerCase(), hit = lookupWord(k);
+  if (hit) return mm[1] + hit + mm[3];
+  if (/^[A-Z]$/.test(core)) return mm[1] + LN[k] + mm[3];
+  const dl = core.match(/^(\d+)([A-Za-z])$/);
+  if (dl) return mm[1] + toBnDigits(dl[1]) + LN[dl[2].toLowerCase()] + mm[3];
+  return null;
+}
+
+// Smart conversion: Google Input Tools (online) per word, offline rules as fallback
+const wcache = {};
+const EP = ["https://inputtools.google.com/request?text=", "https://www.google.com/inputtools/request?text="];
+async function gword(w) {
+  if (wcache[w]) return wcache[w];
+  let err;
+  for (const ep of EP) {
+    try {
+      const j = await (await fetch(ep + encodeURIComponent(w) + "&itc=bn-t-i0-und&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8")).json();
+      if (j[0] === "SUCCESS") return (wcache[w] = j[1][0][1][0]);
+    } catch (e) { err = e; }
+  }
+  throw err || new Error("no result");
+}
+async function mapLimit(arr, n, fn) {   // at most n requests at the same time
+  const res = new Array(arr.length); let i = 0;
+  await Promise.all(Array.from({ length: n }, async () => {
+    while (i < arr.length) { const j = i++; res[j] = await fn(arr[j]); }
+  }));
+  return res;
+}
+let convId = 0;
+async function convertP() {
+  const id = ++convId, text = $("bnIn").value;
+  let offline = false;
+  const gl = readGlossary();
+  const look = k => BW[k] || (gl.find(([en]) => en.toLowerCase() === k) || [])[1];
+  const dari = s => s.replace(/\./g, "।");
+  const out = await mapLimit(text.split(/(\s+)/), 4, async p => {
+    if (!p.trim()) return p;
+    const sp = wordSpecial(p); if (sp !== null) return sp;
+    const m = p.match(/^([^A-Za-z0-9]*)([A-Za-z']+)([^A-Za-z0-9]*)$/);
+    if (!m) return banglish(p);
+    const key = m[2].toLowerCase();
+    let tail = m[3], hit;
+    if (tail[0] === ".") { hit = look(key + "."); if (hit) tail = tail.slice(1); }
+    hit = hit || look(key);
+    if (hit) return toBnDigits(m[1]) + hit + dari(tail);
+    try { return toBnDigits(m[1]) + await gword(m[2]) + dari(tail); }
+    catch (e) { offline = true; return toBnDigits(m[1]) + banglish(m[2]) + dari(tail); }
+  });
+  if (id !== convId) return;
+  $("bnOut").value = out.join("");
+  $("bnMode").textContent = offline ? "(basic mode: online service not reachable, using built-in word list + rules)" : "(smart mode)";
+}
+let timer;
+$("bnIn").oninput = () => { clearTimeout(timer); timer = setTimeout(convertP, 350); };
+$("bnClear").onclick = () => { $("bnIn").value = ""; $("bnOut").value = ""; };
+
+// Voice input
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null;
+$("mic").onclick = () => {
+  const st = $("micStatus");
+  if (!SR) { st.textContent = "Voice input needs Chrome or Edge."; return; }
+  if (rec) { rec.stop(); return; }
+  const mode = $("vLang").value;
+  rec = new SR();
+  rec.lang = mode === "bn" ? "bn-BD" : "en-US";
+  rec.continuous = true;
+  rec.interimResults = false;
+  rec.onstart = () => { $("mic").textContent = "⏹ Stop"; st.textContent = "Listening..."; };
+  rec.onresult = async e => {
+    let t = "";
+    for (let i = e.resultIndex; i < e.results.length; i++)
+      if (e.results[i].isFinal) t += e.results[i][0].transcript + " ";
+    t = t.trim();
+    if (!t) return;
+    if (mode === "en") {
+      try { t = await translateLine(t, "en|bn", readGlossary()); }
+      catch (err) { st.textContent = "Translation failed: " + err.message; return; }
+    }
+    const o = $("bnOut");
+    o.value = (o.value ? o.value + " " : "") + t;
+  };
+  rec.onerror = e => { st.textContent = e.error === "not-allowed" ? "Microphone permission was blocked." : "Voice error: " + e.error; };
+  rec.onend = () => { rec = null; $("mic").textContent = "🎤 Start speaking"; if (st.textContent === "Listening...") st.textContent = ""; };
+  rec.start();
+};
+$("bnCopy").onclick = () => { $("bnOut").select(); navigator.clipboard.writeText($("bnOut").value); };
+function showTab(name) {
+  ["T", "P", "I"].forEach(k => {
+    $("pane" + k).style.display = k === name ? "" : "none";
+    $("tab" + k).classList.toggle("active", k === name);
+  });
+}
+$("tabT").onclick = () => showTab("T");
+$("tabP").onclick = () => showTab("P");
+$("tabI").onclick = () => showTab("I");
+convertP();
+// Voice input for the Translate tab
+let recT = null;
+$("clearT").onclick = () => { $("src").value = ""; $("out").value = ""; };
+$("micT").onclick = () => {
+  const st = $("micTStatus");
+  if (!SR) { st.textContent = "Voice input needs Chrome or Edge."; return; }
+  if (recT) { recT.stop(); return; }
+  recT = new SR();
+  recT.lang = $("dir").value === "bn|en" ? "bn-BD" : "en-US";
+  recT.continuous = true;
+  recT.interimResults = false;
+  recT.onstart = () => { $("micT").textContent = "⏹ Stop"; st.textContent = "Listening (" + recT.lang + ")..."; };
+  recT.onresult = e => {
+    let t = "";
+    for (let i = e.resultIndex; i < e.results.length; i++)
+      if (e.results[i].isFinal) t += e.results[i][0].transcript + " ";
+    t = t.trim();
+    if (!t) return;
+    const s = $("src");
+    s.value = (s.value.trim() ? s.value.replace(/\s+$/, "") + "\n" : "") + t;
+    if ($("autoT").checked) $("go").click();
+  };
+  recT.onerror = e => { st.textContent = e.error === "not-allowed" ? "Microphone permission was blocked." : "Voice error: " + e.error; };
+  recT.onend = () => { recT = null; $("micT").textContent = "🎤 Speak"; if (st.textContent.startsWith("Listening")) st.textContent = ""; };
+  recT.start();
+};
+// ---------- Image -> text (OCR with Tesseract.js, runs in your browser) ----------
+let tessP, curImg = null, crop = null;
+function loadTess() {
+  return tessP || (tessP = new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+    s.onload = res;
+    s.onerror = () => { tessP = null; rej(new Error("could not load the reading engine (check your internet)")); };
+    document.head.appendChild(s);
+  }));
+}
+const mk = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
+const wrapI = $("imgWrap"), boxI = $("cropBox");
+
+function clearCrop() { crop = null; boxI.style.display = "none"; }
+function setImage(f) {
+  const im = $("imgPrev");
+  im.onload = () => { curImg = im; };
+  im.src = URL.createObjectURL(f);
+  wrapI.style.display = "block";
+  $("cropHint").style.display = "block";
+  clearCrop(); clearIgnores();
+}
+$("imgIn").onchange = () => { if ($("imgIn").files[0]) setImage($("imgIn").files[0]); };
+document.addEventListener("paste", e => {
+  if ($("paneI").style.display === "none") return;
+  const f = [...(e.clipboardData ? e.clipboardData.files : [])].find(f => f.type.startsWith("image/"));
+  if (!f) return;
+  const dt = new DataTransfer(); dt.items.add(f); $("imgIn").files = dt.files; setImage(f);
+});
+
+// drag a box on the picture to choose the area to read
+let drag = null, ignoreMode = false, ignores = [];
+const clampTo = (v, m) => Math.min(Math.max(v, 0), m);
+function clearIgnores() { ignores = []; document.querySelectorAll(".ignoreBox").forEach(n => n.remove()); }
+wrapI.addEventListener("pointerdown", e => {
+  if (!curImg) return;
+  const r = curImg.getBoundingClientRect();
+  drag = { x: clampTo(e.clientX - r.left, r.width), y: clampTo(e.clientY - r.top, r.height), cur: null, ign: e.shiftKey || ignoreMode };
+  wrapI.setPointerCapture(e.pointerId);
+  boxI.classList.toggle("ign", drag.ign);
+  boxI.style.display = "none";
+  e.preventDefault();
+});
+wrapI.addEventListener("pointermove", e => {
+  if (!drag) return;
+  const r = curImg.getBoundingClientRect();
+  const x = clampTo(e.clientX - r.left, r.width), y = clampTo(e.clientY - r.top, r.height);
+  const c = { l: Math.min(drag.x, x), t: Math.min(drag.y, y), w: Math.abs(x - drag.x), h: Math.abs(y - drag.y) };
+  Object.assign(boxI.style, { display: "block", left: c.l + "px", top: c.t + "px", width: c.w + "px", height: c.h + "px" });
+  drag.cur = c;
+});
+wrapI.addEventListener("pointerup", () => {
+  if (!drag) return;
+  const c = drag.cur, ign = drag.ign; drag = null;
+  if (!c || c.w < 12 || c.h < 12) { boxI.style.display = "none"; if (!ign) crop = null; return; }
+  const k = curImg.naturalWidth / curImg.clientWidth;
+  const rect = { x: Math.round(c.l * k), y: Math.round(c.t * k), w: Math.round(c.w * k), h: Math.round(c.h * k) };
+  if (ign) {
+    ignores.push(rect); boxI.style.display = "none";
+    const d = document.createElement("div"); d.className = "ignoreBox";
+    Object.assign(d.style, { left: c.l + "px", top: c.t + "px", width: c.w + "px", height: c.h + "px" });
+    wrapI.appendChild(d);
+  } else crop = rect;
+});
+$("cropReset").onclick = () => { clearCrop(); clearIgnores(); };
+$("ignMode").onclick = () => {
+  ignoreMode = !ignoreMode;
+  $("ignMode").textContent = "Ignore area: " + (ignoreMode ? "ON (drag to mark)" : "off");
+  $("ignMode").style.background = ignoreMode ? "var(--teal)" : "";
+  $("ignMode").style.color = ignoreMode ? "#052" : "";
+};
+
+// cleaned-up versions of the picture. Green channel is added because red text on a green/olive
+// banner is almost invisible in plain grey but very clear in green.
+function grayCanvas(arr, W, H) {
+  const c = mk(W, H), g = c.getContext("2d"), o = g.createImageData(W, H);
+  for (let i = 0, j = 0; i < arr.length; i++, j += 4) { o.data[j] = o.data[j + 1] = o.data[j + 2] = arr[i]; o.data[j + 3] = 255; }
+  g.putImageData(o, 0, 0);
+  return c;
+}
+function stretchArr(a) {
+  const n = a.length, hist = new Uint32Array(256);
+  for (let i = 0; i < n; i++) hist[a[i]]++;
+  let acc = 0, lo = 0, hi = 255;
+  for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= n * 0.02) { lo = v; break; } }
+  acc = 0;
+  for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= n * 0.98) { hi = v; break; } }
+  if (hi - lo < 10) { lo = 0; hi = 255; }
+  const o = new Uint8ClampedArray(n);
+  for (let i = 0; i < n; i++) o[i] = (a[i] - lo) * 255 / (hi - lo);
+  return o;
+}
+function adaptiveArr(a, W, H) {   // compare each pixel with the average of its neighbourhood
+  const r = Math.max(15, Math.round(Math.max(W, H) / 50)), S = W + 1, I = new Float64Array(S * (H + 1)), o = new Uint8ClampedArray(W * H);
+  for (let y = 0; y < H; y++) { let row = 0; for (let x = 0; x < W; x++) { row += a[y * W + x]; I[(y + 1) * S + x + 1] = I[y * S + x + 1] + row; } }
+  for (let y = 0; y < H; y++) {
+    const y0 = Math.max(0, y - r), y1 = Math.min(H, y + r + 1);
+    for (let x = 0; x < W; x++) {
+      const x0 = Math.max(0, x - r), x1 = Math.min(W, x + r + 1);
+      const mean = (I[y1 * S + x1] - I[y0 * S + x1] - I[y1 * S + x0] + I[y0 * S + x0]) / ((x1 - x0) * (y1 - y0));
+      o[y * W + x] = a[y * W + x] < mean - 12 ? 0 : 255;
+    }
+  }
+  return o;
+}
+function makeVariants(base, sc) {
+  const W = Math.round(base.width * sc), H = Math.round(base.height * sc), n = W * H;
+  const c1 = mk(W, H), g1 = c1.getContext("2d");
+  g1.imageSmoothingQuality = "high"; g1.drawImage(base, 0, 0, W, H);
+  const px = g1.getImageData(0, 0, W, H).data, lum = new Uint8ClampedArray(n), grn = new Uint8ClampedArray(n);
+  for (let i = 0, j = 0; i < n; i++, j += 4) { lum[i] = (px[j] * 299 + px[j + 1] * 587 + px[j + 2] * 114) / 1000; grn[i] = px[j + 1]; }
+  return { c1, c2: grayCanvas(stretchArr(lum), W, H), c3: grayCanvas(adaptiveArr(lum, W, H), W, H),
+           cG: grayCanvas(stretchArr(grn), W, H), cGt: grayCanvas(adaptiveArr(grn, W, H), W, H) };
+}
+
+// QR codes and ignored areas are painted over with the colour around them before reading
+let jsqrP;
+function loadJsQR() {
+  return jsqrP || (jsqrP = new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js";
+    s.onload = res; s.onerror = () => { jsqrP = null; rej(new Error("jsQR")); };
+    document.head.appendChild(s);
+  }));
+}
+async function findQR(base) {
+  const out = [];
+  const add = (x0, y0, x1, y1) => {
+    const p = 0.12 * Math.max(x1 - x0, y1 - y0), ax = Math.max(0, x0 - p), ay = Math.max(0, y0 - p);
+    out.push({ x: ax, y: ay, w: Math.min(base.width, x1 + p) - ax, h: Math.min(base.height, y1 + p) - ay });
+  };
+  try {
+    if ("BarcodeDetector" in window) {
+      (await new BarcodeDetector({ formats: ["qr_code"] }).detect(base)).forEach(c => {
+        const b = c.boundingBox; add(b.x, b.y, b.x + b.width, b.y + b.height);
+      });
+      if (out.length) return out;
+    }
+  } catch (e) {}
+  try {
+    await loadJsQR();
+    const s = Math.max(1, Math.min(3, 1400 / Math.max(base.width, base.height)));
+    const c = mk(Math.round(base.width * s), Math.round(base.height * s)), g = c.getContext("2d");
+    g.drawImage(base, 0, 0, c.width, c.height);
+    const d = g.getImageData(0, 0, c.width, c.height);
+    const q = jsQR(d.data, c.width, c.height, { inversionAttempts: "attemptBoth" });
+    if (q) {
+      const L = q.location, pts = [L.topLeftCorner, L.topRightCorner, L.bottomLeftCorner, L.bottomRightCorner];
+      const xs = pts.map(p => p.x / s), ys = pts.map(p => p.y / s);
+      add(Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys));
+    }
+  } catch (e) {}
+  return out;
+}
+function fillMask(ctx, x, y, w, h) {
+  x = Math.round(x); y = Math.round(y); w = Math.round(w); h = Math.round(h);
+  const W = ctx.canvas.width, H = ctx.canvas.height;
+  const pts = [[x + w / 2, y - 3], [x + w / 2, y + h + 3], [x - 3, y + h / 2], [x + w + 3, y + h / 2]]
+    .filter(p => p[0] >= 0 && p[0] < W && p[1] >= 0 && p[1] < H);
+  let col = [255, 255, 255];
+  if (pts.length) {
+    const s = pts.map(p => ctx.getImageData(Math.round(p[0]), Math.round(p[1]), 1, 1).data);
+    col = [0, 1, 2].map(k => Math.round(s.reduce((a, d) => a + d[k], 0) / s.length));
+  }
+  ctx.fillStyle = "rgb(" + col + ")"; ctx.fillRect(x, y, w, h);
+}
+
+// colour of a word (text) and of the area behind it, taken from the original pixels
+function sampleColors(ctx, x0, y0, x1, y1) {
+  x0 = Math.max(0, Math.floor(x0)); y0 = Math.max(0, Math.floor(y0));
+  const w = Math.max(1, Math.min(ctx.canvas.width - x0, Math.ceil(x1) - x0));
+  const h = Math.max(1, Math.min(ctx.canvas.height - y0, Math.ceil(y1) - y0));
+  const d = ctx.getImageData(x0, y0, w, h).data, px = [], step = Math.max(1, Math.floor(w * h / 400));
+  for (let i = 0; i < w * h; i += step) px.push([d[i * 4], d[i * 4 + 1], d[i * 4 + 2]]);
+  const mean = a => [0, 1, 2].map(k => Math.round(a.reduce((s, p) => s + p[k], 0) / a.length));
+  const avg = mean(px), dist = p => Math.hypot(p[0] - avg[0], p[1] - avg[1], p[2] - avg[2]);
+  px.sort((a, b) => dist(a) - dist(b));
+  const bg = mean(px.slice(0, Math.max(1, Math.floor(px.length * 0.6))));
+  let fg = mean(px.slice(Math.min(px.length - 1, Math.floor(px.length * 0.88))));
+  const lum = c => 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2];
+  if (Math.hypot(fg[0] - bg[0], fg[1] - bg[1], fg[2] - bg[2]) < 60) fg = lum(bg) > 140 ? [20, 20, 20] : [235, 235, 235];
+  return { fg: "rgb(" + fg + ")", bg: "rgb(" + bg + ")" };
+}
+
+// combine the results of all passes: keep the most confident word wherever words overlap
+function mergeWords(all) {
+  all.sort((a, b) => b.c - a.c);
+  const keep = [];
+  for (const w of all) {
+    const aw = (w.x1 - w.x0) * (w.y1 - w.y0);
+    const clash = keep.some(k => {
+      const ix = Math.min(w.x1, k.x1) - Math.max(w.x0, k.x0), iy = Math.min(w.y1, k.y1) - Math.max(w.y0, k.y0);
+      return ix > 0 && iy > 0 && ix * iy / Math.min(aw, (k.x1 - k.x0) * (k.y1 - k.y0)) > 0.5;
+    });
+    if (!clash) keep.push(w);
+  }
+  keep.sort((a, b) => (a.y0 + a.y1) - (b.y0 + b.y1));
+  const lines = [];
+  for (const w of keep) {
+    const cy = (w.y0 + w.y1) / 2, h = w.y1 - w.y0;
+    const line = lines.find(l => Math.abs(l.cy - cy) < 0.6 * Math.max(l.h, h));
+    if (line) { line.w.push(w); line.cy = (line.cy * (line.w.length - 1) + cy) / line.w.length; line.h = Math.max(line.h, h); }
+    else lines.push({ cy, h, w: [w] });
+  }
+  lines.sort((a, b) => a.cy - b.cy);
+  return lines.map(l => l.w.sort((a, b) => a.x0 - b.x0));
+}
+
+function renderChips(words) {
+  const box = $("wordList"); box.innerHTML = "";
+  words.forEach(w => {
+    const s = document.createElement("span");
+    s.className = "chip" + (w.c < 70 ? " low" : "");
+    s.textContent = w.t; s.title = "confidence " + Math.round(w.c) + "%";
+    s.style.color = w.fg; s.style.background = w.bg;
+    box.appendChild(s);
+  });
+  $("wordCount").textContent = "(" + words.length + " words)";
+}
+
+// background without text: median colour of every small block of the picture
+function softBg(base) {
+  const bs = Math.max(4, Math.round(Math.min(base.width, base.height) / 36));
+  const bw = Math.ceil(base.width / bs), bh = Math.ceil(base.height / bs);
+  const data = base.getContext("2d").getImageData(0, 0, base.width, base.height).data;
+  const sm = mk(bw, bh), sg = sm.getContext("2d"), o = sg.createImageData(bw, bh);
+  for (let by = 0; by < bh; by++) for (let bx = 0; bx < bw; bx++) {
+    const ch = [[], [], []], x1 = Math.min(base.width, (bx + 1) * bs), y1 = Math.min(base.height, (by + 1) * bs);
+    for (let y = by * bs; y < y1; y += 2) for (let x = bx * bs; x < x1; x += 2) {
+      const i = (y * base.width + x) * 4; ch[0].push(data[i]); ch[1].push(data[i + 1]); ch[2].push(data[i + 2]);
+    }
+    const j = (by * bw + bx) * 4;
+    for (let k = 0; k < 3; k++) { ch[k].sort((a, b) => a - b); o.data[j + k] = ch[k][ch[k].length >> 1]; }
+    o.data[j + 3] = 255;
+  }
+  sg.putImageData(o, 0, 0);
+  return sm.toDataURL();
+}
+
+function renderLayout(words, base, sc) {
+  const L = $("layout"); L.innerHTML = "";
+  if (!words.length) { L.style.height = "0"; return; }
+  const W = Math.min(720, $("layoutWrap").clientWidth || 720), r = W / base.width;
+  L.style.width = W + "px"; L.style.height = Math.round(base.height * r) + "px";
+  L.style.backgroundImage = "url(" + softBg(base) + ")";
+  L.style.backgroundSize = "100% 100%";
+  const hs = words.map(w => w.y1 - w.y0).sort((a, b) => a - b), med = hs[hs.length >> 1] || 1;
+  words.forEach(w => {
+    const s = document.createElement("span"); s.className = "lw"; s.textContent = w.t;
+    const h = (w.y1 - w.y0) / sc * r;
+    Object.assign(s.style, { left: (w.x0 / sc * r) + "px", top: (w.y0 / sc * r) + "px", height: h + "px",
+      lineHeight: h + "px", fontSize: (h * 0.8) + "px", color: w.fg, background: w.bg,
+      fontWeight: (w.y1 - w.y0) > med * 1.35 ? "700" : "500" });
+    L.appendChild(s);
+    const nw = s.scrollWidth, tw = (w.x1 - w.x0) / sc * r;
+    if (nw > 0) s.style.transform = "scaleX(" + Math.max(0.5, Math.min(2, tw / nw)) + ")";
+  });
+}
+
+$("ocrGo").onclick = async () => {
+  const st = $("ocrStatus");
+  if (!curImg) { st.textContent = "Choose an image first."; return; }
+  $("ocrGo").disabled = true;
+  let worker;
+  try {
+    st.textContent = "Loading the reading engine...";
+    await loadTess();
+    const reg = crop || { x: 0, y: 0, w: curImg.naturalWidth, h: curImg.naturalHeight };
+    const base = mk(reg.w, reg.h), bctx0 = base.getContext("2d");
+    bctx0.drawImage(curImg, reg.x, reg.y, reg.w, reg.h, 0, 0, reg.w, reg.h);
+    const masks = ignores.map(m => ({ x: m.x - reg.x, y: m.y - reg.y, w: m.w, h: m.h }));
+    if ($("qrSkip").checked) { st.textContent = "Looking for QR codes..."; masks.push(...await findQR(base)); }
+    masks.forEach(m => fillMask(bctx0, m.x, m.y, m.w, m.h));
+    const sc = Math.max(1, Math.min(4, 2400 / Math.max(reg.w, reg.h)));
+    const v = makeVariants(base, sc);
+    const passes = $("enh").checked
+      ? [[v.c1, 11], [v.c2, 11], [v.c3, 11], [v.cG, 11], [v.cGt, 11], [v.c3, 6]]
+      : [[v.c2, 11], [v.cG, 11]];
+    let label = "";
+    worker = await Tesseract.createWorker($("ocrLang").value, 1, {
+      langPath: "https://tessdata.projectnaptha.com/4.0.0_best",
+      logger: m => { if (m.status) st.textContent = label + m.status + " " + Math.round((m.progress || 0) * 100) + "%"; }
+    });
+    const all = [];
+    for (let i = 0; i < passes.length; i++) {
+      label = passes.length > 1 ? "Reading pass " + (i + 1) + " of " + passes.length + ": " : "";
+      await worker.setParameters({ tessedit_pageseg_mode: String(passes[i][1]), preserve_interword_spaces: "1" });
+      const r = await worker.recognize(passes[i][0]);
+      (r.data.words || []).forEach(w => {
+        const t = w.text.trim();
+        if (t && /[\p{L}\p{N}]/u.test(t) && w.confidence >= 40)
+          all.push({ t, c: w.confidence, x0: w.bbox.x0, y0: w.bbox.y0, x1: w.bbox.x1, y1: w.bbox.y1 });
+      });
+    }
+    const lines = mergeWords(all), words = lines.flat();
+    $("imgOut").value = lines.map(l => l.map(w => w.t).join(" ")).join("\n");
+    const bctx = base.getContext("2d");
+    words.forEach(w => Object.assign(w, sampleColors(bctx, w.x0 / sc, w.y0 / sc, w.x1 / sc, w.y1 / sc)));
+    renderChips(words);
+    renderLayout(words, base, sc);
+    st.textContent = words.length ? "Done." : "No text found. Drag a box around the text, or try another language option.";
+  } catch (e) {
+    st.textContent = "Failed: " + e.message;
+  }
+  if (worker) { try { await worker.terminate(); } catch (e) {} }
+  $("ocrGo").disabled = false;
+};
+const copyText = t => navigator.clipboard.writeText(t);
+$("ocrCopy").onclick = () => copyText($("imgOut").value);
+$("wordsCopy").onclick = () => copyText([...document.querySelectorAll("#wordList .chip")].map(c => c.textContent).join("\n"));
+$("ocrSend").onclick = () => {
+  const lang = $("ocrLang").value;
+  $("src").value = $("imgOut").value;
+  if (lang === "eng") { $("dir").value = "en|bn"; $("nameMode").checked = true; }   // cards: names, places, numbers
+  else if (lang === "ben") { $("dir").value = "bn|en"; $("nameMode").checked = false; }
+  updateLabels();
+  showTab("T");
+  $("go").click();
+};
+$("ocrClear").onclick = () => {
+  $("imgIn").value = ""; clearIgnores(); wrapI.style.display = "none"; $("cropHint").style.display = "none"; clearCrop(); curImg = null;
+  $("imgOut").value = ""; $("wordList").innerHTML = ""; $("layout").innerHTML = ""; $("layout").style.height = "0";
+  $("wordCount").textContent = ""; $("ocrStatus").textContent = "";
+};
+</script>
+</body>
+</html>
