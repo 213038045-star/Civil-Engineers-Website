@@ -97,7 +97,7 @@
             background-image:none !important;
         }
 
-        /* ---------- Converter dropdown ---------- */
+        /* ---------- Dropdowns (Converter + Others) ---------- */
         .dropdown-menu{
             background:var(--panel-800) !important;
             background-image:none !important;
@@ -329,27 +329,55 @@
                     <li class="nav-item"><a class="nav-link" href="/resume">Resume</a></li>
                     <li class="nav-item"><a class="nav-link" href="/design">Design</a></li>
                     <li class="nav-item"><a class="nav-link" href="/estimate">Estimate</a></li>
+
+                    <!-- Converter dropdown -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="converterDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             Converter
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="converterDropdown">
+                            <li><h6 class="dropdown-header">File Converters</h6></li>
+                            <!-- Replace url_for('converter') with your own endpoints if you have separate pages -->
+                            <li><a class="dropdown-item" href="{{ url_for('converter') }}">Word to PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('converter') }}">Excel to PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('converter') }}">PowerPoint to PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('converter') }}">Image to PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('pdf_converter') }}">PDF to Word</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('converter') }}"><strong>All File Converters</strong></a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Unit Converters</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('speed_calculator') }}">Speed Calculator, km/h to m/s</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('mass_unit') }}">Mass Unit Converter</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('pressure_converter') }}">Pressure Unit Converter</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('unit_weight') }}">Unit Weight Converter</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Others dropdown (still highlighted as active on this page) -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle active" href="#" id="othersDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Others
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="othersDropdown">
+                            <li><h6 class="dropdown-header">Document Tools</h6></li>
                             <li><a class="dropdown-item" href="{{ url_for('pdf_editor') }}">PDF Editor</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('translate_tool') }}">Translate Tool</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('scanner_tool') }}">Scanner Tool</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('extract_word') }}">Extract Word</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('marge_pdf_tool') }}">Merge PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('split_pdf_tool') }}">Split PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('compress_pdf_tool') }}">Compress PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('code_generator') }}">QR &amp; Barcode Generator</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('voice_tool') }}">Voice to Text</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Image &amp; Math</h6></li>
                             <li><a class="dropdown-item" href="{{ url_for('image_enhancer') }}">Image Enhancer</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('background_remover') }}">Background Remover</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('converter') }}">All File Converters</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('scientific_calculator') }}">Scientific Calculator</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('speed_calculator') }}">Speed Calculator,km/h to m/s</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('mass_unit') }}">Mass Unit Converter</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('pressure_converter') }}">Pressure unit Converter</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('unit_weight') }}">Unit Weight Converter</a></li>
-
+                            <li><a class="dropdown-item" href="/others"><strong>All Tools</strong></a></li>
                         </ul>
                     </li>
-                    <li class="nav-item"><a class="nav-link active" href="/others">Others</a></li>
                 </ul>
             </div>
         </div>
