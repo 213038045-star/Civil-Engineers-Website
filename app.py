@@ -201,6 +201,14 @@ def translate_tool():
 def scanner_tool():
     return render_template('others/scaner.html')
 
+@app.route('/voice-text-converter')   # keep whatever URL you already have
+def voice_tool():                     # was voice_to_text_tool
+    return render_template('others/voice_to_text.html')
+
+@app.route('/qr-barcode-generator')
+def code_generator():
+    return render_template('others/qr_code.html')
+
 @app.route('/beam_column_estimator')
 def beam_column_estimator():
     return render_template('estimate/beam_column_estimator.html')
