@@ -193,6 +193,14 @@ def split_pdf_tool():
 def compress_pdf_tool():
     return render_template('others/compress_pdf_tool.html')
 
+@app.route('/translate_tool')
+def translate_tool():
+    return render_template('others/translator.html')
+
+@app.route('/scanner_tool')
+def scanner_tool():
+    return render_template('others/scaner.html')
+
 @app.route('/beam_column_estimator')
 def beam_column_estimator():
     return render_template('estimate/beam_column_estimator.html')
