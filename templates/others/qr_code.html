@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR &amp; Barcode Generator — Abdur Rauf</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --bg-950:#080c16; --bg-900:#0c1220;
+            --panel-800:#101a2c; --panel-700:#16223a;
+            --grid-line:rgba(255,255,255,.05);
+            --border:#1f2c47; --border-soft:#233252;
+            --text-100:#eef2f8; --text-300:#aebbd0; --text-500:#7c8aa3;
+            --orange-500:#f0632f; --orange-050:rgba(240,99,47,.12);
+            --blue-500:#2f6fed; --blue-600:#265cc4; --blue-050:rgba(47,111,237,.14);
+            --teal-400:#39d6ae; --teal-050:rgba(57,214,174,.12);
+            --shadow-md:0 12px 30px rgba(0,0,0,.35);
+            --shadow-lg:0 24px 55px rgba(0,0,0,.45);
+            --radius:12px;
+        }
+        html{scroll-behavior:smooth;}
+        html body{
+            background:
+                linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0/34px 34px,
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0/34px 34px,
+                var(--bg-950) !important;
+            color:var(--text-300) !important;
+            font-family:'Inter',system-ui,sans-serif;
+            -webkit-font-smoothing:antialiased;
+        }
+        a{color:var(--blue-500); text-decoration:none;}
+        a:hover{color:#5b8ff5;}
+        :focus-visible{outline:2px solid var(--blue-500); outline-offset:3px;}
+
+        /* Navbar */
+        .navbar{
+            background:rgba(8,12,22,.85) !important; background-image:none !important;
+            backdrop-filter:saturate(160%) blur(10px);
+            border-bottom:1px solid var(--border) !important;
+            padding-top:1rem; padding-bottom:1rem;
+            position:sticky; top:0; z-index:1030;
+        }
+        .navbar-brand{
+            font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.25rem;
+            color:var(--text-100) !important; display:flex; align-items:center; gap:.4rem; letter-spacing:.02em;
+        }
+        .navbar-brand .heart{ color:var(--orange-500); }
+        .navbar-nav .nav-link,
+        .navbar-nav .nav-item .nav-link.dropdown-toggle{
+            background:transparent !important; background-image:none !important;
+            font-weight:500; font-size:.92rem; color:var(--text-300) !important;
+            padding:.5rem 1rem !important; border-radius:8px; border:none !important;
+            transition:background .15s ease, color .15s ease;
+        }
+        .navbar-nav .nav-link:hover{ background:var(--panel-700) !important; color:var(--text-100) !important; }
+        .navbar-nav .nav-link.active{ color:#fff !important; font-weight:600; background:var(--blue-500) !important; }
+        .dropdown-menu{
+            background:var(--panel-800) !important; background-image:none !important;
+            border:1px solid var(--border) !important; border-radius:12px;
+            box-shadow:var(--shadow-lg); padding:.55rem; margin-top:.6rem; min-width:15.5rem;
+        }
+        .dropdown-menu .dropdown-header{
+            font-weight:600; font-size:.7rem; letter-spacing:.06em; text-transform:uppercase;
+            color:var(--text-500); padding:.5rem .8rem .3rem;
+        }
+        .dropdown-menu .dropdown-item{
+            font-weight:500; font-size:.9rem; background:transparent !important;
+            color:var(--text-300) !important; border-radius:8px; padding:.55rem .8rem;
+            transition:background .12s ease, color .12s ease;
+        }
+        .dropdown-menu .dropdown-item:hover,
+        .dropdown-menu .dropdown-item:focus{ background:var(--blue-050) !important; color:#8fb4ff !important; }
+        .dropdown-menu .dropdown-divider{ border-color:var(--border) !important; margin:.4rem .4rem; }
+        .dropdown-toggle::after{ vertical-align:.15em; }
+
+        /* Hero */
+        .hero-section{
+            position:relative; overflow:hidden; padding:3.5rem 0 3rem; text-align:center;
+            background:var(--bg-950) !important; background-image:none !important;
+            border-bottom:1px solid var(--border) !important;
+        }
+        .hero-section::before{
+            content:""; position:absolute; inset:0; pointer-events:none;
+            background:
+                radial-gradient(55% 90% at 15% -10%, rgba(47,111,237,.18), transparent 60%),
+                radial-gradient(45% 80% at 100% 0%, rgba(240,99,47,.14), transparent 60%) !important;
+        }
+        .hero-section .container{ position:relative; }
+        .kicker{
+            display:inline-flex; align-items:center; gap:.5rem; font-weight:600; font-size:.78rem;
+            letter-spacing:.06em; text-transform:uppercase; color:var(--teal-400);
+            background:var(--teal-050); border:1px solid rgba(57,214,174,.3);
+            padding:.4rem .9rem; border-radius:999px; margin-bottom:1.1rem;
+        }
+        .hero-section h1{
+            font-family:'Space Grotesk',sans-serif; font-weight:700;
+            font-size:clamp(2rem, 4.5vw, 2.7rem); line-height:1.15; color:var(--text-100); margin:0 0 .9rem;
+        }
+        .hero-section h1 .accent{ color:var(--orange-500); }
+        .hero-section p.lead{ max-width:560px; margin:0 auto; color:var(--text-500); font-size:1.02rem; line-height:1.65; }
+
+        /* Tool */
+        .tool-wrap{ padding:2.5rem 0 4.5rem; }
+        .tool-wrap .container{ max-width:960px; }
+
+        .tabs{
+            display:inline-flex; gap:.35rem; padding:.35rem; margin-bottom:1.5rem;
+            background:var(--panel-800); border:1px solid var(--border); border-radius:12px;
+        }
+        .tab-btn{
+            font-family:'Inter',sans-serif; font-weight:600; font-size:.9rem;
+            color:var(--text-300); background:transparent; border:none;
+            padding:.6rem 1.3rem; border-radius:8px; cursor:pointer;
+            transition:background .15s ease, color .15s ease;
+        }
+        .tab-btn:hover{ background:var(--panel-700); color:var(--text-100); }
+        .tab-btn.active{ background:var(--blue-500); color:#fff; }
+        .tab-pane{ display:none; }
+        .tab-pane.active{ display:block; }
+
+        .panel{
+            background:var(--panel-800); border:1px solid var(--border);
+            border-radius:var(--radius); box-shadow:var(--shadow-md); padding:1.6rem; height:100%;
+        }
+        .panel h2{
+            font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:1.05rem;
+            letter-spacing:.02em; text-transform:uppercase; color:var(--teal-400); margin:0 0 1.2rem;
+        }
+        .field-label{ display:block; font-size:.82rem; font-weight:600; color:var(--text-300); margin-bottom:.4rem; }
+        .field{
+            width:100%; background:var(--bg-900); color:var(--text-100);
+            border:1px solid var(--border-soft); border-radius:8px; padding:.65rem .8rem;
+            font-family:'Inter',sans-serif; font-size:.92rem;
+            transition:border-color .15s ease, box-shadow .15s ease;
+        }
+        .field:focus{ outline:none; border-color:var(--blue-500); box-shadow:0 0 0 3px var(--blue-050); }
+        textarea.field{ resize:vertical; min-height:110px; }
+        select.field option{ background:var(--panel-800); color:var(--text-100); }
+        .hint{ font-size:.78rem; color:var(--text-500); margin-top:.35rem; }
+        .row-gap{ margin-bottom:1.1rem; }
+        input[type=color]{
+            width:100%; height:42px; padding:3px; cursor:pointer;
+            background:var(--bg-900); border:1px solid var(--border-soft); border-radius:8px;
+        }
+        input[type=range]{ width:100%; accent-color:var(--blue-500); }
+        .size-val{ float:right; color:var(--text-500); font-weight:500; }
+        .check{ display:flex; align-items:center; gap:.55rem; font-size:.88rem; color:var(--text-300); cursor:pointer; }
+        .check input{ accent-color:var(--blue-500); width:16px; height:16px; }
+
+        .btn-main, .btn-ghost{
+            font-family:'Inter',sans-serif; font-weight:600; font-size:.88rem;
+            padding:.65rem 1.1rem; border-radius:8px; cursor:pointer;
+            transition:background .15s ease, border-color .15s ease, color .15s ease;
+        }
+        .btn-main{ background:var(--blue-500); color:#fff; border:1px solid var(--blue-500); }
+        .btn-main:hover:not(:disabled){ background:var(--blue-600); border-color:var(--blue-600); }
+        .btn-ghost{ background:transparent; color:var(--text-300); border:1px solid var(--border-soft); }
+        .btn-ghost:hover:not(:disabled){ border-color:var(--orange-500); color:var(--orange-500); background:var(--orange-050); }
+        .btn-main:disabled, .btn-ghost:disabled{ opacity:.45; cursor:not-allowed; }
+
+        .preview-box{
+            display:flex; align-items:center; justify-content:center; min-height:320px;
+            background:var(--bg-900); border:1px dashed var(--border-soft);
+            border-radius:var(--radius); padding:1.2rem; overflow:hidden;
+        }
+        .out{ display:none; padding:14px; border-radius:10px; line-height:0; max-width:100%; }
+        .out img, .out canvas{ max-width:100%; height:auto; }
+        .placeholder{ text-align:center; color:var(--text-500); font-size:.9rem; }
+        .placeholder svg{ width:44px; height:44px; margin-bottom:.6rem; opacity:.6; }
+        .error-msg{ color:var(--orange-500); font-size:.85rem; margin-top:.8rem; min-height:1.2rem; text-align:center; }
+        .actions{ display:flex; gap:.6rem; flex-wrap:wrap; margin-top:1rem; }
+        .actions .btn-main, .actions .btn-ghost{ flex:1 1 auto; }
+
+        footer{
+            border-top:1px solid var(--border) !important; background:var(--bg-900) !important;
+            background-image:none !important; padding:1.6rem 0;
+        }
+        footer .footer-inner{
+            display:flex; flex-wrap:wrap; justify-content:space-between; gap:.75rem;
+            font-size:.85rem; color:var(--text-500);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/"><span class="heart">&#9829;</span> RAUF</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/blog">Blog</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/resume">Resume</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/design">Design</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/estimate">Estimate</a></li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="converterDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Converter</a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="converterDropdown">
+                            <li><h6 class="dropdown-header">File Converters</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('converter') }}">Word to PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('converter') }}">Excel to PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('converter') }}">PowerPoint to PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('converter') }}">Image to PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('pdf_converter') }}">PDF to Word</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('converter') }}"><strong>All File Converters</strong></a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Unit Converters</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('speed_calculator') }}">Speed Calculator, km/h to m/s</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('mass_unit') }}">Mass Unit Converter</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('pressure_converter') }}">Pressure Unit Converter</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('unit_weight') }}">Unit Weight Converter</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle active" href="#" id="othersDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Others</a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="othersDropdown">
+                            <li><h6 class="dropdown-header">Document Tools</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('pdf_editor') }}">PDF Editor</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('translate_tool') }}">Translate Tool</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('scanner_tool') }}">Scanner Tool</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('extract_word') }}">Extract Word</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('marge_pdf_tool') }}">Merge PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('split_pdf_tool') }}">Split PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('compress_pdf_tool') }}">Compress PDF</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Image &amp; Math</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('image_enhancer') }}">Image Enhancer</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('background_remover') }}">Background Remover</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('scientific_calculator') }}">Scientific Calculator</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('code_generator') }}">QR &amp; Barcode Generator</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/others"><strong>All Tools</strong></a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero-section">
+        <div class="container">
+            <span class="kicker">&#9679; Free tool, no sign-up</span>
+            <h1>QR &amp; <span class="accent">Barcode</span> Generator</h1>
+            <p class="lead">Create QR codes and barcodes (Code 128, EAN, UPC and more) in your browser. Nothing is uploaded.</p>
+        </div>
+    </section>
+
+    <div class="tool-wrap">
+        <div class="container">
+
+            <div class="tabs" role="tablist">
+                <button type="button" class="tab-btn active" data-tab="qrPane" role="tab">QR Code</button>
+                <button type="button" class="tab-btn" data-tab="barPane" role="tab">Barcode</button>
+            </div>
+
+            <!-- ============ QR TAB ============ -->
+            <div class="tab-pane active" id="qrPane">
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="panel">
+                            <h2>Your content</h2>
+                            <div class="row-gap">
+                                <label class="field-label" for="qrText">Text or URL</label>
+                                <textarea id="qrText" class="field" placeholder="https://example.com"></textarea>
+                            </div>
+                            <div class="row g-3 row-gap">
+                                <div class="col-6">
+                                    <label class="field-label" for="qrFg">QR color</label>
+                                    <input type="color" id="qrFg" value="#000000">
+                                </div>
+                                <div class="col-6">
+                                    <label class="field-label" for="qrBg">Background</label>
+                                    <input type="color" id="qrBg" value="#ffffff">
+                                </div>
+                            </div>
+                            <div class="row-gap">
+                                <label class="field-label" for="qrSize">Size <span class="size-val" id="qrSizeVal">256 px</span></label>
+                                <input type="range" id="qrSize" min="128" max="512" step="32" value="256">
+                            </div>
+                            <div class="row-gap">
+                                <label class="field-label" for="qrLevel">Error correction</label>
+                                <select id="qrLevel" class="field">
+                                    <option value="L">Low (7%)</option>
+                                    <option value="M" selected>Medium (15%)</option>
+                                    <option value="Q">Quartile (25%)</option>
+                                    <option value="H">High (30%)</option>
+                                </select>
+                                <div class="hint">Higher levels stay scannable if the code is slightly damaged, but make it denser.</div>
+                            </div>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button type="button" class="btn-main" id="qrGenerate">Generate QR code</button>
+                                <button type="button" class="btn-ghost" id="qrClear">Clear</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="panel">
+                            <h2>Preview</h2>
+                            <div class="preview-box">
+                                <div class="placeholder" id="qrPlaceholder">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h3M20 17v4"/></svg>
+                                    <div>Your QR code will appear here</div>
+                                </div>
+                                <div id="qrcode" class="out"></div>
+                            </div>
+                            <div class="error-msg" id="qrError"></div>
+                            <div class="actions">
+                                <button type="button" class="btn-main" id="qrDownload" disabled>Download PNG</button>
+                                <button type="button" class="btn-ghost" id="qrCopy" disabled>Copy image</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ BARCODE TAB ============ -->
+            <div class="tab-pane" id="barPane">
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="panel">
+                            <h2>Your content</h2>
+                            <div class="row-gap">
+                                <label class="field-label" for="barFormat">Barcode type</label>
+                                <select id="barFormat" class="field">
+                                    <option value="CODE128" selected>Code 128 (general purpose)</option>
+                                    <option value="CODE39">Code 39</option>
+                                    <option value="EAN13">EAN-13 (products)</option>
+                                    <option value="EAN8">EAN-8</option>
+                                    <option value="UPC">UPC-A (US products)</option>
+                                    <option value="ITF14">ITF-14 (shipping cartons)</option>
+                                    <option value="codabar">Codabar</option>
+                                    <option value="MSI">MSI</option>
+                                    <option value="pharmacode">Pharmacode</option>
+                                </select>
+                            </div>
+                            <div class="row-gap">
+                                <label class="field-label" for="barText">Value</label>
+                                <input type="text" id="barText" class="field" placeholder="123456789012" autocomplete="off">
+                                <div class="hint" id="barHint">Any letters, numbers or symbols.</div>
+                            </div>
+                            <div class="row g-3 row-gap">
+                                <div class="col-6">
+                                    <label class="field-label" for="barFg">Bar color</label>
+                                    <input type="color" id="barFg" value="#000000">
+                                </div>
+                                <div class="col-6">
+                                    <label class="field-label" for="barBg">Background</label>
+                                    <input type="color" id="barBg" value="#ffffff">
+                                </div>
+                            </div>
+                            <div class="row g-3 row-gap">
+                                <div class="col-6">
+                                    <label class="field-label" for="barWidth">Bar width <span class="size-val" id="barWidthVal">2</span></label>
+                                    <input type="range" id="barWidth" min="1" max="4" step="1" value="2">
+                                </div>
+                                <div class="col-6">
+                                    <label class="field-label" for="barHeight">Height <span class="size-val" id="barHeightVal">100</span></label>
+                                    <input type="range" id="barHeight" min="40" max="200" step="10" value="100">
+                                </div>
+                            </div>
+                            <div class="row-gap">
+                                <label class="check"><input type="checkbox" id="barText2" checked> Show the value under the bars</label>
+                            </div>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button type="button" class="btn-main" id="barGenerate">Generate barcode</button>
+                                <button type="button" class="btn-ghost" id="barClear">Clear</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="panel">
+                            <h2>Preview</h2>
+                            <div class="preview-box">
+                                <div class="placeholder" id="barPlaceholder">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5v14M7 5v14M11 5v14M14 5v14M17 5v14M20 5v14"/></svg>
+                                    <div>Your barcode will appear here</div>
+                                </div>
+                                <div id="barOut" class="out"><canvas id="barCanvas"></canvas></div>
+                            </div>
+                            <div class="error-msg" id="barError"></div>
+                            <div class="actions">
+                                <button type="button" class="btn-main" id="barDownload" disabled>Download PNG</button>
+                                <button type="button" class="btn-ghost" id="barCopy" disabled>Copy image</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer>
+        <div class="container footer-inner">
+            <span>&copy; 2026 Abdur Rauf</span>
+            <span>Others / QR &amp; Barcode Generator</span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+    <script>
+        const $ = id => document.getElementById(id);
+        const debounce = (fn, ms = 250) => { let t; return () => { clearTimeout(t); t = setTimeout(fn, ms); }; };
+
+        /* ---------- Tabs ---------- */
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                $(btn.dataset.tab).classList.add('active');
+            });
+        });
+
+        /* ---------- Shared helpers ---------- */
+        function downloadCanvas(canvas, name){
+            if (!canvas) return;
+            const a = document.createElement('a');
+            a.href = canvas.toDataURL('image/png');
+            a.download = name;
+            a.click();
+        }
+        function copyCanvas(canvas, btn, errEl){
+            if (!canvas || !navigator.clipboard || !window.ClipboardItem){
+                errEl.textContent = 'Copying images is not supported in this browser. Use Download instead.';
+                return;
+            }
+            canvas.toBlob(blob => {
+                navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+                    .then(() => {
+                        const old = btn.textContent;
+                        btn.textContent = 'Copied!';
+                        setTimeout(() => btn.textContent = old, 1500);
+                    })
+                    .catch(() => errEl.textContent = 'Could not copy. Use Download instead.');
+            });
+        }
+
+        /* ---------- QR code ---------- */
+        const qrBox = $('qrcode');
+        function qrReady(ok){
+            qrBox.style.display = ok ? 'inline-block' : 'none';
+            $('qrPlaceholder').style.display = ok ? 'none' : 'block';
+            $('qrDownload').disabled = !ok;
+            $('qrCopy').disabled = !ok;
+        }
+        function generateQR(){
+            const text = $('qrText').value.trim();
+            $('qrError').textContent = '';
+            qrBox.innerHTML = '';
+            if (!text){ qrReady(false); return; }
+            const size = parseInt($('qrSize').value, 10);
+            try {
+                new QRCode(qrBox, {
+                    text: text, width: size, height: size,
+                    colorDark: $('qrFg').value, colorLight: $('qrBg').value,
+                    correctLevel: QRCode.CorrectLevel[$('qrLevel').value]
+                });
+                qrBox.style.background = $('qrBg').value;
+                qrReady(true);
+            } catch (e) {
+                qrReady(false);
+                $('qrError').textContent = 'This text is too long for a QR code at this error-correction level. Shorten it or lower the level.';
+            }
+        }
+        $('qrGenerate').addEventListener('click', generateQR);
+        $('qrClear').addEventListener('click', () => { $('qrText').value = ''; generateQR(); $('qrText').focus(); });
+        $('qrDownload').addEventListener('click', () => downloadCanvas(qrBox.querySelector('canvas'), 'qr-code.png'));
+        $('qrCopy').addEventListener('click', () => copyCanvas(qrBox.querySelector('canvas'), $('qrCopy'), $('qrError')));
+        $('qrSize').addEventListener('input', () => { $('qrSizeVal').textContent = $('qrSize').value + ' px'; });
+        const qrLive = debounce(generateQR);
+        ['qrText','qrFg','qrBg','qrSize','qrLevel'].forEach(id => $(id).addEventListener('input', qrLive));
+
+        /* ---------- Barcode ---------- */
+        const hints = {
+            CODE128:    ['Any letters, numbers or symbols.', 'HELLO-123'],
+            CODE39:     ['Capital letters A–Z, digits 0–9 and - . $ / + % space.', 'ABC-123'],
+            EAN13:      ['12 digits (the 13th check digit is added for you) or 13 digits.', '590123412345'],
+            EAN8:       ['7 digits (check digit added for you) or 8 digits.', '9638507'],
+            UPC:        ['11 digits (check digit added for you) or 12 digits.', '12345678901'],
+            ITF14:      ['13 digits (check digit added for you) or 14 digits.', '1234567890123'],
+            codabar:    ['Digits and - $ : / . +  (optionally start/end with A–D).', 'A123456B'],
+            MSI:        ['Digits only.', '1234567'],
+            pharmacode: ['A number from 3 to 131070.', '1234']
+        };
+        const barCanvas = $('barCanvas');
+        function barReady(ok){
+            $('barOut').style.display = ok ? 'inline-block' : 'none';
+            $('barPlaceholder').style.display = ok ? 'none' : 'block';
+            $('barDownload').disabled = !ok;
+            $('barCopy').disabled = !ok;
+        }
+        function updateHint(){
+            const h = hints[$('barFormat').value];
+            $('barHint').textContent = h[0];
+            $('barText').placeholder = h[1];
+        }
+        function generateBarcode(){
+            const value = $('barText').value.trim();
+            const err = $('barError');
+            err.textContent = '';
+            if (!value){ barReady(false); return; }
+            let valid = true;
+            try {
+                JsBarcode(barCanvas, value, {
+                    format: $('barFormat').value,
+                    lineColor: $('barFg').value,
+                    background: $('barBg').value,
+                    width: parseInt($('barWidth').value, 10),
+                    height: parseInt($('barHeight').value, 10),
+                    displayValue: $('barText2').checked,
+                    margin: 14,
+                    fontSize: 18,
+                    valid: v => { valid = v; }
+                });
+            } catch (e) { valid = false; }
+            if (!valid){
+                barReady(false);
+                err.textContent = 'That value is not valid for this barcode type. ' + hints[$('barFormat').value][0];
+                return;
+            }
+            $('barOut').style.background = $('barBg').value;
+            barReady(true);
+        }
+        $('barGenerate').addEventListener('click', generateBarcode);
+        $('barClear').addEventListener('click', () => { $('barText').value = ''; generateBarcode(); $('barText').focus(); });
+        $('barDownload').addEventListener('click', () => downloadCanvas(barCanvas, 'barcode.png'));
+        $('barCopy').addEventListener('click', () => copyCanvas(barCanvas, $('barCopy'), $('barError')));
+        $('barWidth').addEventListener('input', () => { $('barWidthVal').textContent = $('barWidth').value; });
+        $('barHeight').addEventListener('input', () => { $('barHeightVal').textContent = $('barHeight').value; });
+        $('barFormat').addEventListener('change', updateHint);
+        const barLive = debounce(generateBarcode);
+        ['barText','barFormat','barFg','barBg','barWidth','barHeight','barText2'].forEach(id => {
+            $(id).addEventListener('input', barLive);
+            $(id).addEventListener('change', barLive);
+        });
+        updateHint();
+    </script>
+</body>
+</html>

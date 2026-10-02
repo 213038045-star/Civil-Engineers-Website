@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice to Text &amp; Text to Voice — Abdur Rauf</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --bg-950:#080c16; --bg-900:#0c1220;
+            --panel-800:#101a2c; --panel-700:#16223a;
+            --grid-line:rgba(255,255,255,.05);
+            --border:#1f2c47; --border-soft:#233252;
+            --text-100:#eef2f8; --text-300:#aebbd0; --text-500:#7c8aa3;
+            --orange-500:#f0632f; --orange-050:rgba(240,99,47,.12);
+            --blue-500:#2f6fed; --blue-600:#265cc4; --blue-050:rgba(47,111,237,.14);
+            --teal-400:#39d6ae; --teal-050:rgba(57,214,174,.12);
+            --shadow-md:0 12px 30px rgba(0,0,0,.35);
+            --shadow-lg:0 24px 55px rgba(0,0,0,.45);
+            --radius:12px;
+        }
+        html{scroll-behavior:smooth;}
+        html body{
+            background:
+                linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0/34px 34px,
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0/34px 34px,
+                var(--bg-950) !important;
+            color:var(--text-300) !important;
+            font-family:'Inter',system-ui,sans-serif;
+            -webkit-font-smoothing:antialiased;
+        }
+        a{color:var(--blue-500); text-decoration:none;}
+        a:hover{color:#5b8ff5;}
+        :focus-visible{outline:2px solid var(--blue-500); outline-offset:3px;}
+
+        /* Navbar */
+        .navbar{
+            background:rgba(8,12,22,.85) !important; background-image:none !important;
+            backdrop-filter:saturate(160%) blur(10px);
+            border-bottom:1px solid var(--border) !important;
+            padding-top:1rem; padding-bottom:1rem;
+            position:sticky; top:0; z-index:1030;
+        }
+        .navbar-brand{
+            font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.25rem;
+            color:var(--text-100) !important; display:flex; align-items:center; gap:.4rem; letter-spacing:.02em;
+        }
+        .navbar-brand .heart{ color:var(--orange-500); }
+        .navbar-nav .nav-link,
+        .navbar-nav .nav-item .nav-link.dropdown-toggle{
+            background:transparent !important; background-image:none !important;
+            font-weight:500; font-size:.92rem; color:var(--text-300) !important;
+            padding:.5rem 1rem !important; border-radius:8px; border:none !important;
+            transition:background .15s ease, color .15s ease;
+        }
+        .navbar-nav .nav-link:hover{ background:var(--panel-700) !important; color:var(--text-100) !important; }
+        .navbar-nav .nav-link.active{ color:#fff !important; font-weight:600; background:var(--blue-500) !important; }
+        .dropdown-menu{
+            background:var(--panel-800) !important; background-image:none !important;
+            border:1px solid var(--border) !important; border-radius:12px;
+            box-shadow:var(--shadow-lg); padding:.55rem; margin-top:.6rem; min-width:15.5rem;
+        }
+        .dropdown-menu .dropdown-header{
+            font-weight:600; font-size:.7rem; letter-spacing:.06em; text-transform:uppercase;
+            color:var(--text-500); padding:.5rem .8rem .3rem;
+        }
+        .dropdown-menu .dropdown-item{
+            font-weight:500; font-size:.9rem; background:transparent !important;
+            color:var(--text-300) !important; border-radius:8px; padding:.55rem .8rem;
+            transition:background .12s ease, color .12s ease;
+        }
+        .dropdown-menu .dropdown-item:hover,
+        .dropdown-menu .dropdown-item:focus{ background:var(--blue-050) !important; color:#8fb4ff !important; }
+        .dropdown-menu .dropdown-divider{ border-color:var(--border) !important; margin:.4rem .4rem; }
+        .dropdown-toggle::after{ vertical-align:.15em; }
+
+        /* Hero */
+        .hero-section{
+            position:relative; overflow:hidden; padding:3.5rem 0 3rem; text-align:center;
+            background:var(--bg-950) !important; background-image:none !important;
+            border-bottom:1px solid var(--border) !important;
+        }
+        .hero-section::before{
+            content:""; position:absolute; inset:0; pointer-events:none;
+            background:
+                radial-gradient(55% 90% at 15% -10%, rgba(47,111,237,.18), transparent 60%),
+                radial-gradient(45% 80% at 100% 0%, rgba(240,99,47,.14), transparent 60%) !important;
+        }
+        .hero-section .container{ position:relative; }
+        .kicker{
+            display:inline-flex; align-items:center; gap:.5rem; font-weight:600; font-size:.78rem;
+            letter-spacing:.06em; text-transform:uppercase; color:var(--teal-400);
+            background:var(--teal-050); border:1px solid rgba(57,214,174,.3);
+            padding:.4rem .9rem; border-radius:999px; margin-bottom:1.1rem;
+        }
+        .hero-section h1{
+            font-family:'Space Grotesk',sans-serif; font-weight:700;
+            font-size:clamp(2rem, 4.5vw, 2.7rem); line-height:1.15; color:var(--text-100); margin:0 0 .9rem;
+        }
+        .hero-section h1 .accent{ color:var(--orange-500); }
+        .hero-section p.lead{ max-width:560px; margin:0 auto; color:var(--text-500); font-size:1.02rem; line-height:1.65; }
+
+        /* Tool */
+        .tool-wrap{ padding:2.5rem 0 4.5rem; }
+        .tool-wrap .container{ max-width:860px; }
+
+        .tabs{
+            display:inline-flex; gap:.35rem; padding:.35rem; margin-bottom:1.5rem;
+            background:var(--panel-800); border:1px solid var(--border); border-radius:12px;
+        }
+        .tab-btn{
+            font-family:'Inter',sans-serif; font-weight:600; font-size:.9rem;
+            color:var(--text-300); background:transparent; border:none;
+            padding:.6rem 1.3rem; border-radius:8px; cursor:pointer;
+            transition:background .15s ease, color .15s ease;
+        }
+        .tab-btn:hover{ background:var(--panel-700); color:var(--text-100); }
+        .tab-btn.active{ background:var(--blue-500); color:#fff; }
+        .tab-pane{ display:none; }
+        .tab-pane.active{ display:block; }
+
+        .panel{
+            background:var(--panel-800); border:1px solid var(--border);
+            border-radius:var(--radius); box-shadow:var(--shadow-md); padding:1.6rem;
+        }
+        .panel h2{
+            font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:1.05rem;
+            letter-spacing:.02em; text-transform:uppercase; color:var(--teal-400); margin:0 0 1.2rem;
+        }
+        .field-label{ display:block; font-size:.82rem; font-weight:600; color:var(--text-300); margin-bottom:.4rem; }
+        .field{
+            width:100%; background:var(--bg-900); color:var(--text-100);
+            border:1px solid var(--border-soft); border-radius:8px; padding:.65rem .8rem;
+            font-family:'Inter',sans-serif; font-size:.95rem; line-height:1.6;
+            transition:border-color .15s ease, box-shadow .15s ease;
+        }
+        .field:focus{ outline:none; border-color:var(--blue-500); box-shadow:0 0 0 3px var(--blue-050); }
+        textarea.field{ resize:vertical; min-height:200px; }
+        select.field option{ background:var(--panel-800); color:var(--text-100); }
+        .hint{ font-size:.78rem; color:var(--text-500); margin-top:.35rem; }
+        .row-gap{ margin-bottom:1.1rem; }
+        input[type=range]{ width:100%; accent-color:var(--blue-500); }
+        .size-val{ float:right; color:var(--text-500); font-weight:500; }
+
+        .btn-main, .btn-ghost, .btn-danger{
+            font-family:'Inter',sans-serif; font-weight:600; font-size:.88rem;
+            padding:.65rem 1.1rem; border-radius:8px; cursor:pointer;
+            transition:background .15s ease, border-color .15s ease, color .15s ease;
+        }
+        .btn-main{ background:var(--blue-500); color:#fff; border:1px solid var(--blue-500); }
+        .btn-main:hover:not(:disabled){ background:var(--blue-600); border-color:var(--blue-600); }
+        .btn-ghost{ background:transparent; color:var(--text-300); border:1px solid var(--border-soft); }
+        .btn-ghost:hover:not(:disabled){ border-color:var(--orange-500); color:var(--orange-500); background:var(--orange-050); }
+        .btn-danger{ background:var(--orange-500); color:#fff; border:1px solid var(--orange-500); }
+        .btn-danger:hover:not(:disabled){ background:#d9531f; border-color:#d9531f; }
+        .btn-main:disabled, .btn-ghost:disabled, .btn-danger:disabled{ opacity:.45; cursor:not-allowed; }
+        .btn-row{ display:flex; gap:.6rem; flex-wrap:wrap; margin-top:1rem; }
+
+        .status{
+            display:flex; align-items:center; gap:.6rem; font-size:.85rem; color:var(--text-500);
+            margin-top:1rem; min-height:1.4rem;
+        }
+        .dot{ width:10px; height:10px; border-radius:50%; background:var(--border-soft); flex:0 0 auto; }
+        .dot.live{ background:var(--orange-500); animation:pulse 1.2s infinite; }
+        .dot.speaking{ background:var(--teal-400); animation:pulse 1.2s infinite; }
+        @keyframes pulse{ 0%{box-shadow:0 0 0 0 rgba(240,99,47,.55);} 70%{box-shadow:0 0 0 10px rgba(240,99,47,0);} 100%{box-shadow:0 0 0 0 rgba(240,99,47,0);} }
+        .dot.speaking{ animation-name:pulse2; }
+        @keyframes pulse2{ 0%{box-shadow:0 0 0 0 rgba(57,214,174,.55);} 70%{box-shadow:0 0 0 10px rgba(57,214,174,0);} 100%{box-shadow:0 0 0 0 rgba(57,214,174,0);} }
+        .error-msg{ color:var(--orange-500); font-size:.85rem; margin-top:.6rem; min-height:1.2rem; }
+        .notice{
+            background:var(--blue-050); border:1px solid rgba(47,111,237,.3); color:var(--text-300);
+            border-radius:10px; padding:.75rem 1rem; font-size:.84rem; line-height:1.55; margin-bottom:1.1rem;
+        }
+        .counter{ font-size:.78rem; color:var(--text-500); text-align:right; margin-top:.3rem; }
+
+        footer{
+            border-top:1px solid var(--border) !important; background:var(--bg-900) !important;
+            background-image:none !important; padding:1.6rem 0;
+        }
+        footer .footer-inner{
+            display:flex; flex-wrap:wrap; justify-content:space-between; gap:.75rem;
+            font-size:.85rem; color:var(--text-500);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/"><span class="heart">&#9829;</span> RAUF</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/blog">Blog</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/resume">Resume</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/design">Design</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/estimate">Estimate</a></li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="converterDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Converter</a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="converterDropdown">
+                            <li><h6 class="dropdown-header">File Converters</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('converter') }}">Word to PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('converter') }}">Excel to PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('converter') }}">PowerPoint to PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('converter') }}">Image to PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('pdf_converter') }}">PDF to Word</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('converter') }}"><strong>All File Converters</strong></a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Unit Converters</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('speed_calculator') }}">Speed Calculator, km/h to m/s</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('mass_unit') }}">Mass Unit Converter</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('pressure_converter') }}">Pressure Unit Converter</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('unit_weight') }}">Unit Weight Converter</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle active" href="#" id="othersDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Others</a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="othersDropdown">
+                            <li><h6 class="dropdown-header">Document Tools</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('pdf_editor') }}">PDF Editor</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('translate_tool') }}">Translate Tool</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('scanner_tool') }}">Scanner Tool</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('extract_word') }}">Extract Word</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('marge_pdf_tool') }}">Merge PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('split_pdf_tool') }}">Split PDF</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('compress_pdf_tool') }}">Compress PDF</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Image &amp; Math</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('image_enhancer') }}">Image Enhancer</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('background_remover') }}">Background Remover</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('scientific_calculator') }}">Scientific Calculator</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('code_generator') }}">QR &amp; Barcode Generator</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Voice</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('voice_tool') }}">Voice to Text &amp; Text to Voice</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/others"><strong>All Tools</strong></a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero-section">
+        <div class="container">
+            <span class="kicker">&#9679; Free tool, no sign-up</span>
+            <h1>Voice to <span class="accent">Text</span> &amp; Text to Voice</h1>
+            <p class="lead">Speak and get written text, or paste text and hear it read aloud. Works in many languages.</p>
+        </div>
+    </section>
+
+    <div class="tool-wrap">
+        <div class="container">
+
+            <div class="tabs" role="tablist">
+                <button type="button" class="tab-btn active" data-tab="sttPane" role="tab">Voice to Text</button>
+                <button type="button" class="tab-btn" data-tab="ttsPane" role="tab">Text to Voice</button>
+            </div>
+
+            <!-- ============ VOICE TO TEXT ============ -->
+            <div class="tab-pane active" id="sttPane">
+                <div class="panel">
+                    <h2>Speech recognition</h2>
+
+                    <div class="notice">
+                        Allow microphone access when your browser asks. Works best in Chrome, Edge or Safari over HTTPS (or on localhost). In Chrome and Edge, the browser sends your audio to its own speech service to turn it into text.
+                    </div>
+
+                    <div class="row-gap">
+                        <label class="field-label" for="sttLang">Language you will speak</label>
+                        <select id="sttLang" class="field">
+                            <option value="en-US" selected>English (US)</option>
+                            <option value="en-GB">English (UK)</option>
+                            <option value="en-IN">English (India)</option>
+                            <option value="bn-BD">Bangla (Bangladesh)</option>
+                            <option value="bn-IN">Bangla (India)</option>
+                            <option value="hi-IN">Hindi</option>
+                            <option value="ur-PK">Urdu</option>
+                            <option value="ar-SA">Arabic</option>
+                            <option value="es-ES">Spanish</option>
+                            <option value="fr-FR">French</option>
+                            <option value="de-DE">German</option>
+                            <option value="pt-BR">Portuguese (Brazil)</option>
+                            <option value="ru-RU">Russian</option>
+                            <option value="tr-TR">Turkish</option>
+                            <option value="id-ID">Indonesian</option>
+                            <option value="ja-JP">Japanese</option>
+                            <option value="ko-KR">Korean</option>
+                            <option value="zh-CN">Chinese (Mandarin)</option>
+                        </select>
+                    </div>
+
+                    <div class="row-gap">
+                        <label class="field-label" for="sttText">Your text (you can also edit it)</label>
+                        <textarea id="sttText" class="field" placeholder="Press Start and begin speaking…"></textarea>
+                        <div class="counter" id="sttCount">0 words</div>
+                    </div>
+
+                    <div class="btn-row">
+                        <button type="button" class="btn-main" id="sttStart">Start listening</button>
+                        <button type="button" class="btn-danger" id="sttStop" disabled>Stop</button>
+                        <button type="button" class="btn-ghost" id="sttCopy" disabled>Copy</button>
+                        <button type="button" class="btn-ghost" id="sttDownload" disabled>Download .txt</button>
+                        <button type="button" class="btn-ghost" id="sttClear" disabled>Clear</button>
+                    </div>
+
+                    <div class="status"><span class="dot" id="sttDot"></span><span id="sttStatus">Ready.</span></div>
+                    <div class="error-msg" id="sttError"></div>
+                </div>
+            </div>
+
+            <!-- ============ TEXT TO VOICE ============ -->
+            <div class="tab-pane" id="ttsPane">
+                <div class="panel">
+                    <h2>Text to speech</h2>
+
+                    <div class="row-gap">
+                        <label class="field-label" for="ttsText">Text to read aloud</label>
+                        <textarea id="ttsText" class="field" placeholder="Type or paste your text here…"></textarea>
+                        <div class="counter" id="ttsCount">0 characters</div>
+                    </div>
+
+                    <div class="row-gap">
+                        <label class="field-label" for="ttsVoice">Voice</label>
+                        <select id="ttsVoice" class="field"><option>Loading voices…</option></select>
+                        <div class="hint">The voices available depend on your device and browser. For another language, pick a voice labeled with that language.</div>
+                    </div>
+
+                    <div class="row g-3 row-gap">
+                        <div class="col-md-4">
+                            <label class="field-label" for="ttsRate">Speed <span class="size-val" id="ttsRateVal">1.0x</span></label>
+                            <input type="range" id="ttsRate" min="0.5" max="2" step="0.1" value="1">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="field-label" for="ttsPitch">Pitch <span class="size-val" id="ttsPitchVal">1.0</span></label>
+                            <input type="range" id="ttsPitch" min="0.5" max="2" step="0.1" value="1">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="field-label" for="ttsVolume">Volume <span class="size-val" id="ttsVolumeVal">100%</span></label>
+                            <input type="range" id="ttsVolume" min="0" max="1" step="0.1" value="1">
+                        </div>
+                    </div>
+
+                    <div class="btn-row">
+                        <button type="button" class="btn-main" id="ttsSpeak">Speak</button>
+                        <button type="button" class="btn-ghost" id="ttsPause" disabled>Pause</button>
+                        <button type="button" class="btn-ghost" id="ttsResume" disabled>Resume</button>
+                        <button type="button" class="btn-danger" id="ttsStop" disabled>Stop</button>
+                        <button type="button" class="btn-ghost" id="ttsClear">Clear</button>
+                    </div>
+
+                    <div class="status"><span class="dot" id="ttsDot"></span><span id="ttsStatus">Ready.</span></div>
+                    <div class="error-msg" id="ttsError"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer>
+        <div class="container footer-inner">
+            <span>&copy; 2026 Abdur Rauf</span>
+            <span>Others / Voice to Text &amp; Text to Voice</span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const $ = id => document.getElementById(id);
+
+        /* ---------- Tabs ---------- */
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                $(btn.dataset.tab).classList.add('active');
+                // Don't leave the mic or speaker running on a hidden tab
+                if (btn.dataset.tab !== 'sttPane') stopListening();
+                if (btn.dataset.tab !== 'ttsPane') stopSpeaking();
+            });
+        });
+
+        /* =====================================================
+           VOICE TO TEXT  (Web Speech API: SpeechRecognition)
+           ===================================================== */
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const sttText = $('sttText');
+        let recognition = null;
+        let listening = false;
+        let baseText = '';     // text already in the box when listening started / confirmed text
+        let wantListening = false;
+
+        function sttUpdateUI(){
+            const hasText = sttText.value.trim().length > 0;
+            $('sttStart').disabled = listening;
+            $('sttStop').disabled = !listening;
+            $('sttCopy').disabled = !hasText;
+            $('sttDownload').disabled = !hasText;
+            $('sttClear').disabled = !hasText;
+            const words = sttText.value.trim() ? sttText.value.trim().split(/\s+/).length : 0;
+            $('sttCount').textContent = words + (words === 1 ? ' word' : ' words');
+        }
+        function sttStatus(msg, live){
+            $('sttStatus').textContent = msg;
+            $('sttDot').classList.toggle('live', !!live);
+        }
+
+        if (!SR){
+            $('sttStart').disabled = true;
+            $('sttError').textContent = 'Voice to text is not supported in this browser. Please use Chrome, Edge or Safari.';
+            sttStatus('Not supported.');
+        }
+
+        function buildRecognition(){
+            const r = new SR();
+            r.continuous = true;
+            r.interimResults = true;
+            r.lang = $('sttLang').value;
+
+            r.onstart = () => { listening = true; sttStatus('Listening… speak now.', true); sttUpdateUI(); };
+
+            r.onresult = (e) => {
+                let finalChunk = '', interim = '';
+                for (let i = e.resultIndex; i < e.results.length; i++){
+                    const t = e.results[i][0].transcript;
+                    if (e.results[i].isFinal) finalChunk += t; else interim += t;
+                }
+                if (finalChunk){
+                    baseText += (baseText && !/\s$/.test(baseText) ? ' ' : '') + finalChunk.trim();
+                }
+                sttText.value = baseText + (interim ? (baseText ? ' ' : '') + interim : '');
+                sttText.scrollTop = sttText.scrollHeight;
+                sttUpdateUI();
+            };
+
+            r.onerror = (e) => {
+                const msgs = {
+                    'not-allowed': 'Microphone access was blocked. Allow it in your browser’s site settings and try again.',
+                    'service-not-allowed': 'Speech recognition is blocked on this page. Use HTTPS or localhost.',
+                    'audio-capture': 'No microphone was found.',
+                    'network': 'Network error. Speech recognition needs an internet connection.',
+                    'language-not-supported': 'This language is not supported by your browser.'
+                };
+                if (e.error === 'no-speech' || e.error === 'aborted') return; // harmless
+                $('sttError').textContent = msgs[e.error] || ('Error: ' + e.error);
+                wantListening = false;
+            };
+
+            r.onend = () => {
+                // Browsers stop after a pause in speech; restart while the user still wants to listen
+                if (wantListening){
+                    try { r.start(); return; } catch (err) {}
+                }
+                listening = false;
+                sttText.value = baseText;
+                sttStatus('Stopped.');
+                sttUpdateUI();
+            };
+            return r;
+        }
+
+        function startListening(){
+            if (!SR || listening) return;
+            $('sttError').textContent = '';
+            baseText = sttText.value.trim();
+            recognition = buildRecognition();
+            wantListening = true;
+            try { recognition.start(); }
+            catch (e) { $('sttError').textContent = 'Could not start the microphone. Try again.'; wantListening = false; }
+        }
+        function stopListening(){
+            wantListening = false;
+            if (recognition && listening) recognition.stop();
+        }
+
+        $('sttStart').addEventListener('click', startListening);
+        $('sttStop').addEventListener('click', stopListening);
+        $('sttLang').addEventListener('change', () => { if (listening){ stopListening(); } });
+        sttText.addEventListener('input', () => { if (!listening) baseText = sttText.value; sttUpdateUI(); });
+        $('sttClear').addEventListener('click', () => { stopListening(); sttText.value = ''; baseText = ''; sttUpdateUI(); sttStatus('Cleared.'); });
+        $('sttCopy').addEventListener('click', () => {
+            navigator.clipboard.writeText(sttText.value).then(() => {
+                const b = $('sttCopy'); b.textContent = 'Copied!';
+                setTimeout(() => b.textContent = 'Copy', 1500);
+            }).catch(() => { sttText.select(); document.execCommand('copy'); });
+        });
+        $('sttDownload').addEventListener('click', () => {
+            const blob = new Blob([sttText.value], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'speech-to-text.txt';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        });
+        sttUpdateUI();
+
+        /* =====================================================
+           TEXT TO VOICE  (Web Speech API: speechSynthesis)
+           ===================================================== */
+        const synth = window.speechSynthesis;
+        const ttsText = $('ttsText');
+        let voices = [];
+        let speaking = false;
+
+        function ttsStatus(msg, live){
+            $('ttsStatus').textContent = msg;
+            $('ttsDot').classList.toggle('speaking', !!live);
+        }
+        function ttsButtons(state){ // 'idle' | 'speaking' | 'paused'
+            $('ttsSpeak').disabled = state !== 'idle';
+            $('ttsPause').disabled = state !== 'speaking';
+            $('ttsResume').disabled = state !== 'paused';
+            $('ttsStop').disabled = state === 'idle';
+        }
+
+        if (!synth){
+            $('ttsSpeak').disabled = true;
+            $('ttsError').textContent = 'Text to speech is not supported in this browser.';
+            ttsStatus('Not supported.');
+        }
+
+        function loadVoices(){
+            if (!synth) return;
+            voices = synth.getVoices();
+            const sel = $('ttsVoice');
+            if (!voices.length){ sel.innerHTML = '<option>No voices found</option>'; return; }
+            const prev = sel.value;
+            sel.innerHTML = '';
+            voices
+                .map((v, i) => ({ v, i }))
+                .sort((a, b) => a.v.lang.localeCompare(b.v.lang) || a.v.name.localeCompare(b.v.name))
+                .forEach(({ v, i }) => {
+                    const o = document.createElement('option');
+                    o.value = i;
+                    o.textContent = v.name + ' (' + v.lang + ')' + (v.default ? ' — default' : '');
+                    sel.appendChild(o);
+                });
+            if (prev && [...sel.options].some(o => o.value === prev)) {
+                sel.value = prev;
+            } else {
+                const def = voices.findIndex(v => v.default) ;
+                const en = voices.findIndex(v => v.lang.toLowerCase().startsWith('en'));
+                sel.value = def >= 0 ? def : (en >= 0 ? en : 0);
+            }
+        }
+        if (synth){
+            loadVoices();
+            synth.onvoiceschanged = loadVoices;
+        }
+
+        // Split long text into sentence-sized chunks (some browsers cut off long utterances)
+        function chunkText(text, max = 180){
+            const sentences = text.replace(/\s+/g, ' ').match(/[^.!?।؟\n]+[.!?।؟]*\s*/g) || [text];
+            const chunks = [];
+            let cur = '';
+            sentences.forEach(s => {
+                if ((cur + s).length > max && cur){ chunks.push(cur.trim()); cur = ''; }
+                if (s.length > max){
+                    const words = s.split(' ');
+                    words.forEach(w => {
+                        if ((cur + ' ' + w).length > max){ chunks.push(cur.trim()); cur = w; }
+                        else cur += (cur ? ' ' : '') + w;
+                    });
+                } else cur += s;
+            });
+            if (cur.trim()) chunks.push(cur.trim());
+            return chunks;
+        }
+
+        function speak(){
+            if (!synth) return;
+            const text = ttsText.value.trim();
+            $('ttsError').textContent = '';
+            if (!text){ $('ttsError').textContent = 'Please enter some text first.'; return; }
+
+            synth.cancel();
+            const chunks = chunkText(text);
+            const voice = voices[parseInt($('ttsVoice').value, 10)];
+            let finished = 0;
+            speaking = true;
+            ttsButtons('speaking');
+            ttsStatus('Speaking…', true);
+
+            chunks.forEach((chunk, idx) => {
+                const u = new SpeechSynthesisUtterance(chunk);
+                if (voice){ u.voice = voice; u.lang = voice.lang; }
+                u.rate = parseFloat($('ttsRate').value);
+                u.pitch = parseFloat($('ttsPitch').value);
+                u.volume = parseFloat($('ttsVolume').value);
+                u.onend = () => {
+                    finished++;
+                    if (finished === chunks.length && speaking){
+                        speaking = false; ttsButtons('idle'); ttsStatus('Finished.', false);
+                    }
+                };
+                u.onerror = (e) => {
+                    if (e.error === 'interrupted' || e.error === 'canceled') return;
+                    $('ttsError').textContent = 'Speech error: ' + e.error;
+                    speaking = false; ttsButtons('idle'); ttsStatus('Stopped.', false);
+                };
+                synth.speak(u);
+            });
+        }
+        function stopSpeaking(){
+            if (!synth) return;
+            speaking = false;
+            synth.cancel();
+            ttsButtons('idle');
+            ttsStatus('Stopped.', false);
+        }
+
+        $('ttsSpeak').addEventListener('click', speak);
+        $('ttsPause').addEventListener('click', () => { synth.pause(); ttsButtons('paused'); ttsStatus('Paused.', false); });
+        $('ttsResume').addEventListener('click', () => { synth.resume(); ttsButtons('speaking'); ttsStatus('Speaking…', true); });
+        $('ttsStop').addEventListener('click', stopSpeaking);
+        $('ttsClear').addEventListener('click', () => { stopSpeaking(); ttsText.value = ''; $('ttsCount').textContent = '0 characters'; ttsStatus('Cleared.', false); });
+        ttsText.addEventListener('input', () => { $('ttsCount').textContent = ttsText.value.length + ' characters'; });
+        $('ttsRate').addEventListener('input', () => { $('ttsRateVal').textContent = parseFloat($('ttsRate').value).toFixed(1) + 'x'; });
+        $('ttsPitch').addEventListener('input', () => { $('ttsPitchVal').textContent = parseFloat($('ttsPitch').value).toFixed(1); });
+        $('ttsVolume').addEventListener('input', () => { $('ttsVolumeVal').textContent = Math.round($('ttsVolume').value * 100) + '%'; });
+
+        // Stop audio if the user leaves the page
+        window.addEventListener('beforeunload', () => { if (synth) synth.cancel(); if (recognition) recognition.abort(); });
+    </script>
+</body>
+</html>
