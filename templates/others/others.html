@@ -334,17 +334,19 @@
                             Converter
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="converterDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('pdf_converter') }}">PDF to Word Converter</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('pdf_editor') }}">PDF Editor</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('translate_tool') }}">Translate Tool</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('scanner_tool') }}">Scanner Tool</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('extract_word') }}">Extract Word</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('image_enhancer') }}">Image Enhancer</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('background_remover') }}">Background Remover</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('converter') }}">All File Converters</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('pdf_editor') }}">PDF Editor</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('speed_calculator') }}">Speed Calculator,km/h to m/s</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('mass_unit') }}">Mass Unit Converter</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('pressure_converter') }}">Pressure unit Converter</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('unit_weight') }}">Unit Weight Converter</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('extract_word') }}">Extract Word</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('image_enhancer') }}">Image Enhancer</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('background_remover') }}">Background Remover</a></li>
+
                         </ul>
                     </li>
                     <li class="nav-item"><a class="nav-link active" href="/others">Others</a></li>
