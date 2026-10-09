@@ -357,7 +357,7 @@
         </div>
         <div class="container">
             <div class="stat-strip">
-                <div><strong>12</strong><span>Tools</span></div>
+                <div><strong>13</strong><span>Tools</span></div>
                 <div><strong>5</strong><span>File formats</span></div>
                 <div><strong>0</strong><span>Files stored after you leave</span></div>
             </div>
@@ -441,6 +441,26 @@
                         <h3>PDF Converter to PowerPoint</h3>
                         <p>Convert PDF documents to PowerPoint presentations.</p>
                         <a href="{{ url_for('pdf_to_powerpoint') }}" class="open-link">Open tool</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <div class="category-head" data-bs-toggle="collapse" data-bs-target="#cat-from-image" role="button" aria-expanded="true" aria-controls="cat-from-image">
+                <div class="category-head-text">
+                    <h2>Convert from image</h2>
+                    <span>Turn a photo or scan into editable files</span>
+                </div>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="tool-list collapse show" id="cat-from-image">
+                <div class="tool-row row-xlsx">
+                    <span class="format-tag tag-xlsx">IMG &rarr; XLSX</span>
+                    <div class="tool-body">
+                        <h3>Image to Word &amp; Excel</h3>
+                        <p>Extract tables, text, signatures and stamps from an image into editable Word and Excel files.</p>
+                        <a href="{{ url_for('image_office.image_to_word_excel') }}" class="open-link">Open tool</a>
                     </div>
                 </div>
             </div>

@@ -4,6 +4,8 @@ import os
 import logging
 from html import escape
 from routes.projects import projects_bp
+from routes.image_office import image_office_bp
+from routes.scanner import scanner
 
 # `resend` is optional: if it isn't installed the site still works and
 # messages are saved to the CSV only.
@@ -14,8 +16,11 @@ except ImportError:
 
 app = Flask(__name__)
 
-# Register the new Blueprint
+# Register blueprints (each must have a unique name)
 app.register_blueprint(projects_bp)
+app.register_blueprint(image_office_bp)   # Image to Word / Excel tool
+app.register_blueprint(scanner)           # Document scanner (/scanner)
+
 
 # ---------------------------------------------------------------------------
 # Logging (only for this app's own messages, keeps Flask's request log clean)

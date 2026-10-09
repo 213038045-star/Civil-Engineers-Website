@@ -1,0 +1,1724 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Document Scanner | RAUF</title>
+
+<script>
+/* Endpoint URLs come from Flask so the page keeps working if the prefix changes. */
+window.SCANNER_URLS = {
+    upload: "{{ url_for('scanner.upload') }}",
+    process: "{{ url_for('scanner.process_scan') }}",
+    detectFrame: "{{ url_for('scanner.detect_frame') }}",
+    pdf: "{{ url_for('scanner.create_pdf') }}",
+    remove: "{{ url_for('scanner.delete_page') }}"
+};
+</script>
+
+{% raw %}
+<style>
+
+:root {
+    --bg: #080d17;
+    --panel: #101b2e;
+    --panel-2: #18263d;
+    --line: #263650;
+    --line-2: #34496d;
+    --text: #e7edf7;
+    --muted: #8d9db7;
+    --accent: #ff6333;
+    --danger: #ff7a7a;
+}
+
+* { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    line-height: 1.45;
+}
+
+header {
+    height: 66px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8%;
+    border-bottom: 1px solid #202b3d;
+    background: var(--bg);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.logo-box {
+    background: var(--accent);
+    width: 25px;
+    height: 25px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+}
+
+nav a {
+    color: #aebbd0;
+    text-decoration: none;
+    margin-left: 25px;
+}
+
+nav a:hover { color: white; }
+
+.container {
+    width: min(1180px, 94%);
+    margin: 36px auto 60px;
+}
+
+.title {
+    font-size: 38px;
+    margin: 0 0 10px;
+}
+
+.title span { color: var(--accent); }
+
+.subtitle {
+    color: var(--muted);
+    margin: 0 0 26px;
+    max-width: 62ch;
+}
+
+/* ---------- layout ---------- */
+
+.workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 20px;
+    align-items: start;
+}
+
+.stage {
+    position: relative;
+    height: clamp(340px, 66vh, 680px);
+    background: #050910;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.stage.dragover { border-color: var(--accent); }
+
+.view {
+    position: absolute;
+    inset: 0;
+    display: none;
+}
+
+#app[data-mode="capture"] .view-capture,
+#app[data-mode="crop"] .view-crop,
+#app[data-mode="result"] .view-result { display: block; }
+
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px;
+}
+
+.group + .group {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #293750;
+}
+
+.group h2 {
+    font-size: 16px;
+    margin: 0 0 6px;
+}
+
+.hint {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 14px;
+}
+
+.only-capture, .only-crop, .only-result { display: none; }
+#app[data-mode="capture"] .only-capture,
+#app[data-mode="crop"] .only-crop,
+#app[data-mode="result"] .only-result { display: block; }
+
+/* ---------- buttons ---------- */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 10px 16px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: #1d2b43;
+    color: #d9e3f2;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn:hover { background: #24344f; }
+.btn.primary { background: var(--accent); color: #fff; }
+.btn.primary:hover { background: #ff7347; }
+.btn.block { width: 100%; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.btn svg, .icon-btn svg {
+    width: 18px; height: 18px;
+    fill: none; stroke: currentColor;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+
+.stack { display: grid; gap: 10px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row > .btn { flex: 1 1 0; }
+
+:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* ---------- capture view ---------- */
+
+.view-capture video {
+    display: none;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+}
+
+.view-capture.live video { display: block; }
+
+#overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.view-capture.mirror video,
+.view-capture.mirror #overlay { transform: scaleX(-1); }
+
+.empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px;
+    text-align: center;
+    color: var(--muted);
+}
+
+.view-capture.live .empty { display: none; }
+
+.empty h2 { margin: 0; color: var(--text); font-size: 20px; }
+.empty p { margin: 0; max-width: 40ch; }
+
+.empty .frame {
+    width: 74px; height: 96px;
+    margin-bottom: 8px;
+    border: 2px dashed var(--line-2);
+    border-radius: 6px;
+}
+
+.shutter-bar {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    padding: 16px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(to top, rgba(0,0,0,.65), transparent);
+}
+
+.view-capture.live .shutter-bar { display: flex; }
+
+.shutter {
+    width: 68px; height: 68px;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    background: var(--accent);
+    box-shadow: inset 0 0 0 4px #000;
+    cursor: pointer;
+}
+
+.shutter:active { transform: scale(.94); }
+
+.icon-btn {
+    position: absolute;
+    bottom: 26px;
+    width: 46px; height: 46px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 0; border-radius: 50%;
+    background: rgba(255,255,255,.16);
+    color: #fff;
+    cursor: pointer;
+}
+
+.icon-btn[aria-pressed="true"] { background: var(--accent); }
+#switchBtn { left: 20px; }
+#torchBtn { right: 20px; }
+
+.flash {
+    position: absolute; inset: 0;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.flash.go { animation: flash .25s ease-out; }
+
+@keyframes flash { from { opacity: .8; } to { opacity: 0; } }
+
+.notice {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--accent);
+    background: #1a2438;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+}
+
+.switches { display: grid; gap: 10px; margin-top: 14px; }
+
+.switch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.switch input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+/* ---------- crop view ---------- */
+
+#cropCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+    cursor: crosshair;
+}
+
+/* ---------- result view ---------- */
+
+#resultImg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    background: #1b2433;
+}
+
+.busy {
+    position: absolute;
+    left: 50%; top: 14px;
+    transform: translateX(-50%);
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px;
+    background: rgba(8,13,23,.92);
+    border: 1px solid var(--line-2);
+    border-radius: 999px;
+    font-size: 14px;
+    z-index: 5;
+}
+
+.spinner {
+    width: 14px; height: 14px;
+    border: 2px solid var(--line-2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- enhance controls ---------- */
+
+.chips {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.chip {
+    min-height: 42px;
+    padding: 8px 6px;
+    background: var(--panel-2);
+    border: 1px solid #30415e;
+    border-radius: 8px;
+    color: #bdc9da;
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.chip[aria-pressed="true"] {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: #1f2234;
+}
+
+.slider { display: block; margin-top: 14px; font-size: 14px; }
+.slider span { display: flex; justify-content: space-between; color: var(--muted); }
+.slider input { width: 100%; accent-color: var(--accent); margin: 6px 0 0; }
+.slider input:disabled { opacity: .4; }
+
+select {
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 10px;
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid #30415e;
+    border-radius: 8px;
+    font: inherit;
+}
+
+label.field { display: block; font-size: 14px; color: var(--muted); margin-bottom: 10px; }
+label.field select { margin-top: 6px; }
+
+textarea {
+    width: 100%;
+    min-height: 130px;
+    margin-top: 10px;
+    padding: 10px;
+    background: #0a1220;
+    color: var(--text);
+    border: 1px solid #30415e;
+    border-radius: 8px;
+    font: 14px/1.5 Consolas, monospace;
+    resize: vertical;
+}
+
+/* ---------- pages strip ---------- */
+
+.pages {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    padding-bottom: 6px;
+    overflow-x: auto;
+}
+
+.thumb {
+    position: relative;
+    flex: 0 0 auto;
+    width: 74px; height: 98px;
+}
+
+.thumb-open {
+    width: 100%; height: 100%;
+    padding: 0;
+    background: #050910;
+    border: 2px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.thumb.active .thumb-open { border-color: var(--accent); }
+.thumb[draggable="true"] { cursor: grab; }
+.thumb.dragging { opacity: .4; }
+.thumb.over .thumb-open { border-color: #fff; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.thumb .num {
+    position: absolute; left: 5px; bottom: 5px;
+    min-width: 20px; padding: 0 5px;
+    background: rgba(8,13,23,.85);
+    border-radius: 10px;
+    font-size: 12px; text-align: center;
+}
+
+.thumb-del {
+    position: absolute; top: -6px; right: -6px;
+    width: 24px; height: 24px;
+    border: 0; border-radius: 50%;
+    background: #3a4660; color: #fff;
+    font-size: 15px; line-height: 1;
+    cursor: pointer;
+}
+
+.thumb-del:hover { background: var(--danger); color: #000; }
+
+.thumb-add {
+    flex: 0 0 auto;
+    width: 74px; height: 98px;
+    background: transparent;
+    border: 2px dashed var(--line-2);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 26px;
+    cursor: pointer;
+}
+
+.thumb-add:hover { color: var(--text); border-color: var(--accent); }
+
+.status {
+    margin-top: 14px;
+    min-height: 22px;
+    color: #91a2bd;
+    font-size: 14px;
+}
+
+.status[data-kind="error"] { color: var(--danger); }
+
+@media (max-width: 920px) {
+    .workspace { grid-template-columns: 1fr; }
+    header { padding: 0 4%; }
+    nav a { margin-left: 14px; }
+    .title { font-size: 30px; }
+}
+
+@media (max-width: 520px) {
+    nav { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spinner { animation: none; }
+    .flash.go { animation: none; }
+}
+
+</style>
+{% endraw %}
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+<div class="logo-box">AR</div>
+RAUF
+</div>
+
+<nav>
+<a href="/">Home</a>
+<a href="/about">About</a>
+<a href="/contact">Contact</a>
+<a href="/blog">Blog</a>
+<a href="/resume">Resume</a>
+<a href="/design">Design</a>
+</nav>
+
+</header>
+
+
+<div class="container">
+
+<h1 class="title">Document <span>Scanner</span></h1>
+
+<p class="subtitle">
+Scan pages with your camera or from photos. Page edges are found automatically,
+perspective is straightened and shadows are removed.
+</p>
+
+<div class="workspace" id="app" data-mode="capture">
+
+<div>
+
+<div class="stage" id="stage">
+
+<!-- CAPTURE -->
+<div class="view view-capture" id="viewCapture">
+
+<div class="empty" id="empty">
+<div class="frame"></div>
+<h2>Point the camera at a page</h2>
+<p>Lay the page on a darker surface with good light. You can also upload photos or drop them here.</p>
+</div>
+
+<video id="video" autoplay playsinline muted></video>
+<canvas id="overlay"></canvas>
+
+<div class="shutter-bar" id="shutterBar">
+<button class="icon-btn" id="switchBtn" type="button" aria-label="Switch camera">
+<svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+</button>
+<button class="shutter" id="shutterBtn" type="button" aria-label="Capture photo"></button>
+<button class="icon-btn" id="torchBtn" type="button" aria-label="Flashlight" aria-pressed="false" hidden>
+<svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+</button>
+</div>
+
+<div class="flash" id="flash"></div>
+
+</div>
+
+<!-- CROP -->
+<div class="view view-crop" id="viewCrop">
+<canvas id="cropCanvas" role="img" aria-label="Crop editor. Drag the four corner handles onto the corners of the page."></canvas>
+</div>
+
+<!-- RESULT -->
+<div class="view view-result" id="viewResult">
+<img id="resultImg" alt="Scanned page preview">
+</div>
+
+<div class="busy" id="busy" hidden role="status">
+<div class="spinner"></div><span>Working…</span>
+</div>
+
+</div>
+
+<div class="pages" id="pages" hidden></div>
+
+<div class="status" id="status" role="status" aria-live="polite">Ready.</div>
+
+</div>
+
+
+<aside class="panel">
+
+<!-- CAPTURE PANEL -->
+<div class="only-capture">
+
+<div class="group">
+<h2>Add a page</h2>
+<p class="hint">Use the live camera, or take a photo with your phone's camera app.</p>
+
+<div class="notice" id="camNotice" hidden></div>
+
+<div class="stack">
+<button class="btn primary block" id="cameraBtn" type="button">Start camera</button>
+<button class="btn block" id="nativeBtn" type="button">Take photo with camera app</button>
+<button class="btn block" id="uploadBtn" type="button">Upload images</button>
+</div>
+
+<input type="file" id="fileInput" accept="image/*" multiple hidden>
+<input type="file" id="nativeInput" accept="image/*" capture="environment" hidden>
+
+<div class="switches">
+<label class="switch"><input type="checkbox" id="liveToggle" checked> Outline the page while scanning</label>
+<label class="switch"><input type="checkbox" id="autoToggle"> Capture automatically when steady</label>
+</div>
+</div>
+
+</div>
+
+<!-- CROP PANEL -->
+<div class="only-crop">
+
+<div class="group">
+<h2>Adjust the crop</h2>
+<p class="hint">Drag the round corner handles onto the page corners, and the square handles to move a whole side. Hold a handle to see a magnified view.</p>
+
+<label class="switch" style="margin-bottom:14px"><input type="checkbox" id="bentToggle"> Bent page: follow curved edges and flatten</label>
+
+<div class="stack">
+<button class="btn primary block" id="applyCropBtn" type="button">Use this crop</button>
+<div class="row">
+<button class="btn" id="autoCropBtn" type="button">Auto edges</button>
+<button class="btn" id="fullCropBtn" type="button">Full photo</button>
+</div>
+<button class="btn block" id="cancelCropBtn" type="button">Cancel</button>
+</div>
+</div>
+
+</div>
+
+<!-- RESULT PANEL -->
+<div class="only-result">
+
+<div class="group">
+<h2>Enhance</h2>
+
+<div class="chips" id="chips">
+<button class="chip" type="button" data-filter="magicpro" aria-pressed="true">Magic Pro</button>
+<button class="chip" type="button" data-filter="magic" aria-pressed="false">Auto enhance</button>
+<button class="chip" type="button" data-filter="document" aria-pressed="false">Document</button>
+<button class="chip" type="button" data-filter="bw" aria-pressed="false">Black &amp; white</button>
+<button class="chip" type="button" data-filter="gray" aria-pressed="false">Grayscale</button>
+<button class="chip" type="button" data-filter="lighten" aria-pressed="false">Lighten</button>
+<button class="chip" type="button" data-filter="original" aria-pressed="false">Original</button>
+</div>
+
+<label class="slider">
+<span>Brightness <output id="brightVal">0</output></span>
+<input type="range" id="brightness" min="-100" max="100" step="5" value="0">
+</label>
+
+<label class="slider">
+<span>Contrast <output id="contrastVal">1.0</output></span>
+<input type="range" id="contrast" min="0.5" max="2" step="0.1" value="1">
+</label>
+
+<div class="row" style="margin-top:14px">
+<button class="btn" id="rotLeft" type="button" aria-label="Rotate left">
+<svg viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+</button>
+<button class="btn" id="rotRight" type="button" aria-label="Rotate right">
+<svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+</button>
+<button class="btn" id="resetBtn" type="button">Reset</button>
+</div>
+
+<div class="row" style="margin-top:10px">
+<button class="btn" id="recropBtn" type="button">Adjust crop</button>
+<button class="btn" id="addPageBtn" type="button">Add page</button>
+</div>
+
+<div class="row" style="margin-top:10px">
+<button class="btn" id="moveLeft" type="button" aria-label="Move page earlier">&larr; Move</button>
+<button class="btn" id="moveRight" type="button" aria-label="Move page later">Move &rarr;</button>
+</div>
+</div>
+
+<div class="group">
+<h2>Save</h2>
+
+<label class="field">Paper size
+<select id="sizeSel">
+<option value="a4">A4</option>
+<option value="letter">US Letter</option>
+<option value="fit">Original size (first page)</option>
+</select>
+</label>
+
+<label class="field">Page fill
+<select id="fillSel">
+<option value="1">Fill page (slight crop, no white margin)</option>
+<option value="0">Fit inside page</option>
+</select>
+</label>
+
+<div class="stack">
+<button class="btn primary block" id="pdfBtn" type="button">Download PDF</button>
+<button class="btn block" id="jpgBtn" type="button">Download this page as JPG</button>
+<button class="btn block" id="ocrBtn" type="button">Extract text from this page</button>
+</div>
+
+<div id="ocrBox" hidden>
+<textarea id="ocrText" aria-label="Extracted text"></textarea>
+<button class="btn block" id="copyBtn" type="button" style="margin-top:10px">Copy text</button>
+</div>
+</div>
+
+</div>
+
+</aside>
+
+</div>
+
+</div>
+
+{% raw %}
+<script>
+(function () {
+'use strict';
+
+var U = window.SCANNER_URLS;
+var $ = function (id) { return document.getElementById(id); };
+
+var app = $('app'), stage = $('stage');
+var viewCapture = $('viewCapture'), video = $('video'), overlay = $('overlay');
+var cropCanvas = $('cropCanvas'), resultImg = $('resultImg');
+var busyEl = $('busy'), statusEl = $('status'), pagesEl = $('pages');
+
+var S = {
+    pages: [], cur: -1, mode: 'capture',
+    stream: null, track: null, facing: 'environment', torch: false,
+    wantCamera: false, capturing: false,
+    live: true, auto: false, liveTimer: 0, liveErrors: 0, stable: 0, lastQuad: null,
+    procTimer: 0, dragIndex: -1
+};
+
+/* ------------------------------------------------------------------ */
+/* helpers                                                             */
+/* ------------------------------------------------------------------ */
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function say(msg, kind) {
+    statusEl.textContent = msg;
+    statusEl.dataset.kind = kind || '';
+}
+
+function busy(on, msg) {
+    busyEl.hidden = !on;
+    if (msg) busyEl.querySelector('span').textContent = msg;
+}
+
+function page() { return S.pages[S.cur] || null; }
+
+async function api(url, options) {
+    var res;
+    try {
+        res = await fetch(url, options);
+    } catch (e) {
+        throw new Error('Cannot reach the server. Check that the app is running and you are online.');
+    }
+    var data = null;
+    try { data = await res.json(); } catch (e) { data = null; }
+    if (!res.ok || !data || data.success === false) {
+        var msg = (data && data.error) ||
+            (res.status === 413 ? 'That image is too large.' : 'Server error (' + res.status + ').');
+        throw new Error(msg);
+    }
+    return data;
+}
+
+function postJson(url, body) {
+    return api(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+}
+
+function saveBlob(blob, name) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+}
+
+/* ------------------------------------------------------------------ */
+/* modes                                                               */
+/* ------------------------------------------------------------------ */
+
+function setMode(mode) {
+    S.mode = mode;
+    app.dataset.mode = mode;
+
+    if (mode === 'capture') {
+        if (S.wantCamera && !S.stream) startCamera(); else liveLoop();
+    } else {
+        stopCamera(true);
+    }
+    if (mode === 'crop') layoutCrop();
+    renderPages();
+}
+
+/* ------------------------------------------------------------------ */
+/* camera                                                              */
+/* ------------------------------------------------------------------ */
+
+function cameraSupported() {
+    return window.isSecureContext && navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+}
+
+function showNotice(text) {
+    var n = $('camNotice');
+    n.textContent = text;
+    n.hidden = !text;
+}
+
+function explainCameraError(err) {
+    var name = err && err.name;
+    if (name === 'NotAllowedError' || name === 'SecurityError' || name === 'PermissionDeniedError') {
+        return 'Camera access is blocked. Tap the lock icon next to the address bar, allow Camera, then press Start camera again.';
+    }
+    if (name === 'NotFoundError' || name === 'DevicesNotFoundError' || name === 'OverconstrainedError') {
+        return 'No camera was found on this device. Use Upload images instead.';
+    }
+    if (name === 'NotReadableError' || name === 'TrackStartError' || name === 'AbortError') {
+        return 'The camera is busy. Close other apps or tabs that use it, then try again.';
+    }
+    return 'The camera could not start' + (err && err.message ? ': ' + err.message : '.');
+}
+
+async function startCamera() {
+    if (S.stream) return;
+
+    if (!cameraSupported()) {
+        showNotice('The live camera only works on HTTPS or localhost, and this page is on ' +
+            location.protocol + '//' + location.host + '. Use "Take photo with camera app" instead, ' +
+            'or open the site over HTTPS.');
+        say('Live camera is unavailable on this connection.', 'error');
+        return;
+    }
+
+    showNotice('');
+    say('Starting camera…');
+    S.wantCamera = true;
+
+    var attempts = [
+        { facingMode: { ideal: S.facing }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        { facingMode: S.facing },
+        true
+    ];
+
+    var stream = null, lastErr = null;
+    for (var i = 0; i < attempts.length; i++) {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: attempts[i] });
+            break;
+        } catch (e) {
+            lastErr = e;
+            if (e.name === 'NotAllowedError' || e.name === 'SecurityError' || e.name === 'NotFoundError') break;
+        }
+    }
+
+    if (!stream) {
+        S.wantCamera = false;
+        showNotice(explainCameraError(lastErr));
+        say('Camera did not start.', 'error');
+        return;
+    }
+
+    if (S.mode !== 'capture') { stream.getTracks().forEach(function (t) { t.stop(); }); return; }
+
+    S.stream = stream;
+    S.track = stream.getVideoTracks()[0];
+    video.srcObject = stream;
+    try { await video.play(); } catch (e) { /* autoplay attribute handles it */ }
+
+    S.track.addEventListener('ended', function () {
+        stopCamera(false);
+        say('The camera was disconnected.', 'error');
+    });
+
+    var caps = S.track.getCapabilities ? S.track.getCapabilities() : {};
+    $('torchBtn').hidden = !caps.torch;
+    S.torch = false;
+    $('torchBtn').setAttribute('aria-pressed', 'false');
+
+    if (caps.focusMode && caps.focusMode.indexOf('continuous') >= 0) {
+        try { await S.track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) { /* optional */ }
+    }
+
+    viewCapture.classList.add('live');
+    viewCapture.classList.toggle('mirror', S.facing === 'user');
+    $('cameraBtn').textContent = 'Stop camera';
+    say('Camera ready. Fill the frame with the page, then press the shutter.');
+    S.stable = 0; S.lastQuad = null;
+    liveLoop();
+}
+
+function stopCamera(keepWanted) {
+    if (S.stream) S.stream.getTracks().forEach(function (t) { t.stop(); });
+    S.stream = null; S.track = null;
+    video.srcObject = null;
+    viewCapture.classList.remove('live');
+    $('cameraBtn').textContent = 'Start camera';
+    clearTimeout(S.liveTimer);
+    clearOverlay();
+    if (!keepWanted) S.wantCamera = false;
+}
+
+async function takePhoto() {
+    if (!S.stream || S.capturing) return;
+    if (!video.videoWidth) { say('The camera is still warming up. Try again in a moment.'); return; }
+
+    S.capturing = true;
+    var f = $('flash');
+    f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+
+    var blob = null;
+    try {
+        /* full-resolution still where the browser supports it (Chrome / Android) */
+        if ('ImageCapture' in window && S.track && S.track.readyState === 'live' && !S.torch) {
+            blob = await new ImageCapture(S.track).takePhoto();
+        }
+    } catch (e) { blob = null; }
+
+    if (!blob) {
+        var c = document.createElement('canvas');
+        c.width = video.videoWidth; c.height = video.videoHeight;
+        c.getContext('2d').drawImage(video, 0, 0);
+        blob = await new Promise(function (r) { c.toBlob(r, 'image/jpeg', 0.93); });
+    }
+
+    S.capturing = false;
+    if (!blob) { say('Could not capture the photo. Try again.', 'error'); return; }
+    addFiles([blob]);
+}
+
+/* ---- live page outline ------------------------------------------- */
+
+var liveCanvas = document.createElement('canvas');
+
+function liveLoop() {
+    clearTimeout(S.liveTimer);
+    if (S.mode !== 'capture' || !S.stream || !S.live) { clearOverlay(); return; }
+    S.liveTimer = setTimeout(liveTick, 450);
+}
+
+async function liveTick() {
+    if (S.mode !== 'capture' || !S.stream || !S.live) return;
+    if (document.hidden || !video.videoWidth || S.capturing) { liveLoop(); return; }
+
+    var s = 360 / Math.max(video.videoWidth, video.videoHeight);
+    liveCanvas.width = Math.round(video.videoWidth * s);
+    liveCanvas.height = Math.round(video.videoHeight * s);
+    liveCanvas.getContext('2d').drawImage(video, 0, 0, liveCanvas.width, liveCanvas.height);
+
+    var blob = await new Promise(function (r) { liveCanvas.toBlob(r, 'image/jpeg', 0.6); });
+
+    try {
+        var fd = new FormData();
+        fd.append('image', blob, 'frame.jpg');
+        var d = await api(U.detectFrame, { method: 'POST', body: fd });
+        S.liveErrors = 0;
+        handleLive(d.corners);
+    } catch (e) {
+        S.liveErrors++;
+        if (S.liveErrors >= 4) {
+            S.live = false;
+            $('liveToggle').checked = false;
+            clearOverlay();
+            say('Page outline turned off because the server could not be reached.', 'error');
+        }
+    }
+    liveLoop();
+}
+
+function handleLive(q) {
+    drawOverlay(q);
+
+    if (!q) { S.stable = 0; S.lastQuad = null; return; }
+
+    if (S.lastQuad) {
+        var moved = 0;
+        for (var i = 0; i < 4; i++) {
+            moved = Math.max(moved, Math.hypot(q[i][0] - S.lastQuad[i][0], q[i][1] - S.lastQuad[i][1]));
+        }
+        S.stable = moved < 0.02 ? S.stable + 1 : 0;
+    }
+    S.lastQuad = q;
+
+    if (S.auto) {
+        if (S.stable >= 4) { S.stable = 0; takePhoto(); }
+        else if (S.stable >= 2) say('Hold steady…');
+    }
+}
+
+function videoRect() {
+    var bw = video.clientWidth, bh = video.clientHeight;
+    var vw = video.videoWidth, vh = video.videoHeight;
+    var k = Math.min(bw / vw, bh / vh);
+    return { x: (bw - vw * k) / 2, y: (bh - vh * k) / 2, w: vw * k, h: vh * k };
+}
+
+function clearOverlay() {
+    var ctx = overlay.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+}
+
+function drawOverlay(q) {
+    var dpr = window.devicePixelRatio || 1;
+    var w = overlay.clientWidth, h = overlay.clientHeight;
+    if (overlay.width !== Math.round(w * dpr) || overlay.height !== Math.round(h * dpr)) {
+        overlay.width = Math.round(w * dpr);
+        overlay.height = Math.round(h * dpr);
+    }
+    var ctx = overlay.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    if (!q || !video.videoWidth) return;
+
+    var r = videoRect();
+    ctx.beginPath();
+    q.forEach(function (p, i) {
+        var x = r.x + p[0] * r.w, y = r.y + p[1] * r.h;
+        if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+    });
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255, 99, 51, 0.18)';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#ff6333';
+    ctx.stroke();
+}
+
+/* ------------------------------------------------------------------ */
+/* adding photos                                                       */
+/* ------------------------------------------------------------------ */
+
+function midpoints(c) {
+    return c.map(function (a, i) {
+        var b = c[(i + 1) % 4];
+        return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    });
+}
+
+function newPage(d) {
+    var corners = d.corners.map(function (c) { return c.slice(); });
+    var mids = (d.mids || midpoints(corners)).map(function (c) { return c.slice(); });
+    return {
+        id: d.id, src: d.src, w: d.width, h: d.height,
+        corners: corners, mids: mids, bent: !!d.curved,
+        auto: corners.map(function (c) { return c.slice(); }),
+        autoMids: mids.map(function (c) { return c.slice(); }),
+        autoBent: !!d.curved,
+        detected: d.detected,
+        filter: 'magicpro', brightness: 0, contrast: 1, rotate: 0,
+        out: null, dirty: true, ticket: 0
+    };
+}
+
+async function addFiles(files) {
+    files = Array.prototype.slice.call(files);
+    if (!files.length) return;
+
+    var multi = files.length > 1;
+    var added = [];
+
+    for (var i = 0; i < files.length; i++) {
+        busy(true, multi ? 'Reading photo ' + (i + 1) + ' of ' + files.length + '…' : 'Finding the page edges…');
+        try {
+            var fd = new FormData();
+            fd.append('image', files[i], files[i].name || 'scan.jpg');
+            var d = await api(U.upload, { method: 'POST', body: fd });
+            var p = newPage(d);
+            S.pages.push(p);
+            added.push(p);
+        } catch (e) {
+            say((files[i].name ? files[i].name + ': ' : '') + e.message, 'error');
+        }
+    }
+
+    if (!added.length) { busy(false); return; }
+
+    if (!multi) {
+        busy(false);
+        openCrop(S.pages.indexOf(added[0]));
+        return;
+    }
+
+    busy(true, 'Enhancing pages…');
+    for (var j = 0; j < added.length; j++) await processPage(added[j], true);
+    busy(false);
+    openResult(S.pages.indexOf(added[0]));
+    say(added.length + ' pages added. Select a page below to adjust it.');
+}
+
+/* ------------------------------------------------------------------ */
+/* crop editor                                                         */
+/* ------------------------------------------------------------------ */
+
+var C = { img: null, ox: 0, oy: 0, dw: 0, dh: 0, cw: 0, ch: 0, drag: -1, dpr: 1, start: null };
+
+function openCrop(i) {
+    S.cur = i;
+    var p = S.pages[i];
+    C.img = new Image();
+    C.img.onload = layoutCrop;
+    C.img.src = p.src;
+    setMode('crop');
+    $('bentToggle').checked = p.bent;
+    say(p.detected
+        ? (p.bent ? 'Curved page found. Drag the handles if the outline is off.' : 'Page edges found. Drag the handles if they are off.')
+        : 'The edges could not be found automatically. Drag the corners onto the page.');
+}
+
+function layoutCrop() {
+    if (S.mode !== 'crop') return;
+    var box = cropCanvas.getBoundingClientRect();
+    C.cw = box.width; C.ch = box.height;
+    C.dpr = window.devicePixelRatio || 1;
+    cropCanvas.width = Math.round(C.cw * C.dpr);
+    cropCanvas.height = Math.round(C.ch * C.dpr);
+    if (!C.img || !C.img.complete || !C.img.naturalWidth) return;
+
+    var pad = 26;
+    var k = Math.min((C.cw - 2 * pad) / C.img.naturalWidth, (C.ch - 2 * pad) / C.img.naturalHeight);
+    C.dw = C.img.naturalWidth * k; C.dh = C.img.naturalHeight * k;
+    C.ox = (C.cw - C.dw) / 2; C.oy = (C.ch - C.dh) / 2;
+    drawCrop();
+}
+
+function toPx(n) { return { x: C.ox + n[0] * C.dw, y: C.oy + n[1] * C.dh }; }
+function midNorm(p, i) {
+    if (p.bent) return p.mids[i];
+    var a = p.corners[i], b = p.corners[(i + 1) % 4];
+    return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+}
+
+/* handle ids: 0-3 corners, 4-7 side handles (side i joins corner i and i+1) */
+function handlePx(p, id) { return id < 4 ? toPx(p.corners[id]) : toPx(midNorm(p, id - 4)); }
+
+function tracePath(ctx, p) {
+    var pts = p.corners.map(toPx);
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (var i = 0; i < 4; i++) {
+        var b = pts[(i + 1) % 4];
+        if (p.bent) {
+            var a = pts[i], m = toPx(p.mids[i]);
+            ctx.quadraticCurveTo(2 * m.x - (a.x + b.x) / 2, 2 * m.y - (a.y + b.y) / 2, b.x, b.y);
+        } else {
+            ctx.lineTo(b.x, b.y);
+        }
+    }
+    ctx.closePath();
+}
+
+function drawCrop() {
+    var p = page();
+    if (!p || !C.img || !C.dw) return;
+    var ctx = cropCanvas.getContext('2d');
+    ctx.setTransform(C.dpr, 0, 0, C.dpr, 0, 0);
+    ctx.clearRect(0, 0, C.cw, C.ch);
+    ctx.drawImage(C.img, C.ox, C.oy, C.dw, C.dh);
+
+    // darken everything outside the crop
+    ctx.beginPath();
+    ctx.rect(0, 0, C.cw, C.ch);
+    tracePath(ctx, p);
+    ctx.fillStyle = 'rgba(5, 9, 16, 0.62)';
+    ctx.fill('evenodd');
+
+    ctx.beginPath();
+    tracePath(ctx, p);
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = '#ff6333';
+    ctx.stroke();
+
+    for (var id = 4; id < 8; id++) {          // side handles: rounded squares
+        var h = handlePx(p, id), r = id === C.drag ? 10 : 8;
+        ctx.beginPath();
+        ctx.rect(h.x - r, h.y - r, 2 * r, 2 * r);
+        ctx.fillStyle = p.bent ? '#ffd34d' : '#fff';
+        ctx.fill();
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#ff6333';
+        ctx.stroke();
+    }
+    for (id = 0; id < 4; id++) {              // corner handles: circles
+        var q = handlePx(p, id);
+        ctx.beginPath();
+        ctx.arc(q.x, q.y, id === C.drag ? 15 : 11, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#ff6333';
+        ctx.stroke();
+    }
+
+    if (C.drag >= 0) drawLoupe(p);
+}
+
+function drawLoupe(p) {
+    var R = 58, zoom = 2.5;
+    var handle = handlePx(p, C.drag);
+    var lx = handle.x < C.cw / 2 ? C.cw - R - 14 : R + 14;
+    var ly = R + 14;
+    var k = C.dw / C.img.naturalWidth;
+    var n = C.drag < 4 ? p.corners[C.drag] : midNorm(p, C.drag - 4);
+    var cx = n[0] * C.img.naturalWidth;
+    var cy = n[1] * C.img.naturalHeight;
+    var half = R / (k * zoom);
+    var ctx = cropCanvas.getContext('2d');
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(lx, ly, R, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.fillStyle = '#000';
+    ctx.fillRect(lx - R, ly - R, 2 * R, 2 * R);
+    ctx.drawImage(C.img, cx - half, cy - half, 2 * half, 2 * half, lx - R, ly - R, 2 * R, 2 * R);
+    ctx.restore();
+
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#fff';
+    ctx.beginPath(); ctx.arc(lx, ly, R, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#ff6333';
+    ctx.beginPath();
+    ctx.moveTo(lx - 12, ly); ctx.lineTo(lx + 12, ly);
+    ctx.moveTo(lx, ly - 12); ctx.lineTo(lx, ly + 12);
+    ctx.stroke();
+}
+
+function cropPos(e) {
+    var r = cropCanvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+function norm(m) {
+    return [clamp((m.x - C.ox) / C.dw, 0, 1), clamp((m.y - C.oy) / C.dh, 0, 1)];
+}
+
+cropCanvas.addEventListener('pointerdown', function (e) {
+    var p = page();
+    if (!p || !C.dw) return;
+    var m = cropPos(e), best = -1, bestD = Infinity;
+    var reach = e.pointerType === 'touch' ? 50 : 28;
+    for (var id = 0; id < 8; id++) {
+        var c = handlePx(p, id);
+        var d = Math.hypot(c.x - m.x, c.y - m.y) - (id < 4 ? 6 : 0);   // corners win ties
+        if (d < bestD) { bestD = d; best = id; }
+    }
+    if (bestD <= reach) {
+        C.drag = best;
+        C.start = {
+            m: m,
+            corners: p.corners.map(function (c) { return c.slice(); }),
+            mids: p.mids.map(function (c) { return c.slice(); })
+        };
+        cropCanvas.setPointerCapture(e.pointerId);
+        e.preventDefault();
+        drawCrop();
+    }
+});
+
+cropCanvas.addEventListener('pointermove', function (e) {
+    if (C.drag < 0) return;
+    var p = page(), m = cropPos(e), st = C.start;
+
+    if (C.drag < 4) {
+        var np = norm(m), old = st.corners[C.drag];
+        var dx = np[0] - old[0], dy = np[1] - old[1];
+        p.corners[C.drag] = np;
+        // keep the bow of the two touching edges while a corner moves
+        [C.drag, (C.drag + 3) % 4].forEach(function (i) {
+            p.mids[i] = [clamp(st.mids[i][0] + dx / 2, 0, 1), clamp(st.mids[i][1] + dy / 2, 0, 1)];
+        });
+    } else {
+        var i = C.drag - 4, j = (i + 1) % 4;
+        if (p.bent) {
+            p.mids[i] = norm(m);
+        } else {
+            // slide the whole side straight in/out, like CamScanner
+            var a = toPx(st.corners[i]), b = toPx(st.corners[j]);
+            var ex = b.x - a.x, ey = b.y - a.y, len = Math.hypot(ex, ey) || 1;
+            var nx = -ey / len, ny = ex / len;
+            var s = (m.x - st.m.x) * nx + (m.y - st.m.y) * ny;
+            [i, j].forEach(function (k) {
+                var c0 = toPx(st.corners[k]);
+                p.corners[k] = norm({ x: c0.x + nx * s, y: c0.y + ny * s });
+            });
+            p.mids = midpoints(p.corners);
+        }
+    }
+    drawCrop();
+});
+
+function endDrag() { if (C.drag >= 0) { C.drag = -1; C.start = null; drawCrop(); } }
+cropCanvas.addEventListener('pointerup', endDrag);
+cropCanvas.addEventListener('pointercancel', endDrag);
+
+$('bentToggle').addEventListener('change', function (e) {
+    var p = page();
+    if (e.target.checked && !p.bent) {
+        // start from the straight outline, or from the detected curve if there is one
+        p.mids = p.autoBent ? p.autoMids.map(function (c) { return c.slice(); }) : midpoints(p.corners);
+    }
+    p.bent = e.target.checked;
+    if (!p.bent) p.mids = midpoints(p.corners);
+    drawCrop();
+    say(p.bent ? 'Bent page mode. Drag the yellow side handles so the outline follows the curved edges.' : 'Straight crop.');
+});
+
+$('applyCropBtn').addEventListener('click', function () {
+    var p = page();
+    p.dirty = true;
+    openResult(S.cur);
+});
+
+$('autoCropBtn').addEventListener('click', function () {
+    var p = page();
+    p.corners = p.auto.map(function (c) { return c.slice(); });
+    p.mids = p.autoMids.map(function (c) { return c.slice(); });
+    p.bent = p.autoBent;
+    $('bentToggle').checked = p.bent;
+    drawCrop();
+    say(p.detected ? 'Restored the automatic edges.' : 'No edges were found automatically, so the starting frame was restored.');
+});
+
+$('fullCropBtn').addEventListener('click', function () {
+    var p = page();
+    p.corners = [[0, 0], [1, 0], [1, 1], [0, 1]];
+    p.mids = midpoints(p.corners);
+    p.bent = false;
+    $('bentToggle').checked = false;
+    drawCrop();
+    say('Crop set to the whole photo.');
+});
+
+$('cancelCropBtn').addEventListener('click', function () {
+    var p = page();
+    if (p && p.out) { openResult(S.cur); return; }
+    removePage(S.cur);
+});
+
+/* ------------------------------------------------------------------ */
+/* enhance                                                             */
+/* ------------------------------------------------------------------ */
+
+async function processPage(p, quiet) {
+    var ticket = ++p.ticket;
+    if (!quiet) busy(true, 'Enhancing…');
+    try {
+        var d = await postJson(U.process, {
+            id: p.id, corners: p.corners, mids: p.mids, flatten: p.bent, filter: p.filter,
+            brightness: p.brightness, contrast: p.contrast, rotate: p.rotate
+        });
+        if (ticket !== p.ticket) return;
+        p.out = d.image + '?v=' + Date.now();
+        p.dirty = false;
+        if (S.pages[S.cur] === p && S.mode === 'result') resultImg.src = p.out;
+        renderPages();
+    } catch (e) {
+        if (ticket === p.ticket) say(e.message, 'error');
+    } finally {
+        if (!quiet && ticket === p.ticket) busy(false);
+    }
+}
+
+function schedule(delay) {
+    var p = page();
+    if (!p) return;
+    p.dirty = true;
+    clearTimeout(S.procTimer);
+    S.procTimer = setTimeout(function () { processPage(p); }, delay);
+}
+
+function openResult(i) {
+    S.cur = i;
+    var p = S.pages[i];
+    setMode('result');
+    syncControls();
+    resultImg.src = p.out || p.src;
+    if (!p.out || p.dirty) { say('Straightening and enhancing the page…'); schedule(0); }
+}
+
+function syncControls() {
+    var p = page();
+    if (!p) return;
+    document.querySelectorAll('.chip').forEach(function (c) {
+        c.setAttribute('aria-pressed', String(c.dataset.filter === p.filter));
+    });
+    $('brightness').value = p.brightness;
+    $('contrast').value = p.contrast;
+    $('brightVal').textContent = p.brightness;
+    $('contrastVal').textContent = Number(p.contrast).toFixed(1);
+    $('contrast').disabled = p.filter === 'bw';
+    $('ocrBox').hidden = true;
+}
+
+document.querySelectorAll('.chip').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+        var p = page();
+        p.filter = chip.dataset.filter;
+        syncControls();
+        schedule(0);
+    });
+});
+
+$('brightness').addEventListener('input', function (e) {
+    page().brightness = Number(e.target.value);
+    $('brightVal').textContent = e.target.value;
+    schedule(250);
+});
+
+$('contrast').addEventListener('input', function (e) {
+    page().contrast = Number(e.target.value);
+    $('contrastVal').textContent = Number(e.target.value).toFixed(1);
+    schedule(250);
+});
+
+$('rotLeft').addEventListener('click', function () { page().rotate = (page().rotate + 270) % 360; schedule(0); });
+$('rotRight').addEventListener('click', function () { page().rotate = (page().rotate + 90) % 360; schedule(0); });
+
+$('resetBtn').addEventListener('click', function () {
+    var p = page();
+    p.filter = 'magicpro'; p.brightness = 0; p.contrast = 1; p.rotate = 0;
+    syncControls();
+    schedule(0);
+});
+
+$('moveLeft').addEventListener('click', function () { movePage(S.cur, S.cur - 1); });
+$('moveRight').addEventListener('click', function () { movePage(S.cur, S.cur + 1); });
+
+$('recropBtn').addEventListener('click', function () { openCrop(S.cur); });
+$('addPageBtn').addEventListener('click', function () { setMode('capture'); say('Add another page.'); });
+
+/* ------------------------------------------------------------------ */
+/* page strip                                                          */
+/* ------------------------------------------------------------------ */
+
+function renderPages() {
+    pagesEl.textContent = '';
+    pagesEl.hidden = !S.pages.length;
+
+    S.pages.forEach(function (p, i) {
+        var box = document.createElement('div');
+        box.className = 'thumb' + (i === S.cur && S.mode !== 'capture' ? ' active' : '');
+
+        var open = document.createElement('button');
+        open.type = 'button';
+        open.className = 'thumb-open';
+        open.setAttribute('aria-label', 'Open page ' + (i + 1));
+        var img = document.createElement('img');
+        img.alt = '';
+        img.src = p.out || p.src;
+        open.appendChild(img);
+        open.addEventListener('click', function () { p.out ? openResult(i) : openCrop(i); });
+
+        /* drag a thumbnail onto another one to change the page order */
+        box.draggable = true;
+        box.addEventListener('dragstart', function (e) {
+            S.dragIndex = i;
+            box.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            try { e.dataTransfer.setData('text/plain', String(i)); } catch (err) { /* old browsers */ }
+        });
+        box.addEventListener('dragend', function () { S.dragIndex = -1; box.classList.remove('dragging'); });
+        box.addEventListener('dragover', function (e) {
+            if (S.dragIndex >= 0) { e.preventDefault(); e.stopPropagation(); box.classList.add('over'); }
+        });
+        box.addEventListener('dragleave', function () { box.classList.remove('over'); });
+        box.addEventListener('drop', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            box.classList.remove('over');
+            if (S.dragIndex >= 0) movePage(S.dragIndex, i);
+            S.dragIndex = -1;
+        });
+
+        var num = document.createElement('span');
+        num.className = 'num';
+        num.textContent = i + 1;
+
+        var del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'thumb-del';
+        del.setAttribute('aria-label', 'Delete page ' + (i + 1));
+        del.textContent = '×';
+        del.addEventListener('click', function () { removePage(i); });
+
+        box.appendChild(open);
+        box.appendChild(num);
+        box.appendChild(del);
+        pagesEl.appendChild(box);
+    });
+
+    if (S.pages.length) {
+        var add = document.createElement('button');
+        add.type = 'button';
+        add.className = 'thumb-add';
+        add.setAttribute('aria-label', 'Add another page');
+        add.textContent = '+';
+        add.addEventListener('click', function () { setMode('capture'); });
+        pagesEl.appendChild(add);
+    }
+
+    $('pdfBtn').textContent = S.pages.length > 1 ? 'Download PDF (' + S.pages.length + ' pages)' : 'Download PDF';
+}
+
+function movePage(from, to) {
+    if (from === to || from < 0 || to < 0 || from >= S.pages.length || to >= S.pages.length) return;
+    var current = S.pages[S.cur];
+    var moved = S.pages.splice(from, 1)[0];
+    S.pages.splice(to, 0, moved);
+    S.cur = S.pages.indexOf(current);
+    renderPages();
+    say('Page moved to position ' + (S.pages.indexOf(moved) + 1) + '.');
+}
+
+function removePage(i) {
+    var p = S.pages[i];
+    if (!p) return;
+    fetch(U.remove, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: p.id })
+    }).catch(function () { /* server cleans up old files anyway */ });
+
+    S.pages.splice(i, 1);
+
+    if (!S.pages.length) { S.cur = -1; setMode('capture'); say('Page deleted.'); return; }
+
+    var next = Math.min(i, S.pages.length - 1);
+    S.pages[next].out ? openResult(next) : openCrop(next);
+    say('Page deleted.');
+}
+
+/* ------------------------------------------------------------------ */
+/* export                                                              */
+/* ------------------------------------------------------------------ */
+
+async function ensureProcessed() {
+    for (var i = 0; i < S.pages.length; i++) {
+        var p = S.pages[i];
+        if (!p.out || p.dirty) await processPage(p, true);
+    }
+}
+
+$('pdfBtn').addEventListener('click', async function () {
+    var btn = this;
+    btn.disabled = true;
+    busy(true, 'Building PDF…');
+    try {
+        clearTimeout(S.procTimer);
+        await ensureProcessed();
+        var ids = S.pages.map(function (p) { return p.id; }).join(',');
+        var res = await fetch(U.pdf + '?ids=' + ids + '&size=' + $('sizeSel').value + '&fill=' + $('fillSel').value);
+        if (!res.ok) {
+            var err = null;
+            try { err = await res.json(); } catch (e) { err = null; }
+            throw new Error((err && err.error) || 'Could not build the PDF.');
+        }
+        saveBlob(await res.blob(), 'Scanned_Document.pdf');
+        say('PDF downloaded.');
+    } catch (e) {
+        say(e.message, 'error');
+    } finally {
+        busy(false);
+        btn.disabled = false;
+    }
+});
+
+$('jpgBtn').addEventListener('click', async function () {
+    var p = page();
+    busy(true, 'Preparing JPG…');
+    try {
+        clearTimeout(S.procTimer);
+        if (!p.out || p.dirty) await processPage(p, true);
+        var res = await fetch(p.out);
+        if (!res.ok) throw new Error('Could not download the image.');
+        saveBlob(await res.blob(), 'Scanned_Page_' + (S.cur + 1) + '.jpg');
+        say('JPG downloaded.');
+    } catch (e) {
+        say(e.message, 'error');
+    } finally {
+        busy(false);
+    }
+});
+
+$('ocrBtn').addEventListener('click', async function () {
+    var p = page();
+    busy(true, 'Reading text…');
+    try {
+        clearTimeout(S.procTimer);
+        if (!p.out || p.dirty) await processPage(p, true);
+        var d = await postJson(U.ocr, { id: p.id });
+        $('ocrText').value = d.text || '';
+        $('ocrBox').hidden = false;
+        say(d.text ? 'Text extracted. Check it for mistakes before using it.' : 'No text was found on this page.');
+    } catch (e) {
+        say(e.message, 'error');
+    } finally {
+        busy(false);
+    }
+});
+
+$('copyBtn').addEventListener('click', async function () {
+    var ta = $('ocrText');
+    try {
+        await navigator.clipboard.writeText(ta.value);
+    } catch (e) {
+        ta.select();
+        document.execCommand('copy');
+    }
+    say('Text copied.');
+});
+
+/* ------------------------------------------------------------------ */
+/* wiring                                                              */
+/* ------------------------------------------------------------------ */
+
+$('cameraBtn').addEventListener('click', function () {
+    if (S.stream) { stopCamera(false); say('Camera stopped.'); } else { startCamera(); }
+});
+
+$('shutterBtn').addEventListener('click', takePhoto);
+
+$('switchBtn').addEventListener('click', function () {
+    S.facing = S.facing === 'environment' ? 'user' : 'environment';
+    stopCamera(true);
+    startCamera();
+});
+
+$('torchBtn').addEventListener('click', async function () {
+    if (!S.track) return;
+    try {
+        await S.track.applyConstraints({ advanced: [{ torch: !S.torch }] });
+        S.torch = !S.torch;
+        this.setAttribute('aria-pressed', String(S.torch));
+    } catch (e) {
+        say('This camera does not support the flashlight.', 'error');
+    }
+});
+
+$('uploadBtn').addEventListener('click', function () { $('fileInput').click(); });
+$('nativeBtn').addEventListener('click', function () { $('nativeInput').click(); });
+
+['fileInput', 'nativeInput'].forEach(function (id) {
+    $(id).addEventListener('change', function (e) {
+        var files = e.target.files;
+        if (files && files.length) addFiles(files);
+        e.target.value = '';
+    });
+});
+
+$('liveToggle').addEventListener('change', function (e) {
+    S.live = e.target.checked;
+    S.liveErrors = 0;
+    if (!S.live) clearOverlay();
+    liveLoop();
+});
+
+$('autoToggle').addEventListener('change', function (e) {
+    S.auto = e.target.checked;
+    S.stable = 0;
+    if (S.auto && !S.live) {
+        S.live = true;
+        $('liveToggle').checked = true;
+        liveLoop();
+    }
+});
+
+stage.addEventListener('dragover', function (e) { e.preventDefault(); stage.classList.add('dragover'); });
+stage.addEventListener('dragleave', function () { stage.classList.remove('dragover'); });
+stage.addEventListener('drop', function (e) {
+    e.preventDefault();
+    stage.classList.remove('dragover');
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+});
+
+window.addEventListener('resize', function () {
+    if (S.mode === 'crop') layoutCrop();
+});
+
+document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { if (S.stream) stopCamera(true); }
+    else if (S.mode === 'capture' && S.wantCamera && !S.stream) startCamera();
+});
+
+window.addEventListener('pagehide', function () { stopCamera(true); });
+
+if (!cameraSupported()) {
+    showNotice('Live camera needs HTTPS or localhost, and this page is on ' + location.protocol + '//' +
+        location.host + '. "Take photo with camera app" still works on your phone.');
+}
+
+renderPages();
+
+})();
+</script>
+{% endraw %}
+
+</body>
+
+</html>

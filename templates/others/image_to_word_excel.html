@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image to Word / Excel — Abdur Rauf</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --bg-950:#080c16;
+            --bg-900:#0c1220;
+            --panel-800:#101a2c;
+            --panel-700:#16223a;
+            --grid-line:rgba(255,255,255,.05);
+            --border:#1f2c47;
+            --border-soft:#233252;
+
+            --text-100:#eef2f8;
+            --text-300:#aebbd0;
+            --text-500:#7c8aa3;
+
+            --orange-500:#f0632f;
+            --orange-050:rgba(240,99,47,.12);
+
+            --blue-500:#2f6fed;
+            --blue-050:rgba(47,111,237,.14);
+
+            --teal-400:#39d6ae;
+            --teal-050:rgba(57,214,174,.12);
+
+            --c-pdf:#f0632f;      --c-pdf-wash:rgba(240,99,47,.12);
+            --c-docx:#2f6fed;     --c-docx-wash:rgba(47,111,237,.14);
+            --c-xlsx:#39d6ae;     --c-xlsx-wash:rgba(57,214,174,.12);
+            --c-pptx:#e0a53a;     --c-pptx-wash:rgba(224,165,58,.13);
+            --c-img:#a78bfa;      --c-img-wash:rgba(167,139,250,.13);
+
+            --shadow-md:0 12px 30px rgba(0,0,0,.35);
+            --shadow-lg:0 24px 55px rgba(0,0,0,.45);
+        }
+
+        html{scroll-behavior:smooth;}
+        html body{
+            background:
+                linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0/34px 34px,
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0/34px 34px,
+                var(--bg-950) !important;
+            color:var(--text-300) !important;
+            font-family:'Inter',system-ui,sans-serif;
+            font-weight:400;
+            -webkit-font-smoothing:antialiased;
+        }
+        a{color:var(--text-100); text-decoration:none;}
+        :focus-visible{outline:2px solid var(--blue-500); outline-offset:3px;}
+        .display{font-family:'Space Grotesk',sans-serif;}
+
+        /* ---------- Navbar ---------- */
+        .navbar{
+            background:rgba(8,12,22,.85) !important;
+            background-image:none !important;
+            backdrop-filter:saturate(160%) blur(10px);
+            border-bottom:1px solid var(--border) !important;
+            padding-top:1.1rem; padding-bottom:1.1rem;
+            position:sticky; top:0; z-index:1030;
+        }
+        .navbar-brand{
+            font-family:'Space Grotesk',sans-serif;
+            font-weight:700;
+            font-size:1.25rem;
+            color:var(--text-100) !important;
+            display:flex; align-items:center; gap:.55rem;
+        }
+        .navbar-brand .mark{
+            width:26px; height:26px;
+            border-radius:6px;
+            background:var(--orange-500) !important;
+            color:#fff;
+            display:inline-flex; align-items:center; justify-content:center;
+            font-size:.68rem; font-weight:700;
+        }
+        .navbar-nav .nav-link{
+            background:transparent !important;
+            background-image:none !important;
+            font-family:'Inter',sans-serif;
+            font-weight:500;
+            font-size:.92rem;
+            color:var(--text-300) !important;
+            padding:.5rem 1rem !important;
+            border:none !important;
+        }
+        .navbar-nav .nav-link:hover{ color:var(--text-100) !important; }
+        .navbar-nav .nav-link.active{ color:var(--text-100) !important; position:relative; }
+        .navbar-nav .nav-link.active::after{
+            content:"";
+            position:absolute;
+            left:1rem; right:1rem; bottom:.15rem;
+            height:2px;
+            background:var(--orange-500) !important;
+        }
+
+        /* ---------- Image to Word / Excel tool ---------- */
+        .tool-page{ padding:3.5rem 0 4.5rem; }
+        .tool-page h1{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(1.9rem,3.2vw,2.5rem); color:var(--text-100); margin:0 0 .6rem; }
+        .tool-page h1 .accent{ color:var(--orange-500); }
+        .tool-page p.lead{ color:var(--text-500); max-width:60ch; line-height:1.65; margin:0 0 2rem; }
+        .panel{ background:var(--panel-800); border:1px solid var(--border); border-radius:12px; padding:1.6rem; box-shadow:var(--shadow-md); }
+        #drop{ border:2px dashed var(--border-soft); border-radius:10px; padding:2.4rem 1rem; text-align:center; cursor:pointer; color:var(--text-300); transition:border-color .15s, background-color .15s; }
+        #drop:hover, #drop.over{ border-color:var(--blue-500); background:var(--blue-050); }
+        #drop small{ color:var(--text-500); }
+        #preview{ max-width:100%; max-height:240px; border-radius:8px; margin-top:1rem; display:none; border:1px solid var(--border); }
+        #fname{ margin:.9rem 0 0; color:var(--text-100); font-weight:500; word-break:break-all; }
+        .opts{ display:grid; grid-template-columns:1fr 1fr; gap:.2rem 1.5rem; margin-top:1.2rem; }
+        .opts label{ display:flex; align-items:center; gap:.55rem; color:var(--text-300); padding:.35rem 0; cursor:pointer; }
+        .opts input{ accent-color:var(--orange-500); width:1.05rem; height:1.05rem; }
+        .opts .tag{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:.68rem; border-radius:5px; padding:.2rem .45rem; }
+        .opts .t-x{ color:var(--c-xlsx); background:var(--c-xlsx-wash); }
+        .opts .t-d{ color:var(--c-docx); background:var(--c-docx-wash); }
+        #go{ margin-top:1.4rem; width:100%; padding:.8rem; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:1rem; border:0; border-radius:8px; background:var(--orange-500); color:#fff; cursor:pointer; transition:filter .15s; }
+        #go:hover{ filter:brightness(1.1); }
+        #go:disabled{ opacity:.55; cursor:wait; }
+        #msg{ margin-top:1rem; min-height:1.4em; font-size:.95rem; }
+        #msg.err{ color:#ff7b7b; } #msg.ok{ color:var(--teal-400); } #msg.busy{ color:var(--text-300); }
+        .notes{ margin-top:1.6rem; padding-left:1.1rem; color:var(--text-500); font-size:.88rem; line-height:1.7; }
+        footer{ background:var(--bg-900) !important; border-top:1px solid var(--border) !important; padding:1.75rem 0; }
+        footer .footer-inner{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:.75rem; font-size:.85rem; color:var(--text-500); }
+        @media (max-width:575px){ .opts{ grid-template-columns:1fr; } }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/"><span class="mark">AR</span> RAUF</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/blog">Blog</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/resume">Resume</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/design">Design</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container tool-page">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-xl-7">
+                <h1>Image to <span class="accent">Word</span> &amp; Excel</h1>
+                <p class="lead">Upload a photo or scan of a document. Tables become real Word / Excel tables, text stays editable, and signatures, stamps and logos are placed back where they were. If the image has no table, you get plain text &mdash; no cells.</p>
+
+                <div class="panel">
+                    <div id="drop" role="button" tabindex="0">
+                        <strong>Click or drop an image here</strong><br>
+                        <small>PNG, JPG, BMP, TIF, WEBP &mdash; max 10 MB</small>
+                    </div>
+                    <input id="file" type="file" accept="image/*" hidden>
+                    <p id="fname"></p>
+                    <img id="preview" alt="Selected image preview">
+
+                    <div class="opts">
+                        <label><input type="checkbox" id="excel" checked> <span class="tag t-x">XLSX</span> Excel file</label>
+                        <label><input type="checkbox" id="word" checked> <span class="tag t-d">DOCX</span> Word file</label>
+                        <label><input type="checkbox" id="colors" checked> Match original colors</label>
+                        <label><input type="checkbox" id="objects" checked> Extract signatures / stamps / logos</label>
+                    </div>
+
+                    <button id="go" type="button">Convert</button>
+                    <div id="msg" role="status"></div>
+                </div>
+
+                <ul class="notes">
+                    <li>Choosing both formats downloads a single .zip containing the two files.</li>
+                    <li>Handwriting and blurry text may be read wrongly &mdash; always check the result.</li>
+                    <li>Your image is deleted from the server immediately after conversion.</li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container footer-inner">
+            <span>&copy; 2026 Abdur Rauf</span>
+            <span>Converter / Image to Word &amp; Excel</span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    (function(){
+        var drop=document.getElementById('drop'), fileInput=document.getElementById('file');
+        var msg=document.getElementById('msg'), go=document.getElementById('go');
+        var preview=document.getElementById('preview'), fname=document.getElementById('fname');
+        var chosen=null;
+        var URL_CONVERT="{{ url_for('image_office.image_to_word_excel_convert') }}";
+
+        function say(cls,text){ msg.className=cls; msg.textContent=text; }
+        function pick(f){
+            if(!f){ return; }
+            if(!/^image\//.test(f.type)){ say('err','Please choose an image file.'); return; }
+            if(f.size>10*1024*1024){ say('err','File too large (max 10 MB).'); return; }
+            chosen=f; say('','');
+            fname.textContent='Selected: '+f.name;
+            preview.src=URL.createObjectURL(f); preview.style.display='block';
+        }
+        drop.addEventListener('click',function(){ fileInput.click(); });
+        drop.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); fileInput.click(); } });
+        fileInput.addEventListener('change',function(){ pick(fileInput.files[0]); });
+        drop.addEventListener('dragover',function(e){ e.preventDefault(); drop.classList.add('over'); });
+        drop.addEventListener('dragleave',function(){ drop.classList.remove('over'); });
+        drop.addEventListener('drop',function(e){ e.preventDefault(); drop.classList.remove('over'); pick(e.dataTransfer.files[0]); });
+
+        go.addEventListener('click',async function(){
+            if(!chosen){ say('err','Please choose an image first.'); return; }
+            if(!document.getElementById('excel').checked && !document.getElementById('word').checked){ say('err','Tick Excel, Word, or both.'); return; }
+            var fd=new FormData();
+            fd.append('file',chosen);
+            ['excel','word','colors','objects'].forEach(function(k){ fd.append(k,document.getElementById(k).checked); });
+            go.disabled=true; say('busy','Working\u2026 this can take 10\u201330 seconds.');
+            try{
+                var r=await fetch(URL_CONVERT,{method:'POST',body:fd});
+                if(!r.ok){ var t=r.statusText; try{ t=(await r.json()).error||t; }catch(e){} throw new Error(t); }
+                var blob=await r.blob();
+                var m=/filename="?([^";]+)"?/.exec(r.headers.get('content-disposition')||'');
+                var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+                a.download=m?m[1]:'converted.zip'; document.body.appendChild(a); a.click(); a.remove();
+                say('ok','Done \u2014 your download has started.');
+            }catch(e){ say('err','Error: '+e.message); }
+            go.disabled=false;
+        });
+    })();
+    </script>
+</body>
+</html>
