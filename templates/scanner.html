@@ -14,7 +14,8 @@ window.SCANNER_URLS = {
     process: "{{ url_for('scanner.process_scan') }}",
     detectFrame: "{{ url_for('scanner.detect_frame') }}",
     pdf: "{{ url_for('scanner.create_pdf') }}",
-    remove: "{{ url_for('scanner.delete_page') }}"
+    remove: "{{ url_for('scanner.delete_page') }}",
+    ocr: "{{ url_for('scanner.ocr') }}"
 };
 </script>
 
@@ -501,6 +502,46 @@ textarea {
 @media (prefers-reduced-motion: reduce) {
     .spinner { animation: none; }
     .flash.go { animation: none; }
+}
+
+
+/* Mobile scanner refinements */
+video#video {
+    display: block;
+    max-width: 100%;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+}
+button, input, select, textarea {
+    touch-action: manipulation;
+}
+@media (max-width: 680px) {
+    .container {
+        width: min(100% - 20px, 1180px);
+        margin: 20px auto 36px;
+    }
+    .title { font-size: clamp(26px, 7vw, 34px); }
+    .subtitle { font-size: 14px; margin-bottom: 18px; }
+    .workspace { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .stage {
+        height: min(62vh, 560px);
+        min-height: 320px;
+        border-radius: 12px;
+    }
+    .group { padding: 14px; }
+    .btn, button { min-height: 42px; }
+    .shutter-bar { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+    .chips { gap: 8px; flex-wrap: wrap; }
+    .chip { min-height: 40px; padding: 9px 12px; }
+    .pages, #pages { gap: 8px; }
+    .thumb { width: 76px; }
+    .switches { gap: 12px; }
+    .switch { font-size: 13px; align-items: flex-start; }
+    header { height: 56px; }
+}
+@media (max-width: 380px) {
+    .stage { min-height: 290px; }
+    .container { width: calc(100% - 14px); }
 }
 
 </style>
@@ -1639,7 +1680,18 @@ $('copyBtn').addEventListener('click', async function () {
 /* ------------------------------------------------------------------ */
 
 $('cameraBtn').addEventListener('click', function () {
-    if (S.stream) { stopCamera(false); say('Camera stopped.'); } else { startCamera(); }
+    if (S.stream) {
+        stopCamera(false);
+        say('Camera stopped.');
+        return;
+    }
+    if (!cameraSupported()) {
+        showNotice('Live camera preview requires HTTPS (or localhost). Opening your phone camera instead. For live preview, open this site using HTTPS.');
+        say('Opening your phone camera…');
+        $('nativeInput').click();
+        return;
+    }
+    startCamera();
 });
 
 $('shutterBtn').addEventListener('click', takePhoto);
