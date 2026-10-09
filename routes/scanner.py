@@ -51,7 +51,7 @@ OUT_MAX_SIDE = 2400                    # scanned page, longest edge (px)
 KEEP_SECONDS = 6 * 60 * 60             # temp files are deleted after 6 h
 MAX_PDF_PAGES = 60
 
-FILTERS = ("magic", "bw", "gray", "lighten", "original")
+FILTERS = ("magicpro", "magic", "document", "bw", "gray", "lighten", "original")
 
 ID_RE = re.compile(r"^[0-9a-f]{32}$")
 FILE_RE = re.compile(r"^([0-9a-f]{32})_(src|out)\.jpg$")
@@ -374,48 +374,71 @@ def _sharpen(image, amount=0.6):
 
 
 def apply_filter(image, filter_name, brightness=0.0, contrast=1.0):
-    """brightness -100..100, contrast 0.5..2.0. Returns a BGR or gray image."""
+    """Apply scanner-style enhancement presets implemented on the server."""
+    original = image.copy()
 
-    if filter_name == "bw":
+    if filter_name == "original":
+        out = original
+
+    elif filter_name == "bw":
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         gray = _flatten(gray)
         gray = cv2.GaussianBlur(gray, (3, 3), 0)
         block = _odd(max(31, max(gray.shape) // 30))
-        # brightness acts as the threshold: higher = lighter page, thinner ink
+        block = min(block, min(gray.shape) if min(gray.shape) % 2 else min(gray.shape) - 1)
+        block = max(3, block)
         offset = _clamp(12 + brightness / 8.0, 2, 28)
-        bw = cv2.adaptiveThreshold(
+        out = cv2.adaptiveThreshold(
             gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, block, offset
         )
-        return cv2.medianBlur(bw, 3)
+        out = cv2.medianBlur(out, 3)
+        brightness = 0
 
-    if filter_name == "gray":
+    elif filter_name == "gray":
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        out = _levels(_flatten(gray), 30, 230)
-        out = _sharpen(out)
+        out = _levels(_flatten(gray), 30, 238)
+        out = _sharpen(out, 0.45)
 
     elif filter_name == "lighten":
         flat = _flatten(image)
-        out = cv2.addWeighted(image, 0.35, flat, 0.65, 0)
-        out = _gamma(out, 0.8)
-        out = _sharpen(out, 0.4)
+        out = cv2.addWeighted(image, 0.30, flat, 0.70, 0)
+        out = _gamma(out, 0.82)
+        out = _sharpen(out, 0.35)
 
-    elif filter_name == "magic":
-        out = _levels(_flatten(image), 20, 235)
+    elif filter_name == "document":
+        # Flatten uneven paper lighting, then enhance local text contrast.
+        flat = _flatten(image)
+        lab = cv2.cvtColor(flat, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+        l = cv2.createCLAHE(clipLimit=1.7, tileGridSize=(8, 8)).apply(l)
+        out = cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+        out = _levels(out, 12, 246)
+        out = _sharpen(out, 0.45)
+
+    elif filter_name in ("magic", "magicpro"):
+        flat = _flatten(image)
+        lab = cv2.cvtColor(flat, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+        clip = 2.0 if filter_name == "magicpro" else 1.35
+        l = cv2.createCLAHE(clipLimit=clip, tileGridSize=(8, 8)).apply(l)
+        out = cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
         hsv = cv2.cvtColor(out, cv2.COLOR_BGR2HSV).astype(np.float32)
-        hsv[:, :, 1] = np.clip(hsv[:, :, 1] * 1.15, 0, 255)
+        hsv[:, :, 1] = np.clip(hsv[:, :, 1] * (1.08 if filter_name == "magicpro" else 1.04), 0, 255)
         out = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
-        out = _sharpen(out)
+        if filter_name == "magicpro":
+            out = cv2.bilateralFilter(out, 5, 24, 24)
+            out = _sharpen(out, 0.55)
+        else:
+            out = _sharpen(out, 0.35)
 
     else:
-        out = image
+        out = original
 
     if brightness or contrast != 1.0:
         out = cv2.convertScaleAbs(out, alpha=contrast, beta=brightness + 128 * (1 - contrast))
-
     return out
 
 
-# ---------------------------------------------------------
 # UPLOAD + AUTO DETECT
 # ---------------------------------------------------------
 
@@ -635,6 +658,10 @@ def create_pdf():
         return _fail("There are no scanned pages to export.", 404)
 
     size = request.args.get("size", "a4")
+    # Fill the selected paper size by default, like CamScanner. This can
+    # trim a little from the image edges when aspect ratios differ.
+    # fill=0 keeps the complete crop visible and may leave white margins.
+    fill_page = request.args.get("fill", "1") == "1"
 
     buffer = io.BytesIO()
     pdf = canvas.Canvas(buffer)
@@ -653,7 +680,13 @@ def create_pdf():
             # "Original size": 150 dpi, so a photo of an A4 sheet becomes ~A4
             page_w, page_h = img_w * 72.0 / 150.0, img_h * 72.0 / 150.0
 
-        ratio = min(page_w / img_w, page_h / img_h)
+        if fill_page:
+            # Scale until the image covers the whole paper; center it so the
+            # excess is clipped evenly from opposite edges.
+            ratio = max(page_w / img_w, page_h / img_h)
+        else:
+            # Keep the entire cropped image inside the paper without clipping.
+            ratio = min(page_w / img_w, page_h / img_h)
         draw_w, draw_h = img_w * ratio, img_h * ratio
 
         pdf.setPageSize((page_w, page_h))
