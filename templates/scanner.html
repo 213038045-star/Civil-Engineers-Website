@@ -510,7 +510,6 @@ video#video {
     display: block;
     max-width: 100%;
     -webkit-transform: translateZ(0);
-    transform: translateZ(0);
 }
 button, input, select, textarea {
     touch-action: manipulation;
@@ -873,10 +872,41 @@ function showNotice(text) {
     n.hidden = !text;
 }
 
-function explainCameraError(err) {
+function inAppBrowser() {
+    var ua = navigator.userAgent || '';
+    return /FBAN|FBAV|Instagram|WhatsApp|Line\/|Messenger|Snapchat|TikTok|; wv\)|\bwv\b/i.test(ua);
+}
+
+async function cameraPermissionState() {
+    try {
+        if (navigator.permissions && navigator.permissions.query) {
+            var r = await navigator.permissions.query({ name: 'camera' });
+            return r.state;            // 'granted' | 'denied' | 'prompt'
+        }
+    } catch (e) { /* not supported (Safari / older browsers) */ }
+    return 'unknown';
+}
+
+async function explainCameraError(err) {
     var name = err && err.name;
+    var state = await cameraPermissionState();
+
     if (name === 'NotAllowedError' || name === 'SecurityError' || name === 'PermissionDeniedError') {
-        return 'Camera access is blocked. Tap the lock icon next to the address bar, allow Camera, then press Start camera again.';
+        if (inAppBrowser()) {
+            return 'This in-app browser does not allow the camera. Open this page in Chrome or Safari ' +
+                   '(menu \u22EE \u2192 "Open in browser"), or use "Take photo with camera app".';
+        }
+        if (name === 'SecurityError') {
+            return 'The server or the page is blocking the camera (Permissions-Policy). ' +
+                   'Use "Take photo with camera app" for now.';
+        }
+        if (state === 'denied') {
+            return 'Camera is blocked for this site. Tap the lock icon in the address bar \u2192 Permissions \u2192 Camera \u2192 Allow, ' +
+                   'then reload the page. If Camera is already allowed there, also check Android Settings \u2192 Apps \u2192 your browser \u2192 Permissions \u2192 Camera.';
+        }
+        return 'Camera permission was dismissed or denied. Press Start camera again and tap Allow. ' +
+               'If no prompt appears, check Android Settings \u2192 Apps \u2192 your browser \u2192 Permissions \u2192 Camera. ' +
+               '(' + name + ')';
     }
     if (name === 'NotFoundError' || name === 'DevicesNotFoundError' || name === 'OverconstrainedError') {
         return 'No camera was found on this device. Use Upload images instead.';
@@ -921,7 +951,7 @@ async function startCamera() {
 
     if (!stream) {
         S.wantCamera = false;
-        showNotice(explainCameraError(lastErr));
+        showNotice(await explainCameraError(lastErr));
         say('Camera did not start.', 'error');
         return;
     }
