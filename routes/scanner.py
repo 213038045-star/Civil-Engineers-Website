@@ -128,7 +128,8 @@ def _decode_upload(data):
 @scanner.after_request
 def _camera_permission(response):
     # Make sure a site-wide Permissions-Policy cannot block the camera here.
-    response.headers["Permissions-Policy"] = "camera=(self)"
+    response.headers["Permissions-Policy"] = "camera=(self), microphone=()"
+    response.headers["Feature-Policy"] = "camera 'self'"
     return response
 
 
