@@ -510,6 +510,7 @@ video#video {
     display: block;
     max-width: 100%;
     -webkit-transform: translateZ(0);
+    transform: translateZ(0);
 }
 button, input, select, textarea {
     touch-action: manipulation;
@@ -742,8 +743,8 @@ perspective is straightened and shadows are removed.
 
 <label class="field">Page fill
 <select id="fillSel">
-<option value="1">Fill page (slight crop, no white margin)</option>
-<option value="0">Fit inside page</option>
+<option value="1" selected>Fill full page (crop edges, no white margin)</option>
+<option value="0">Fit entire crop (may leave margins)</option>
 </select>
 </label>
 
@@ -854,7 +855,7 @@ function setMode(mode) {
     } else {
         stopCamera(true);
     }
-    if (mode === 'crop') layoutCrop();
+    if (mode === 'crop') requestAnimationFrame(layoutCrop);
     renderPages();
 }
 
@@ -1334,7 +1335,7 @@ cropCanvas.addEventListener('pointerdown', function (e) {
     var p = page();
     if (!p || !C.dw) return;
     var m = cropPos(e), best = -1, bestD = Infinity;
-    var reach = e.pointerType === 'touch' ? 50 : 28;
+    var reach = e.pointerType === 'touch' ? 64 : 34;
     for (var id = 0; id < 8; id++) {
         var c = handlePx(p, id);
         var d = Math.hypot(c.x - m.x, c.y - m.y) - (id < 4 ? 6 : 0);   // corners win ties
